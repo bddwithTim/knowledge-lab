@@ -818,13 +818,146 @@ p, .page-head p, header p {
 .complexity strong, .complexity-compare strong { color: var(--accent); font-weight: 400; }
 
 /* Pointer visualization */
+/* ═══ Two-row read/write pointer layout ═══ */
+.two-row-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.track-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 36px;
+  text-align: right;
+  padding-right: 8px;
+  flex-shrink: 0;
+}
+.track-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding-left: 44px;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+  animation: pulse-connector 0.8s ease-in-out;
+}
+@keyframes pulse-connector {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.two-row-cell {
+  position: relative;
+  display: grid;
+  grid-template-rows: 16px 20px 14px;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: center;
+  width: 52px;
+  padding: 6px 4px 4px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  font-weight: 600;
+  color: var(--text);
+  transition: border-color 0.2s, background 0.2s;
+}
+.two-row-cell .pointer-label {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  position: absolute;
+  top: -8px;
+}
+.two-row-cell strong {
+  font-size: 15px;
+  line-height: 1;
+}
+.two-row-cell small {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1;
+}
+.two-row-cell.is-read {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.two-row-cell.is-read .pointer-label {
+  background: var(--accent);
+  color: var(--bg-root);
+}
+.two-row-cell.is-write {
+  border-color: #f2c594;
+  background: #fef5ec;
+}
+.two-row-cell.is-write .pointer-label {
+  background: #f2c594;
+  color: #3d2608;
+}
+.two-row-cell.is-result {
+  border-color: var(--accent);
+  background: rgba(132, 235, 186, 0.08);
+}
+.two-row-cell.is-empty {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+.two-row-cell.is-match {
+  border-color: #52c41a;
+  background: #f0fff0;
+  box-shadow: 0 0 8px rgba(82, 196, 26, 0.35);
+}
+
 .pointer-track {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 9px;
   margin: var(--space-lg) 0 var(--space-md);
+  min-height: 96px;
 }
+.pointer-legend {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+  padding: 4px 8px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+}
+.pointer-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.pointer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.pointer-dot.is-left-dot { background: var(--accent); }
+.pointer-dot.is-right-dot { background: var(--kyu-6-text); }
+.pointer-dot.is-slow-dot { background: #f2c594; }
+.pointer-dot.is-result-dot { background: var(--accent); }
 .pointer-track .number-cell {
   flex: 0 0 auto;
   min-width: 48px;
@@ -865,7 +998,7 @@ p, .page-head p, header p {
 .number-cell.is-right { border-color: var(--kyu-6-text); box-shadow: 0 0 0 2px rgba(245, 209, 155, 0.25); }
 .number-cell.is-slow { border-color: #f2c594; box-shadow: 0 0 0 2px rgba(242, 197, 148, 0.25); }
 .number-cell.is-slow .pointer-label { background: #f2c594; color: #3d2608; }
-.number-cell.is-result { border-color: var(--accent); background: var(--accent-bg); }
+.number-cell.is-result { border-color: var(--accent); background: rgba(132, 235, 186, 0.08); }
 .number-cell.is-stale { opacity: 0.3; }
 
 /* ── Interval Timeline visualization ────────────────── */
@@ -1256,9 +1389,10 @@ p, .page-head p, header p {
 .window-sum strong { color: #5bb8f0; font: 700 1.25rem var(--font-mono); }
 
 .merge-viz { display: flex; flex-direction: column; gap: var(--space-sm); padding: var(--space-md) var(--space-xs); }
-.merge-row { display: flex; align-items: center; gap: 6px; }
+.merge-row { display: flex; align-items: center; gap: 6px; min-height: 64px; }
 .merge-label {
-  width: 22px; text-align: center;
+  min-width: 40px;
+  text-align: center;
   color: var(--text-muted);
   font: 600 0.625rem var(--font-mono);
   flex-shrink: 0;
@@ -1266,6 +1400,8 @@ p, .page-head p, header p {
 .merge-row-a .merge-label { color: var(--accent); }
 .merge-row-b .merge-label { color: var(--kyu-6-text); }
 .merge-row-result .merge-label { color: var(--text-secondary); }
+.merge-row-original { margin-bottom: 2px; }
+.merge-row-original .merge-label { color: var(--text-muted); font-size: 0.5625rem; }
 .merge-cell {
   flex: 1; min-width: 0; max-width: 52px;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -1282,6 +1418,7 @@ p, .page-head p, header p {
 .merge-cell.is-right { border-color: var(--kyu-6-text); box-shadow: 0 0 0 2px rgba(245, 209, 155, 0.25); }
 .merge-cell.is-done { opacity: 0.35; }
 .merge-cell.is-result { background: var(--bg-elevated); border-color: var(--accent-bg); }
+.merge-cell.is-original { opacity: 0.45; border-style: dashed; }
 
 .algorithm-study {
   margin-bottom: var(--space-lg);
@@ -1477,6 +1614,34 @@ code, .inline-code {
 .big-o-chart-sub { font-size: 0.75rem; color: var(--text-muted); margin: 0 0 var(--space-md); }
 .big-o-chart-note { font-size: 0.8125rem; color: var(--text-secondary); margin: var(--space-md) 0 0; line-height: 1.5; }
 .big-o-chart { width: 100%; max-width: 600px; display: block; margin: 0 auto; }
+
+/* ── Complexity comparison table ── */
+.big-o-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--text-sm) var(--font-mono);
+  margin: var(--space-md) 0;
+}
+.big-o-table th,
+.big-o-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.big-o-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.big-o-table td {
+  color: var(--text-secondary);
+}
+.big-o-table td:first-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
 
 /* ── Big O inline code / compare / cheatsheet / quiz ─ */
 .big-o-inline-code { margin: var(--space-md) 0; }

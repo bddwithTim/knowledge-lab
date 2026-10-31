@@ -1,4 +1,4 @@
-export type ScenarioId = 'pair-sum' | 'palindrome' | 'remove-duplicates' | 'container-water' | 'merge-sorted' | 'sliding-window' | 'smallest-subarray' | 'two-sum' | 'first-unique' | 'valid-anagram' | 'most-frequent' | 'big-o-1' | 'big-o-n' | 'big-o-n2' | 'big-o-logn' | 'binary-search-classic' | 'binary-search-boundary' | 'linked-list-cycle' | 'find-middle' | 'valid-parens' | 'next-greater' | 'merge-overlapping' | 'insert-interval' | 'range-sum' | 'pivot-index' | 'three-sum' | 'meeting-rooms' | 'activity-selection' | 'jump-game' | 'fib-dp' | 'knapsack' | 'n-queens' | 'permutations'
+export type ScenarioId = 'pair-sum' | 'palindrome' | 'remove-duplicates' | 'container-water' | 'merge-sorted' | 'sliding-window' | 'smallest-subarray' | 'two-sum' | 'first-unique' | 'valid-anagram' | 'most-frequent' | 'big-o-1' | 'big-o-n' | 'big-o-n2' | 'big-o-logn' | 'binary-search-classic' | 'binary-search-boundary' | 'linked-list-cycle' | 'find-middle' | 'valid-parens' | 'next-greater' | 'merge-overlapping' | 'insert-interval' | 'range-sum' | 'pivot-index' | 'three-sum' | 'meeting-rooms' | 'activity-selection' | 'bubble-sort' | 'insertion-sort' | 'merge-sort' | 'quick-sort' | 'jump-game' | 'fib-dp' | 'knapsack' | 'n-queens' | 'permutations'
 
 export type ScenarioStep = {
   description: string
@@ -12,6 +12,9 @@ export type VisualStep = {
   rightIndex?: number
   found?: boolean
   slowIndex?: number
+  leftLabel?: string
+  rightLabel?: string
+  slowLabel?: string
   // merge-arrays fields
   itemsA?: number[]
   itemsB?: number[]
@@ -38,7 +41,7 @@ export type VisualStep = {
 
 export type Scenario = {
   id: ScenarioId
-  category: 'big-o' | 'two-pointer' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-interval' | 'prefix-sum' | 'sorting-strategies' | 'greedy' | 'dp' | 'backtracking'
+  category: 'big-o' | 'two-pointer' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-interval' | 'prefix-sum' | 'sorting-algorithms' | 'greedy' | 'dp' | 'backtracking'
   title: string
   topic: string
   description: string
@@ -46,7 +49,7 @@ export type Scenario = {
   spaceComplexity: string
   debugCode: string
   steps: ScenarioStep[]
-  visualType: 'number-cells' | 'char-cells' | 'array-cells' | 'bar-chart' | 'merge-arrays' | 'sliding-window' | 'interval-timeline' | 'prefix-array' | 'grid'
+  visualType: 'number-cells' | 'char-cells' | 'array-cells' | 'bar-chart' | 'merge-arrays' | 'sliding-window' | 'interval-timeline' | 'prefix-array' | 'grid' | 'grid'
   visualData: VisualStep[]
   whyItWorks: { title: string; body: string[] }
   whenToUseSummary: string
@@ -1877,163 +1880,386 @@ function rangeSum(prefix, l, r) {
   },
 
   /* ═══════════════════════════════════════════════════
-     SORTING STRATEGIES
+     SORTING ALGORITHMS
   ═══════════════════════════════════════════════════ */
 
-  /* ── Three Sum ───────────────────────────────────── */
+  /* ── Bubble Sort ─────────────────────────────────── */
   {
-    id: 'three-sum',
-    category: 'sorting-strategies',
-    title: 'Three sum to zero',
-    topic: 'Sort + two-pointer',
-    description: 'Find three numbers that add to zero, like [-1, 0, 1] or [-1, -1, 2]. Sort the numbers first, then turn it into a two-sum: pick one number as the anchor, find the other two with two fingers from the ends.',
+    id: 'bubble-sort',
+    category: 'sorting-algorithms',
+    title: 'Bubble sort',
+    topic: 'Compare neighbors · swap',
+    description: 'Bubble sort works like bubbles rising in soda — the largest values float to the top one by one. You compare each pair of neighbors and swap them if they are out of order. After each full pass, the biggest unsorted element lands in its final spot.',
     timeComplexity: 'O(n²)',
     spaceComplexity: 'O(1)',
-    debugCode: `function threeSum(nums) {
-  nums.sort((a, b) => a - b);
-  const result = [];
-
-  for (let i = 0; i < nums.length - 2; i++) {
-    if (i > 0 && nums[i] === nums[i - 1]) continue;
-    let l = i + 1, r = nums.length - 1;
-
-    while (l < r) {
-      const sum = nums[i] + nums[l] + nums[r];
-      if (sum === 0) {
-        result.push([nums[i], nums[l], nums[r]]);
-        while (l < r && nums[l] === nums[l + 1]) l++;
-        while (l < r && nums[r] === nums[r - 1]) r--;
-        l++; r--;
-      } else if (sum < 0) {
-        l++;
-      } else {
-        r--;
+    debugCode: `function bubbleSort(arr) {
+  for (let i = 0; i < arr.length - 1; i++) {
+    let swapped = false;
+    for (let j = 0; j < arr.length - 1 - i; j++) {
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
       }
     }
+    if (!swapped) break;
   }
-  return result;
+  return arr;
 }`,
     steps: [
-      { currentLine: 2, variables: { i: '~', l: '~', r: '~', sum: '~' }, description: 'Sort array: `[-4, -1, -1, 0, 1, 2]`. Sorting lets us use two-pointers and skip duplicates.' },
-      { currentLine: 5, variables: { i: 0, l: '~', r: '~', sum: '~' }, description: 'Outer loop: i=0, nums[0]=-4. Not a duplicate — continue.' },
-      { currentLine: 7, variables: { i: 0, l: 1, r: 5, sum: '~' }, description: 'Set two-pointer range: l=1 (nums[1]=-1), r=5 (nums[5]=2).' },
-      { currentLine: 10, variables: { i: 0, l: 1, r: 5, sum: -3 }, description: 'sum = -4 + (-1) + 2 = -3. Too small — need bigger numbers.' },
-      { currentLine: 17, variables: { i: 0, l: 2, r: 5, sum: -3 }, description: 'Move l right: l=2 (nums[2]=-1).' },
-      { currentLine: 10, variables: { i: 0, l: 2, r: 5, sum: -3 }, description: 'sum = -4 + (-1) + 2 = -3. Still too small — move l again.' },
-      { currentLine: 17, variables: { i: 0, l: 3, r: 5, sum: -3 }, description: 'Move l right: l=3 (nums[3]=0).' },
-      { currentLine: 10, variables: { i: 0, l: 3, r: 5, sum: -2 }, description: 'sum = -4 + 0 + 2 = -2. Too small — move l.' },
-      { currentLine: 17, variables: { i: 0, l: 4, r: 5, sum: -2 }, description: 'Move l right: l=4 (nums[4]=1).' },
-      { currentLine: 10, variables: { i: 0, l: 4, r: 5, sum: -1 }, description: 'sum = -4 + 1 + 2 = -1. l meets r — exit while. No match with -4.' },
-      { currentLine: 5, variables: { i: 1, l: 4, r: 5, sum: -1 }, description: 'Outer loop: i=1, nums[1]=-1. Not a duplicate of nums[0]=-4.' },
-      { currentLine: 7, variables: { i: 1, l: 2, r: 5, sum: -1 }, description: 'Set two-pointer range: l=2 (nums[2]=-1), r=5 (nums[5]=2).' },
-      { currentLine: 10, variables: { i: 1, l: 2, r: 5, sum: 0 }, description: 'sum = -1 + (-1) + 2 = 0. Match found! Triplet: [-1, -1, 2].' },
-      { currentLine: 11, variables: { i: 1, l: 2, r: 5, sum: 0 }, description: 'Push triplet to result. Skip duplicate values at l and r.' },
-      { currentLine: 14, variables: { i: 1, l: 4, r: 4, sum: 0 }, description: 'Skip duplicates and move pointers. l=4, r=4 — while loop ends.' },
-      { currentLine: 5, variables: { i: 2, l: 4, r: 4, sum: 0 }, description: 'i=2, nums[2]=-1 === nums[1]=-1 — skip duplicate anchor.' },
-      { currentLine: 5, variables: { i: 3, l: 4, r: 4, sum: 0 }, description: 'i=3, nums[3]=0. Not a duplicate.' },
-      { currentLine: 7, variables: { i: 3, l: 4, r: 5, sum: 0 }, description: 'Set two-pointer range: l=4 (nums[4]=1), r=5 (nums[5]=2).' },
-      { currentLine: 10, variables: { i: 3, l: 4, r: 5, sum: 3 }, description: 'sum = 0 + 1 + 2 = 3. Too big — need smaller numbers.' },
-      { currentLine: 19, variables: { i: 3, l: 4, r: 4, sum: 3 }, description: 'Move r left: r=4. l meets r — exit while. Loop ends.' },
-      { currentLine: 21, variables: { i: 3, l: 4, r: 4, sum: 3 }, description: 'Return result: `[[-1, -1, 2]]`.' },
+      { currentLine: 2, variables: { i: 0, j: '~', swapped: false, arr: '[5,3,8,1,2]' }, description: 'Pass 1 start. We will push the largest number (8) all the way to the right.' },
+      { currentLine: 5, variables: { i: 0, j: 0, swapped: true, arr: '[3,5,8,1,2]' }, description: 'j=0: 5 > 3 → swap. Array is now [3, 5, 8, 1, 2].' },
+      { currentLine: 5, variables: { i: 0, j: 1, swapped: true, arr: '[3,5,8,1,2]' }, description: 'j=1: 5 < 8 → no swap. These two are already in order.' },
+      { currentLine: 5, variables: { i: 0, j: 2, swapped: true, arr: '[3,5,1,8,2]' }, description: 'j=2: 8 > 1 → swap. 8 continues its journey rightward.' },
+      { currentLine: 5, variables: { i: 0, j: 3, swapped: true, arr: '[3,5,1,2,8]' }, description: 'j=3: 8 > 2 → swap. 8 reaches the end — its final position! ✓' },
+      { currentLine: 2, variables: { i: 1, j: '~', swapped: false, arr: '[3,5,1,2,8]' }, description: 'Pass 2 start. Last element (8) is done. Now bubble up the next largest.' },
+      { currentLine: 5, variables: { i: 1, j: 0, swapped: true, arr: '[3,5,1,2,8]' }, description: 'j=0: 3 < 5 → no swap.' },
+      { currentLine: 5, variables: { i: 1, j: 1, swapped: true, arr: '[3,1,5,2,8]' }, description: 'j=1: 5 > 1 → swap. 5 moves right.' },
+      { currentLine: 5, variables: { i: 1, j: 2, swapped: true, arr: '[3,1,2,5,8]' }, description: 'j=2: 5 > 2 → swap. 5 lands before 8. Both 5 and 8 are now in place. ✓' },
+      { currentLine: 2, variables: { i: 2, j: '~', swapped: false, arr: '[3,1,2,5,8]' }, description: 'Pass 3. Two rightmost elements (5,8) are done.' },
+      { currentLine: 5, variables: { i: 2, j: 0, swapped: true, arr: '[1,3,2,5,8]' }, description: 'j=0: 3 > 1 → swap.' },
+      { currentLine: 5, variables: { i: 2, j: 1, swapped: true, arr: '[1,2,3,5,8]' }, description: 'j=1: 3 > 2 → swap. Array is now [1,2,3,5,8].' },
+      { currentLine: 10, variables: { i: 3, j: '~', swapped: false, arr: '[1,2,3,5,8]' }, description: 'Pass 4: no swaps needed — early exit! Array is sorted. Return [1, 2, 3, 5, 8].' },
     ],
-    visualType: 'number-cells',
+    visualType: 'array-cells',
     visualData: [
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 0, rightIndex: -1 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 0, rightIndex: -1 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 1, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 1, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 3, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 3, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 1, rightIndex: -1 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 4 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: -1 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 3, rightIndex: -1 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 5 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 4 },
-      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 4, found: true },
+      { items: [5, 3, 8, 1, 2], leftIndex: -1, rightIndex: -1 },
+      { items: [3, 5, 8, 1, 2], leftIndex: 0, rightIndex: 1 },
+      { items: [3, 5, 8, 1, 2], leftIndex: 1, rightIndex: 2 },
+      { items: [3, 5, 1, 8, 2], leftIndex: 2, rightIndex: 3 },
+      { items: [3, 5, 1, 2, 8], leftIndex: 3, rightIndex: 4 },
+      { items: [3, 5, 1, 2, 8], leftIndex: -1, rightIndex: -1 },
+      { items: [3, 5, 1, 2, 8], leftIndex: 0, rightIndex: 1 },
+      { items: [3, 1, 5, 2, 8], leftIndex: 1, rightIndex: 2 },
+      { items: [3, 1, 2, 5, 8], leftIndex: 2, rightIndex: 3 },
+      { items: [3, 1, 2, 5, 8], leftIndex: -1, rightIndex: -1 },
+      { items: [1, 3, 2, 5, 8], leftIndex: 0, rightIndex: 1 },
+      { items: [1, 2, 3, 5, 8], leftIndex: 1, rightIndex: 2 },
+      { items: [1, 2, 3, 5, 8], leftIndex: -1, rightIndex: -1 },
     ],
     whyItWorks: {
-      title: 'Sorting reduces 3Sum to 2Sum — which two-pointers solves in O(n).',
+      title: 'Each pass pushes the largest unsorted element to its final position.',
       body: [
-        'For each anchor element i, the remaining problem is "find two numbers that sum to -nums[i]" on a sorted subarray.',
-        'Sorting plus duplicate-skipping guarantees unique triplets without needing a Set.',
-        'The overall complexity is O(n²): O(n log n) for sorting + O(n²) for the nested two-pointer scans.',
+        'Compare every adjacent pair. If they are out of order, swap them. After one full pass, the largest value has "bubbled up" to the end.',
+        'Each subsequent pass can ignore one more element at the end. If a pass makes zero swaps, the array is sorted — early exit.',
       ],
     },
-    whenToUseSummary: 'Sort the array. For each element as anchor, use two-pointers to find pairs that sum to the complement. Skip duplicates at every level.',
+    whenToUseSummary: 'Simple to understand and implement. Only use on tiny arrays — O(n²) is too slow for real data.',
     breakdown: [
-      '3Sum is a classic example of **sorting as a strategy**. Without sorting, you would need three nested loops (O(n³)). Sorting plus two-pointers drops it to O(n²).',
-      '**How it works** — Sort the array first. For each element at index i (the anchor), set two pointers on the remaining subarray (i+1 to end). The target is `-nums[i]` — find two numbers that sum to it.',
-      '**Duplicate handling** — Skip duplicate anchors (`nums[i] === nums[i-1]`). After finding a match, skip duplicate values at both l and r to avoid duplicate triplets in the result.',
-      '**Why sort?** — Sorting does two things: (1) enables the two-pointer technique on the subarray, (2) makes duplicates adjacent so they are easy to skip.',
-      '**Comparison to hash map approach** — A hash-map 3Sum is O(n²) but needs O(n) space and duplicate handling is messier. The sort + two-pointer approach is O(1) extra space and handles duplicates elegantly.',
+      '**Bubble up.** Compare each pair of neighbors. If the left one is bigger, swap them. The big numbers "float" right like bubbles rising in soda.',
+      '**Each pass handles one fewer element.** After pass 1, the last element is done. After pass 2, the last two are done. And so on.',
+      '**Early exit.** If a pass makes zero swaps, every pair is in order — stop early. Helps on nearly-sorted arrays.',
+      '**O(n²) worst case.** Two nested loops. For an array of 5, you might do up to 4+3+2+1=10 comparisons. For 1000, that\'s ~500,000.',
+      '**Why learn it?** It is the simplest sorting algorithm — great for understanding what sorting IS. In practice, use built-in `.sort()` or faster algorithms.',
     ],
     jsConcepts: [
-      'Duplicate skipping — `if (i > 0 && nums[i] === nums[i-1]) continue` skips repeated anchor values. Prevents duplicate triplets.',
-      'Nested two-pointer — outer loop picks an anchor, inner while-loop runs two-pointers on the remainder. O(n²) total because the inner loop runs O(n) times per anchor.',
+      'Destructuring swap — `[arr[j], arr[j+1]] = [arr[j+1], arr[j]]` swaps two values in one line without a temp variable.',
+      'Inline break — `if (!swapped) break` exits the outer loop early when the array is sorted. Avoids wasted passes.',
     ],
   },
 
-  /* ── Meeting Rooms ───────────────────────────────── */
+  /* ── Insertion Sort ──────────────────────────────── */
   {
-    id: 'meeting-rooms',
-    category: 'sorting-strategies',
-    title: 'Meeting rooms (overlap check)',
-    topic: 'Sort + sweep',
-    description: 'You have three meetings: [0,30], [5,10], [15,20]. Can one person attend all of them? Sort them by start time and check each pair — if any meeting starts before the last one ends, there is a conflict.',
-    timeComplexity: 'O(n log n)',
+    id: 'insertion-sort',
+    category: 'sorting-algorithms',
+    title: 'Insertion sort',
+    topic: 'Build sorted portion · insert',
+    description: 'Imagine sorting a hand of cards: you pick up one card at a time and slide it into its correct spot among the cards you already hold. Insertion sort does exactly that — it builds a sorted portion from the left, inserting each new element where it belongs.',
+    timeComplexity: 'O(n²) worst · O(n) best',
     spaceComplexity: 'O(1)',
-    debugCode: `function canAttend(intervals) {
-  intervals.sort((a, b) => a[0] - b[0]);
+    debugCode: `function insertionSort(arr) {
+  for (let i = 1; i < arr.length; i++) {
+    let key = arr[i];
+    let j = i - 1;
 
-  for (let i = 1; i < intervals.length; i++) {
-    if (intervals[i][0] < intervals[i - 1][1]) {
-      return false;
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+    arr[j + 1] = key;
+  }
+  return arr;
+}`,
+    steps: [
+      { currentLine: 2, variables: { i: 1, key: '~', j: '~', arr: '[5,3,8,1,2]' }, description: 'Start at i=1. Index 0 ([5]) is already "sorted" — one element is always sorted.' },
+      { currentLine: 3, variables: { i: 1, key: 3, j: 0, arr: '[5,3,8,1,2]' }, description: 'Pick up key=3 (the card). Compare with 5 (the card to its left).' },
+      { currentLine: 6, variables: { i: 1, key: 3, j: -1, arr: '[5,5,8,1,2]' }, description: '5 > 3, so shift 5 right. j becomes -1 — no more cards to compare.' },
+      { currentLine: 9, variables: { i: 1, key: 3, j: -1, arr: '[3,5,8,1,2]' }, description: 'Insert key=3 at j+1 (index 0). Sorted portion: [3,5].' },
+      { currentLine: 2, variables: { i: 2, key: '~', j: '~', arr: '[3,5,8,1,2]' }, description: 'i=2. Pick up key=8.' },
+      { currentLine: 5, variables: { i: 2, key: 8, j: 1, arr: '[3,5,8,1,2]' }, description: 'key=8 vs arr[1]=5: 5 < 8 → no shift needed. Insert in place.' },
+      { currentLine: 9, variables: { i: 2, key: 8, j: 1, arr: '[3,5,8,1,2]' }, description: 'Insert key=8 at j+1 (index 2). Sorted: [3,5,8].' },
+      { currentLine: 2, variables: { i: 3, key: '~', j: '~', arr: '[3,5,8,1,2]' }, description: 'i=3. Pick up key=1.' },
+      { currentLine: 6, variables: { i: 3, key: 1, j: 2, arr: '[3,5,8,8,2]' }, description: '8 > 1 → shift 8 right.' },
+      { currentLine: 6, variables: { i: 3, key: 1, j: 1, arr: '[3,5,5,8,2]' }, description: '5 > 1 → shift 5 right.' },
+      { currentLine: 6, variables: { i: 3, key: 1, j: 0, arr: '[3,3,5,8,2]' }, description: '3 > 1 → shift 3 right.' },
+      { currentLine: 9, variables: { i: 3, key: 1, j: -1, arr: '[1,3,5,8,2]' }, description: 'Insert key=1 at index 0. Sorted: [1,3,5,8]. Three shifts for one insert!' },
+      { currentLine: 2, variables: { i: 4, key: '~', j: '~', arr: '[1,3,5,8,2]' }, description: 'i=4. Pick up key=2, the last element.' },
+      { currentLine: 6, variables: { i: 4, key: 2, j: 3, arr: '[1,3,5,8,8]' }, description: '8 > 2 → shift.' },
+      { currentLine: 6, variables: { i: 4, key: 2, j: 2, arr: '[1,3,5,5,8]' }, description: '5 > 2 → shift.' },
+      { currentLine: 6, variables: { i: 4, key: 2, j: 1, arr: '[1,3,3,5,8]' }, description: '3 > 2 → shift.' },
+      { currentLine: 5, variables: { i: 4, key: 2, j: 0, arr: '[1,3,3,5,8]' }, description: '1 < 2 → stop shifting.' },
+      { currentLine: 9, variables: { i: 4, key: 2, j: 0, arr: '[1,2,3,5,8]' }, description: 'Insert key=2 at j+1 (index 1). Done! Array is sorted.' },
+    ],
+    visualType: 'array-cells',
+    visualData: [
+      { items: [5, 3, 8, 1, 2], leftIndex: -1, rightIndex: 1 },
+      { items: [5, 3, 8, 1, 2], leftIndex: -1, rightIndex: 1 },
+      { items: [5, 5, 8, 1, 2], leftIndex: 0, rightIndex: 1 },
+      { items: [3, 5, 8, 1, 2], leftIndex: -1, rightIndex: -1 },
+      { items: [3, 5, 8, 1, 2], leftIndex: -1, rightIndex: 2 },
+      { items: [3, 5, 8, 1, 2], leftIndex: 1, rightIndex: 2 },
+      { items: [3, 5, 8, 1, 2], leftIndex: -1, rightIndex: -1 },
+      { items: [3, 5, 8, 1, 2], leftIndex: -1, rightIndex: 3 },
+      { items: [3, 5, 8, 8, 2], leftIndex: 2, rightIndex: 3 },
+      { items: [3, 5, 5, 8, 2], leftIndex: 1, rightIndex: 2 },
+      { items: [3, 3, 5, 8, 2], leftIndex: 0, rightIndex: 1 },
+      { items: [1, 3, 5, 8, 2], leftIndex: -1, rightIndex: -1 },
+      { items: [1, 3, 5, 8, 2], leftIndex: -1, rightIndex: 4 },
+      { items: [1, 3, 5, 8, 8], leftIndex: 3, rightIndex: 4 },
+      { items: [1, 3, 5, 5, 8], leftIndex: 2, rightIndex: 3 },
+      { items: [1, 3, 3, 5, 8], leftIndex: 1, rightIndex: 2 },
+      { items: [1, 3, 3, 5, 8], leftIndex: 0, rightIndex: 1 },
+      { items: [1, 2, 3, 5, 8], leftIndex: -1, rightIndex: -1 },
+    ],
+    whyItWorks: {
+      title: 'Build the sorted portion one element at a time by inserting each new card into its correct spot.',
+      body: [
+        'The array is split into a sorted left side and an unsorted right side. You take the next card from the right and slide it left until it finds its home.',
+        'For each element, shift larger values right one spot, then drop the element into the gap. The sorted side grows by one each iteration.',
+      ],
+    },
+    whenToUseSummary: 'Great for small or nearly-sorted arrays. Beats bubble sort in practice. O(n) best case — when the array is already sorted.',
+    breakdown: [
+      '**Like sorting cards.** Hold sorted cards in your left hand. Pick up the next card with your right. Slide it left until it fits. That is insertion sort.',
+      '**Two parts: sorted and unsorted.** Index 0 starts as sorted (one element). Each step takes the next unsorted element and inserts it into the sorted portion.',
+      '**Shifting, not swapping.** Instead of many swaps, we shift larger elements right one step at a time, then drop the key in. Fewer writes than bubble sort.',
+      '**O(n²) worst, O(n) best.** If the array is already sorted, each element is already in place — the while-loop never runs. If reversed, every element must travel all the way left.',
+      '**Stable sort.** Equal elements keep their relative order. Important when sorting by multiple criteria (e.g., sort by name, then by age).',
+    ],
+    jsConcepts: [
+      'Shifting pattern — `arr[j+1] = arr[j]` copies a value right one position. Creates a "hole" for the key to drop into.',
+      'While loop with two conditions — `j >= 0 && arr[j] > key` stops when we find the right spot OR hit the beginning.',
+    ],
+  },
+
+  /* ── Merge Sort ──────────────────────────────────── */
+  {
+    id: 'merge-sort',
+    category: 'sorting-algorithms',
+    title: 'Merge sort',
+    topic: 'Divide and conquer · merge',
+    description: 'Merge sort splits the array in half, recursively sorts each half, then merges them. This trace follows every line of code — including all recursive calls. Watch how execution jumps back to line 2 each time mergeSort calls itself.',
+    timeComplexity: 'O(n log n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function mergeSort(arr) {
+  if (arr.length <= 1) return arr;
+  const mid = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, mid));
+  const right = mergeSort(arr.slice(mid));
+  return merge(left, right);
+}
+
+function merge(left, right) {
+  const result = [];
+  let i = 0, j = 0;
+  while (i < left.length && j < right.length) {
+    if (left[i] <= right[j]) result.push(left[i++]);
+    else result.push(right[j++]);
+  }
+  return [...result, ...left.slice(i), ...right.slice(j)];
+}`,
+    steps: [
+      { currentLine: 2, variables: { arr: '[5,3,8,1,2,7]', left: '~', right: '~', result: '~' }, description: '🔵 mergeSort([5,3,8,1,2,7]) called. Size 6 > 1 — continue.' },
+      { currentLine: 3, variables: { arr: '[5,3,8,1,2,7]', left: '~', right: '~', result: '~' }, description: 'mid = floor(6/2) = 3. Now we know the split point.' },
+      { currentLine: 4, variables: { arr: '[5,3,8,1,2,7]', left: '~', right: '~', result: '~' }, description: 'left = mergeSort(arr.slice(0, 3)). Calling mergeSort([5,3,8]) — RECURSION! A new mergeSort starts at line 1 with arr=[5,3,8]. Right is NOT computed yet.' },
+      { currentLine: 2, variables: { arr: '[5,3,8]', left: '~', right: '~', result: '~' }, description: '🟢 mergeSort([5,3,8]) called. Size 3 > 1. This is a NEW function call — that is why we are back at line 2.' },
+      { currentLine: 3, variables: { arr: '[5,3,8]', left: '~', right: '~', result: '~' }, description: 'mid = floor(3/2) = 1.' },
+      { currentLine: 4, variables: { arr: '[5,3,8]', left: '~', right: '~', result: '~' }, description: 'left = mergeSort([5]). RECURSE again — calling mergeSort with a single element.' },
+      { currentLine: 2, variables: { arr: '[5]', left: '~', right: '~', result: '~' }, description: '🟡 mergeSort([5]) called. Size 1 === 1 → BASE CASE. Return [5] immediately.' },
+      { currentLine: 5, variables: { arr: '[3,8]', left: '[5]', right: '~', result: '~' }, description: 'Back in mergeSort([5,3,8]) at line 5. Left=[5] returned. Now right = mergeSort([3,8]). RECURSE again.' },
+      { currentLine: 2, variables: { arr: '[3,8]', left: '~', right: '~', result: '~' }, description: '🟠 mergeSort([3,8]) called. Size 2 > 1.' },
+      { currentLine: 3, variables: { arr: '[3,8]', left: '~', right: '~', result: '~' }, description: 'mid = floor(2/2) = 1.' },
+      { currentLine: 4, variables: { arr: '[3,8]', left: '~', right: '~', result: '~' }, description: 'left = mergeSort([3]). RECURSE.' },
+      { currentLine: 2, variables: { arr: '[3]', left: '~', right: '~', result: '~' }, description: 'mergeSort([3]). BASE CASE — return [3].' },
+      { currentLine: 5, variables: { arr: '[3,8]', left: '[3]', right: '~', result: '~' }, description: 'Back at line 5. Left=[3] done. right = mergeSort([8]). RECURSE.' },
+      { currentLine: 2, variables: { arr: '[8]', left: '~', right: '~', result: '~' }, description: 'mergeSort([8]). BASE CASE — return [8].' },
+      { currentLine: 6, variables: { left: '[3]', right: '[8]', i: 0, j: 0, result: '[]' }, description: 'Back at line 6. Both halves ready: left=[3], right=[8]. Now merge([3], [8]) — the VISUAL activates!' },
+      { currentLine: 12, variables: { left: '[3]', right: '[8]', i: 1, j: 0, result: '[3]' }, description: '3 ≤ 8 → push 3 from Left. i=1 (Left exhausted).' },
+      { currentLine: 15, variables: { left: '[3]', right: '[8]', i: 1, j: 0, result: '[3,8]' }, description: 'Left empty → push remaining Right [8]. merge returns [3,8].' },
+      { currentLine: 6, variables: { left: '[5]', right: '[3,8]', i: 0, j: 0, result: '[]' }, description: 'Back in mergeSort([5,3,8]) at line 6. Left=[5], right=[3,8] returned. merge([5], [3,8]) starts.' },
+      { currentLine: 13, variables: { left: '[5]', right: '[3,8]', i: 0, j: 1, result: '[3]' }, description: '3 < 5 → push 3 from Right. j=1.' },
+      { currentLine: 12, variables: { left: '[5]', right: '[3,8]', i: 1, j: 1, result: '[3,5]' }, description: '5 ≤ 8 → push 5 from Left. i=1 (Left exhausted).' },
+      { currentLine: 15, variables: { left: '[5]', right: '[3,8]', i: 1, j: 1, result: '[3,5,8]' }, description: 'Left empty → push remaining Right [8]. LEFT HALF SORTED → [3,5,8].' },
+      { currentLine: 5, variables: { arr: '[1,2,7]', left: '[3,5,8]', right: '~', result: '~' }, description: 'Back in original call at line 5. Left=[3,5,8] done. Now right = mergeSort([1,2,7]). RECURSE.' },
+      { currentLine: 2, variables: { arr: '[1,2,7]', left: '~', right: '~', result: '~' }, description: 'mergeSort([1,2,7]) called. Size 3 > 1.' },
+      { currentLine: 3, variables: { arr: '[1,2,7]', left: '~', right: '~', result: '~' }, description: 'mid = 1.' },
+      { currentLine: 4, variables: { arr: '[1,2,7]', left: '~', right: '~', result: '~' }, description: 'left = mergeSort([1]). RECURSE — base case.' },
+      { currentLine: 2, variables: { arr: '[1]', left: '~', right: '~', result: '~' }, description: 'mergeSort([1]). BASE CASE — return [1].' },
+      { currentLine: 5, variables: { arr: '[1,2,7]', left: '[1]', right: '~', result: '~' }, description: 'Back at line 5. Left=[1]. right = mergeSort([2,7]). RECURSE.' },
+      { currentLine: 2, variables: { arr: '[2,7]', left: '~', right: '~', result: '~' }, description: 'mergeSort([2,7]) called. Size 2 > 1.' },
+      { currentLine: 3, variables: { arr: '[2,7]', left: '~', right: '~', result: '~' }, description: 'mid = 1.' },
+      { currentLine: 4, variables: { arr: '[2,7]', left: '~', right: '~', result: '~' }, description: 'left = mergeSort([2]). Base case. right = mergeSort([7]) at line 5. Both base cases.' },
+      { currentLine: 6, variables: { left: '[2]', right: '[7]', i: 0, j: 0, result: '[]' }, description: 'merge([2], [7]) starts.' },
+      { currentLine: 12, variables: { left: '[2]', right: '[7]', i: 1, j: 0, result: '[2]' }, description: '2 ≤ 7 → push 2. i=1.' },
+      { currentLine: 15, variables: { left: '[2]', right: '[7]', i: 1, j: 0, result: '[2,7]' }, description: 'Left empty → push 7. merge returns [2,7].' },
+      { currentLine: 6, variables: { left: '[1]', right: '[2,7]', i: 0, j: 0, result: '[]' }, description: 'Back in mergeSort([1,2,7]) at line 6. merge([1], [2,7]) starts.' },
+      { currentLine: 12, variables: { left: '[1]', right: '[2,7]', i: 1, j: 0, result: '[1]' }, description: '1 ≤ 2 → push 1 from Left. i=1 (Left exhausted).' },
+      { currentLine: 15, variables: { left: '[1]', right: '[2,7]', i: 1, j: 0, result: '[1,2,7]' }, description: 'Left empty → push remaining Right [2,7]. RIGHT HALF SORTED → [1,2,7].' },
+      { currentLine: 6, variables: { left: '[3,5,8]', right: '[1,2,7]', i: 0, j: 0, result: '[]' }, description: 'Back in original call at line 6: left=[3,5,8], right=[1,2,7]. ═══ FINAL MERGE ═══' },
+      { currentLine: 13, variables: { left: '[3,5,8]', right: '[1,2,7]', i: 0, j: 1, result: '[1]' }, description: '1 < 3 → push 1 from Right. j=1.' },
+      { currentLine: 13, variables: { left: '[3,5,8]', right: '[1,2,7]', i: 0, j: 2, result: '[1,2]' }, description: '2 < 3 → push 2 from Right. j=2.' },
+      { currentLine: 12, variables: { left: '[3,5,8]', right: '[1,2,7]', i: 1, j: 2, result: '[1,2,3]' }, description: '3 ≤ 7 → push 3 from Left. i=1.' },
+      { currentLine: 12, variables: { left: '[3,5,8]', right: '[1,2,7]', i: 2, j: 2, result: '[1,2,3,5]' }, description: '5 ≤ 7 → push 5 from Left. i=2.' },
+      { currentLine: 13, variables: { left: '[3,5,8]', right: '[1,2,7]', i: 2, j: 3, result: '[1,2,3,5,7]' }, description: '7 < 8 → push 7 from Right. j=3 (Right exhausted).' },
+      { currentLine: 15, variables: { left: '[3,5,8]', right: '[1,2,7]', i: 2, j: 3, result: '[1,2,3,5,7,8]' }, description: 'Right empty → push remaining Left [8]. SORTED! [1,2,3,5,7,8]. ✓' },
+    ],
+    visualType: 'merge-arrays',
+    visualData: [
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5, 3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5, 3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5, 3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5, 3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5, 3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3], itemsB: [8], result: [], pointerA: 0, pointerB: 0 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3], itemsB: [8], result: [3], pointerA: 1, pointerB: 0 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3], itemsB: [8], result: [3, 8], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5], itemsB: [3, 8], result: [], pointerA: 0, pointerB: 0 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5], itemsB: [3, 8], result: [3], pointerA: 0, pointerB: 1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5], itemsB: [3, 8], result: [3, 5], pointerA: 1, pointerB: 1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [5], itemsB: [3, 8], result: [3, 5, 8], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [2, 7], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [2, 7], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [2, 7], itemsB: [], result: [], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [2], itemsB: [7], result: [], pointerA: 0, pointerB: 0 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [2], itemsB: [7], result: [2], pointerA: 1, pointerB: 0 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [2], itemsB: [7], result: [2, 7], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [1], itemsB: [2, 7], result: [], pointerA: 0, pointerB: 0 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [1], itemsB: [2, 7], result: [1], pointerA: 1, pointerB: 0 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [1], itemsB: [2, 7], result: [1, 2, 7], pointerA: -1, pointerB: -1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [1, 2, 7], result: [], pointerA: 0, pointerB: 0 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [1, 2, 7], result: [1], pointerA: 0, pointerB: 1 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [1, 2, 7], result: [1, 2], pointerA: 0, pointerB: 2 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [1, 2, 7], result: [1, 2, 3], pointerA: 1, pointerB: 2 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [1, 2, 7], result: [1, 2, 3, 5], pointerA: 2, pointerB: 2 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [1, 2, 7], result: [1, 2, 3, 5, 7], pointerA: 2, pointerB: 3 },
+      { items: [5, 3, 8, 1, 2, 7], itemsA: [3, 5, 8], itemsB: [1, 2, 7], result: [1, 2, 3, 5, 7, 8], pointerA: -1, pointerB: -1 },
+    ],
+    whyItWorks: {
+      title: 'Recursively split to size 1, then merge sorted halves bottom-up.',
+      body: [
+        'A 1-element array is always sorted — base case, no work needed. The real work happens in merge().',
+        'merge() walks two sorted arrays with i and j, always picking the smaller front. O(n) per merge × log₂(n) depth = O(n log n).',
+      ],
+    },
+    whenToUseSummary: 'Guaranteed O(n log n). O(n) extra space. Stable — equal elements keep their order.',
+    breakdown: [
+      '**Recursion: a function calling itself.** Each call to mergeSort starts fresh at line 1 with a new `arr`. When it returns, execution resumes in the caller at the line after the call.',
+      '**The visual only shows what has been computed.** During recursive calls (L4/L5), only the current half is shown — the other side is empty because it has not been computed yet.',
+      '**Steps 0–14: Left half recursion.** Starting from [5,3,8,1,2,7], we recurse down the left side into [5,3,8] → [3,8] → base cases [3] and [8]. Then merge back up.',
+      '**Steps 15–17: First merge.** [3]+[8] → [3,8]. The visual activates — Left, Right, and Result rows appear with pointers.',
+      '**Steps 18–21: Second merge.** [5]+[3,8] → [3,5,8]. Left half fully sorted.',
+      '**Steps 22–33: Right half.** Same process on [1,2,7] → [1]+[2,7] → [2]+[7] → merge up.',
+      '**Steps 34–41: Final merge.** [3,5,8] + [1,2,7] → [1,2,3,5,7,8]. Six elements, six comparisons.',
+      '**Orig row** (dimmed) = the original array — always visible as an anchor.',
+    ],
+    jsConcepts: [
+      'Recursion — a function calling itself with a smaller input. Each call has its own variables. Base case stops the recursion.',
+      '`slice(start, end)` — returns a portion. `slice(0, mid)` = left half, `slice(mid)` = right half.',
+      '`left[i++]` — uses i\'s value then increments. "push left[i], then i += 1".',
+    ],
+  },
+
+  /* ── Quick Sort ──────────────────────────────────── */
+  {
+    id: 'quick-sort',
+    category: 'sorting-algorithms',
+    title: 'Quick sort',
+    topic: 'Partition around pivot · recurse',
+    description: 'Quick sort picks a pivot, then rearranges so everything smaller goes left and everything larger goes right. Then it sorts each side the same way. Like organizing books on a shelf — pick one book as a reference, put shorter books left and taller books right, repeat on each side.',
+    timeComplexity: 'O(n log n) avg · O(n²) worst',
+    spaceComplexity: 'O(log n)',
+    debugCode: `function quickSort(arr, lo = 0, hi = arr.length - 1) {
+  if (lo >= hi) return;
+  const p = partition(arr, lo, hi);
+  quickSort(arr, lo, p - 1);
+  quickSort(arr, p + 1, hi);
+}
+
+function partition(arr, lo, hi) {
+  const pivot = arr[hi];
+  let i = lo;
+  for (let j = lo; j < hi; j++) {
+    if (arr[j] < pivot) {
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
     }
   }
-  return true;
+  [arr[i], arr[hi]] = [arr[hi], arr[i]];
+  return i;
 }`,
     steps: [
-      { currentLine: 2, variables: { prevStart: '~', prevEnd: '~', currStart: '~' }, description: 'Sort meetings by start time: `[[0,30],[5,10],[15,20]]`.' },
-      { currentLine: 4, variables: { prevStart: '~', prevEnd: '~', currStart: '~' }, description: 'Loop: i=1. Compare meeting 1 with meeting 0.' },
-      { currentLine: 5, variables: { prevStart: 0, prevEnd: 30, currStart: 5 }, description: '`intervals[1][0]=5 < intervals[0][1]=30`. Meeting starts before previous ends — conflict!' },
-      { currentLine: 6, variables: { prevStart: 0, prevEnd: 30, currStart: 5 }, description: 'Return false — cannot attend all meetings. [0,30] and [5,10] overlap.' },
+      { currentLine: 2, variables: { lo: 0, hi: 4, pivot: -1, i: '~', arr: '[5,3,8,1,2]' }, description: 'Partition [5,3,8,1,2] with pivot=2 (last element). Goal: smaller left, larger right.' },
+      { currentLine: 10, variables: { lo: 0, hi: 4, pivot: 2, i: 0, arr: '[5,3,8,1,2]' }, description: 'i=0 (boundary). j=0: 5 < 2? No. Skip.' },
+      { currentLine: 10, variables: { lo: 0, hi: 4, pivot: 2, i: 0, arr: '[5,3,8,1,2]' }, description: 'j=1: 3 < 2? No. Skip.' },
+      { currentLine: 10, variables: { lo: 0, hi: 4, pivot: 2, i: 0, arr: '[5,3,8,1,2]' }, description: 'j=2: 8 < 2? No. Skip.' },
+      { currentLine: 10, variables: { lo: 0, hi: 4, pivot: 2, i: 0, arr: '[1,3,8,5,2]' }, description: 'j=3: 1 < 2? Yes! Swap arr[0]↔arr[3] → [1,3,8,5,2]. i advances to 1.' },
+      { currentLine: 14, variables: { lo: 0, hi: 4, pivot: 2, i: 1, arr: '[1,2,8,5,3]' }, description: 'Swap pivot into place: arr[1]↔arr[4] → [1,2,8,5,3]. Pivot at index 1. Left: [1], Right: [8,5,3].' },
+      { currentLine: 3, variables: { lo: 0, hi: 4, pivot: -1, i: '~', arr: '[1,2,8,5,3]' }, description: 'Recurse left: quickSort([1]) — size 1, base case. Recurse right: quickSort([8,5,3]).' },
+      { currentLine: 9, variables: { lo: 2, hi: 4, pivot: 3, i: 2, arr: '[1,2,8,5,3]' }, description: 'Partition right side [8,5,3] with pivot=3.' },
+      { currentLine: 10, variables: { lo: 2, hi: 4, pivot: 3, i: 2, arr: '[1,2,8,5,3]' }, description: 'i=2. j=2: 8 < 3? No. j=3: 5 < 3? No.' },
+      { currentLine: 14, variables: { lo: 2, hi: 4, pivot: 3, i: 2, arr: '[1,2,3,5,8]' }, description: 'Swap pivot: arr[2]↔arr[4] → [1,2,3,5,8]. Pivot at 2. Left: empty, Right: [5,8].' },
+      { currentLine: 4, variables: { lo: 3, hi: 4, pivot: -1, i: '~', arr: '[1,2,3,5,8]' }, description: 'Recurse right: partition([5,8]) with pivot=8. j=3: 5 < 8 → swap (no-op). Pivot stays. Sorted!' },
     ],
-    visualType: 'interval-timeline',
+    visualType: 'array-cells',
     visualData: [
-      { items: [], intervals: [[0,30],[5,10],[15,20]], current: -1 },
-      { items: [], intervals: [[0,30],[5,10],[15,20]], current: 1 },
-      { items: [], intervals: [[0,30],[5,10],[15,20]], current: 1, leftIndex: 0, rightIndex: 0, conflict: true },
-      { items: [], intervals: [[0,30],[5,10],[15,20]], current: 1, leftIndex: 0, rightIndex: 0, conflict: true, found: true },
+      { items: [5, 3, 8, 1, 2], leftIndex: -1, rightIndex: 4 },
+      { items: [5, 3, 8, 1, 2], leftIndex: 0, rightIndex: 4 },
+      { items: [5, 3, 8, 1, 2], leftIndex: 1, rightIndex: 4 },
+      { items: [5, 3, 8, 1, 2], leftIndex: 2, rightIndex: 4 },
+      { items: [1, 3, 8, 5, 2], leftIndex: 0, rightIndex: 3 },
+      { items: [1, 2, 8, 5, 3], leftIndex: 1, rightIndex: 4 },
+      { items: [1, 2, 8, 5, 3], leftIndex: -1, rightIndex: -1 },
+      { items: [1, 2, 8, 5, 3], leftIndex: 2, rightIndex: 4 },
+      { items: [1, 2, 8, 5, 3], leftIndex: 3, rightIndex: 4 },
+      { items: [1, 2, 3, 5, 8], leftIndex: 2, rightIndex: 4 },
+      { items: [1, 2, 3, 5, 8], leftIndex: -1, rightIndex: -1 },
     ],
     whyItWorks: {
-      title: 'Sorting makes the check linear — only adjacent meetings can conflict.',
+      title: 'Pick a pivot, partition around it, then sort each side.',
       body: [
-        'After sorting by start time, the only possible conflict is between a meeting and the next one. If all adjacent pairs are non-overlapping, no non-adjacent pair can overlap either.',
-        'Without sorting, you would need to check every pair — O(n²). Sorting reduces it to O(n log n) total.',
+        'The pivot serves as a reference point. After partitioning, it is in its final sorted position — everything smaller is left, everything larger is right.',
+        'Then recurse on each side. Each level of recursion does O(n) work. With good pivots (roughly median), you get log n levels → O(n log n).',
       ],
     },
-    whenToUseSummary: 'Sort by start time. Check each adjacent pair — if any meeting starts before the previous one ends, there is a conflict.',
+    whenToUseSummary: 'Arguably the fastest general-purpose sort. O(n log n) average, in-place. But watch for O(n²) worst case on already-sorted input with naive pivot choice.',
     breakdown: [
-      'Meeting Rooms demonstrates the **sort + sweep** pattern. The geometric intuition: if you sort intervals by their start times, you can walk through them in order and only check consecutive pairs.',
-      '**Why only adjacent?** — Imagine three meetings A, B, C sorted by start time. If A and B do not overlap, and B and C do not overlap, then A and C cannot overlap either (A ends before B starts, and B ends before C starts, so A definitely ends before C starts).',
-      '**The overlap condition** — `intervals[i][0] < intervals[i-1][1]` — a conflict exists if the current meeting starts before the previous one ends. This works because of the sort — you know i-1 started first.',
-      '**What about equal times?** — If one meeting ends at exactly the same time another starts (e.g., [2,4] and [4,6]), that is NOT considered overlapping — you can attend both. The condition uses `<`, not `<=`.',
-      '**Extension to meeting rooms II** — The same sort pattern combined with a min-heap (priority queue) solves "minimum number of meeting rooms needed." Another great interview follow-up.',
+      '**Pivot is the key.** Pick the last element as pivot. Every element smaller than pivot goes left of the boundary, larger stays right. The pivot ends up between them.',
+      '**Partitioning is one pass.** Walk through with j, maintain i as the boundary of "smaller than pivot" zone. When you find a small element, swap it with the first large element.',
+      '**i is the boundary.** Everything left of i is < pivot. When we find something < pivot, we swap it into position i and advance the boundary.',
+      '**Recurse on both sides.** After placing the pivot, sort everything left of it and everything right of it. Each sub-problem is smaller.',
+      '**O(n²) danger.** If the pivot is always the smallest or largest, one side is empty and the other has n-1 elements → n + (n-1) + ... = O(n²). Random pivot or median-of-three avoids this.',
     ],
     jsConcepts: [
-      'Edge equality — `intervals[i][0] < intervals[i-1][1]` uses strict `<`. Meetings that end and start at the same time do not conflict.',
-      'Sort by first element — `a[0] - b[0]` sorts in ascending order. To sort by end time instead, use `a[1] - b[1]`.',
+      'Partition pattern — `i` tracks the boundary between "smaller" and "larger" zones. Swapping `arr[i]` with `arr[j]` moves a small element across the boundary.',
+      'Default parameters — `lo = 0, hi = arr.length - 1` lets callers omit these arguments. The initial call is just `quickSort(arr)`.',
     ],
   },
+
+
   /* ═══════════════════════════════════════════════════
      GREEDY
   ═══════════════════════════════════════════════════ */

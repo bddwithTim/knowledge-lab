@@ -53,8 +53,16 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
             </div>
           ) : scenario.visualType === 'merge-arrays' ? (
             <div className="merge-viz">
+              {step.items && step.items.length > 0 && (
+                <div className="merge-row merge-row-original">
+                  <span className="merge-label">Orig</span>
+                  {step.items.map((item, index) => (
+                    <div className="merge-cell is-original" key={index}><strong>{item}</strong><small>{index}</small></div>
+                  ))}
+                </div>
+              )}
               <div className="merge-row merge-row-a">
-                <span className="merge-label">A</span>
+                <span className="merge-label">Left</span>
                 {step.itemsA!.map((item, index) => (
                   <div className={`merge-cell${step.pointerA === index ? ' is-left' : ''}${step.pointerA !== undefined && step.pointerA > 0 && index < step.pointerA ? ' is-done' : ''}`} key={index}>
                     {step.pointerA === index && <span className="pointer-label">i</span>}
@@ -63,7 +71,7 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
                 ))}
               </div>
               <div className="merge-row merge-row-b">
-                <span className="merge-label">B</span>
+                <span className="merge-label">Right</span>
                 {step.itemsB!.map((item, index) => (
                   <div className={`merge-cell${step.pointerB === index ? ' is-right' : ''}${step.pointerB !== undefined && step.pointerB > 0 && index < step.pointerB ? ' is-done' : ''}`} key={index}>
                     {step.pointerB === index && <span className="pointer-label">j</span>}
@@ -72,7 +80,7 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
                 ))}
               </div>
               <div className="merge-row merge-row-result">
-                <span className="merge-label">R</span>
+                <span className="merge-label">Result</span>
                 {step.result!.map((item, index) => (
                   <div className="merge-cell is-result" key={index}><strong>{item}</strong><small>{index}</small></div>
                 ))}
@@ -169,19 +177,65 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
             </div>
           ) : (
             <div className="pointer-track">
-              {step.items!.map((item, index) => {
-                const isLeft = index === step.leftIndex
-                const isRight = index === step.rightIndex
-                const isSlow = step.slowIndex !== undefined && index === step.slowIndex
-                const isMatch = step.found && (isLeft || isRight)
-                const isInResult = step.slowIndex !== undefined && index <= step.slowIndex && index !== step.rightIndex
-                return (
-                  <div className={`number-cell${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}${isSlow ? ' is-slow' : ''}${isMatch ? ' is-match' : ''}${isInResult ? ' is-result' : isSlow === false && step.slowIndex !== undefined && index > step.slowIndex ? ' is-stale' : ''}`} key={index}>
-                    <span className="pointer-label">{isLeft && 'L'}{isRight && !isLeft && 'R'}{isSlow && !isLeft && !isRight && 'W'}</span>
-                    <strong>{item}</strong><small>{index}</small>
+              {/* Legend row — always rendered to prevent layout jump */}
+                <div className="pointer-legend">
+                  {step.leftIndex !== undefined && step.leftIndex >= 0 && <span><span className="pointer-dot is-left-dot" /> {step.leftLabel || 'L'} = {step.leftLabel === 'R' ? 'Read' : 'Left'}</span>}
+                  {step.rightIndex !== undefined && step.rightIndex >= 0 && <span><span className="pointer-dot is-right-dot" /> {step.rightLabel || 'R'} = Right</span>}
+                  {step.slowIndex !== undefined && step.slowIndex >= 0 && <span><span className="pointer-dot is-slow-dot" /> {step.slowLabel || 'W'} = Next write</span>}
+                  {step.slowIndex !== undefined && step.slowIndex >= 0 && <span><span className="pointer-dot is-result-dot" /> Unique so far</span>}
+                  {step.leftIndex === -1 && step.rightIndex === -1 && (step.slowIndex === undefined || step.slowIndex < 0) && <span>&nbsp;</span>}
+                </div>
+              {step.slowIndex !== undefined && step.slowIndex >= 0 ? (
+                /* Two-row layout for read/write pointer pattern */
+                <div className="two-row-track">
+                  <div className="track-row track-read">
+                    <span className="track-label">Read</span>
+                    {step.items!.map((item, index) => {
+                      const isLeft = index === step.leftIndex
+                      const isMatch = step.found && isLeft
+                      return (
+                        <div className={`two-row-cell${isLeft ? ' is-read' : ''}${isMatch ? ' is-match' : ''}`} key={index}>
+                          {isLeft && <span className="pointer-label">{step.leftLabel || 'L'}</span>}
+                          <strong>{item}</strong><small>{index}</small>
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
+                  {step.found && step.leftIndex !== undefined && step.leftIndex >= 0 && (
+                    <div className="track-connector" style={{ '--from': step.leftIndex, '--to': step.slowIndex } as any}>
+                      <span>↓ copy</span>
+                    </div>
+                  )}
+                  <div className="track-row track-write">
+                    <span className="track-label">Write</span>
+                    {step.items!.map((item, index) => {
+                      const isSlow = step.slowIndex !== undefined && index === step.slowIndex
+                      const isInResult = index < step.slowIndex!
+                      const isEmpty = index >= step.slowIndex!
+                      const isMatch = step.found && isSlow
+                      return (
+                        <div className={`two-row-cell${isSlow ? ' is-write' : ''}${isInResult ? ' is-result' : ''}${isEmpty ? ' is-empty' : ''}${isMatch ? ' is-match' : ''}`} key={index}>
+                          {isSlow && <span className="pointer-label">{step.slowLabel || 'W'}</span>}
+                          <strong>{isEmpty ? '·' : item}</strong><small>{index}</small>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : (
+                /* Single-row layout for standard two-pointer */
+                step.items!.map((item, index) => {
+                  const isLeft = index === step.leftIndex
+                  const isRight = index === step.rightIndex
+                  const isMatch = step.found && (isLeft || isRight)
+                  return (
+                    <div className={`number-cell${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}${isMatch ? ' is-match' : ''}`} key={index}>
+                      <span className="pointer-label">{[isLeft && (step.leftLabel || 'L'), !isLeft && isRight && (step.rightLabel || 'R')].filter(Boolean).join(' ')}</span>
+                      <strong>{item}</strong><small>{index}</small>
+                    </div>
+                  )
+                })
+              )}
             </div>
           )}
         </div>

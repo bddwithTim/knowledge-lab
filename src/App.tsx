@@ -16,7 +16,7 @@ import { ScenarioSection } from './components/ScenarioSection'
 import { BigOPage } from './components/BigOPage'
 import { WaterLayer } from './components/WaterLayer'
 
-type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-intervals' | 'prefix-sum' | 'sorting-strategies' | 'greedy' | 'dp' | 'backtracking' | 'ts-learn' | 'ts-lesson' | 'zod-learn' | 'zod-lesson'
+type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-intervals' | 'prefix-sum' | 'sorting-algorithms' | 'greedy' | 'dp' | 'backtracking' | 'ts-learn' | 'ts-lesson' | 'zod-learn' | 'zod-lesson'
 type NavEntry = { v: View; lo?: number; to?: number; zo?: number; cid?: string }
 type Result = { label: string; passed: boolean; actual?: unknown; error?: string }
 type OutputFlash = 'idle' | 'success' | 'error'
@@ -259,7 +259,7 @@ export function App() {
             <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')}>
               <span><Graph size={16} /></span>Big O Notation
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-strategies' || view === 'greedy' || view === 'dp' || view === 'backtracking' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-algorithms' || view === 'greedy' || view === 'dp' || view === 'backtracking' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
               <span><Graph size={16} /></span>Algorithm Patterns
             </button>
             <div className="sidebar-note">
@@ -285,7 +285,7 @@ export function App() {
             <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')} title="Big O Notation">
               <span><Graph size={16} /></span>
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-strategies' || view === 'greedy' || view === 'dp' || view === 'backtracking' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-algorithms' || view === 'greedy' || view === 'dp' || view === 'backtracking' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
               <span><Graph size={16} /></span>
             </button>
           </div>
@@ -312,9 +312,9 @@ export function App() {
         {view === 'fast-slow' && <FastSlowPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('binary-search')} onNext={() => navigateTo('stack')} />}
         {view === 'stack' && <StackPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('fast-slow')} onNext={() => navigateTo('merge-intervals')} />}
         {view === 'merge-intervals' && <MergeIntervalsPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('stack')} onNext={() => navigateTo('prefix-sum')} />}
-        {view === 'prefix-sum' && <PrefixSumPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('merge-intervals')} onNext={() => navigateTo('sorting-strategies')} />}
-        {view === 'sorting-strategies' && <SortingStrategiesPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('prefix-sum')} onNext={() => navigateTo('greedy')} />}
-        {view === 'greedy' && <GreedyPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('sorting-strategies')} onNext={() => navigateTo('dp')} />}
+        {view === 'prefix-sum' && <PrefixSumPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('merge-intervals')} onNext={() => navigateTo('sorting-algorithms')} />}
+        {view === 'sorting-algorithms' && <SortingAlgorithmsPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('prefix-sum')} onNext={() => navigateTo('greedy')} />}
+        {view === 'greedy' && <GreedyPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('sorting-algorithms')} onNext={() => navigateTo('dp')} />}
         {view === 'dp' && <DpPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('greedy')} onNext={() => navigateTo('backtracking')} />}
         {view === 'backtracking' && <BacktrackingPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('dp')} />}
         {view === 'ts-learn' && <TSLearnIndex onOpen={(l) => navigateTo('ts-lesson', undefined, l)} />}
@@ -389,7 +389,7 @@ const patternEntries: { id: string; label: string; tags: string[]; active: boole
   { id: 'prefix-sum', label: 'Prefix Sum', tags: ['Range queries', 'Equilibrium', 'O(n)'], active: true },
   { id: 'binary-search', label: 'Binary Search', tags: ['Sorted array', 'Boundary', 'O(log n)'], active: true },
   { id: 'stack', label: 'Stack', tags: ['Valid parens', 'Monotonic', 'O(n)'], active: true },
-  { id: 'sorting-strategies', label: 'Sorting Strategies', tags: ['Sort + two ptr', 'Sort + sweep', 'O(n log n)'], active: true },
+  { id: 'sorting-algorithms', label: 'Sorting Algorithms', tags: ['Bubble', 'Insertion', 'Merge', 'Quick'], active: true },
   { id: 'greedy', label: 'Greedy', tags: ['Best choice at each step', 'Activity selection'], active: true },
   { id: 'dp', label: 'Dynamic Programming', tags: ['Memoization', 'Bottom-up', 'O(n) or O(n×W)'], active: true },
   { id: 'backtracking', label: 'Backtracking', tags: ['Sudoku', 'Permutations', 'O(n!)'], active: true },
@@ -405,7 +405,7 @@ function PatternsOverview({ onSelectPattern }: { onSelectPattern: (view: View) =
       </header>
       <section className="patterns-grid-section">
         {patternEntries.map((p) => {
-          const targetView = p.id === 'two-pointer' ? 'pattern-detail' : p.id === 'sliding-window' ? 'sliding-window' : p.id === 'hash-map' ? 'hash-map' : p.id === 'binary-search' ? 'binary-search' : p.id === 'fast-slow' ? 'fast-slow' : p.id === 'stack' ? 'stack' : p.id === 'merge-interval' ? 'merge-intervals' : p.id === 'prefix-sum' ? 'prefix-sum' : p.id === 'sorting-strategies' ? 'sorting-strategies' : p.id === 'greedy' ? 'greedy' : p.id === 'dp' ? 'dp' : p.id === 'backtracking' ? 'backtracking' : null
+          const targetView = p.id === 'two-pointer' ? 'pattern-detail' : p.id === 'sliding-window' ? 'sliding-window' : p.id === 'hash-map' ? 'hash-map' : p.id === 'binary-search' ? 'binary-search' : p.id === 'fast-slow' ? 'fast-slow' : p.id === 'stack' ? 'stack' : p.id === 'merge-interval' ? 'merge-intervals' : p.id === 'prefix-sum' ? 'prefix-sum' : p.id === 'sorting-algorithms' ? 'sorting-algorithms' : p.id === 'greedy' ? 'greedy' : p.id === 'dp' ? 'dp' : p.id === 'backtracking' ? 'backtracking' : null
           return p.active && targetView ? (
             <button key={p.id} className="when-to-use-card" onClick={() => onSelectPattern(targetView)} style={{ cursor: 'pointer' }}>
               <span className="when-to-use-label" style={{ fontSize: '1.125rem', fontWeight: 700 }}>{p.label}</span>
@@ -1108,80 +1108,62 @@ Pivot found!`} showLineNumbers={false} /></pre>
         <div><span className="eyebrow">End of Prefix Sum</span><strong>Review or move on?</strong></div>
         <div className="lesson-end-actions">
           <button onClick={onPrevious}>← Merge / Intervals</button>
-          <button className="next-lesson-button" onClick={onNext}>Sorting Strategies →</button>
+          <button className="next-lesson-button" onClick={onNext}>Sorting Algorithms →</button>
         </div>
       </nav>
     </>
   )
 }
 
-/* ── SortingStrategiesPage ──────────────────────── */
-function SortingStrategiesPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+/* ── SortingAlgorithmsPage ──────────────────────── */
+function SortingAlgorithmsPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
   useEffect(() => { window.scrollTo(0, 0) }, [])
   return (
     <>
       <header className="algorithm-head">
         <button className="back-link" onClick={onBack}>← Back to patterns</button>
         <span className="eyebrow">Algorithm Pattern</span>
-        <h1>Sorting Strategies</h1>
-        <p>Sorting is not just for finding elements — it is a <strong>meta-strategy</strong> that unlocks other patterns. Sort first, then use two-pointers, binary search, or sweeping to finish in one pass.</p>
+        <h1>Sorting Algorithms</h1>
+        <p>Sorting is one of the most fundamental operations in computer science. These four algorithms show how sorting <strong>actually works</strong> under the hood — from simple comparison-based approaches to efficient divide-and-conquer.</p>
       </header>
       <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">What are Sorting Strategies?</h2>
-        <p className="big-o-chart-sub">Sorting rearranges data to make <strong>adjacency</strong> meaningful. Once sorted, duplicates are grouped, ranges line up, and you can use techniques that require ordered data — like two-pointers or binary search.</p>
-        <pre className="big-o-inline-code"><CodePanel code={`// Without sorting — 3Sum takes O(n^3):
-for (i..n) for (j..n) for (k..n) check sum
-
-// Sort + two-pointer — 3Sum takes O(n^2):
-nums.sort();
-for (i..n)  // anchor
-  twoPointer(i+1, end, target=-nums[i])
-
-// Sort + sweep — overlap check in O(n log n):
-intervals.sort(by start);
-for (i=1..n) if overlaps(i, i-1) return false;`} showLineNumbers={false} /></pre>
-        <p className="big-o-chart-note">💡 <strong>The key insight:</strong> the O(n log n) sorting cost buys you a huge simplification. After sorting, problems that required nested loops often collapse to a single linear scan.</p>
+        <h2 className="big-o-chart-title">How sorting algorithms compare</h2>
+        <p className="big-o-chart-sub">Each algorithm takes a different approach. The simple ones (Bubble, Insertion) are easy to understand but slow on large data. The clever ones (Merge, Quick) use divide-and-conquer for much better performance.</p>
+        <table className="big-o-table"><thead><tr><th>Algorithm</th><th>Best</th><th>Average</th><th>Worst</th><th>Space</th><th>Stable</th></tr></thead><tbody><tr><td>Bubble Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✓</td></tr><tr><td>Insertion Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✓</td></tr><tr><td>Merge Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n)</td><td>✓</td></tr><tr><td>Quick Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n²)</td><td>O(log n)</td><td>✗</td></tr></tbody></table>
+        <p className="big-o-chart-note">💡 <strong>Stable</strong> means equal elements keep their original order. This matters when sorting by multiple criteria (e.g., sort by grade, then by name — you want names alphabetical within each grade).</p>
       </section>
       <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">Two common patterns</h2>
+        <h2 className="big-o-chart-title">The simple ones: O(n²)</h2>
         <div className="big-o-compare">
           <div className="big-o-compare-card">
-            <h4>Sort + two-pointer</h4>
-            <pre className="big-o-inline-code"><CodePanel code={`3Sum: [-4,-1,-1,0,1,2]
-Anchor: -4 → find pair sum = 4
-        l=-1, r=2 → -1+2 = 1 ✗
-        ... l and r converge
-Anchor: -1 → find pair sum = 1
-        l=-1, r=2 → -1+2 = 1 ✓
-Triplet: [-1, -1, 2]`} showLineNumbers={false} /></pre>
-            <p className="big-o-chart-note">For each anchor, run two-pointers on the remainder. O(n²) instead of O(n³).</p>
+            <h4>Bubble Sort</h4>
+            <p className="big-o-chart-note">Compare neighbors and swap if out of order. Each pass bubbles the largest unsorted element to its final position. Simple enough to teach in 5 minutes — too slow for real use beyond tiny arrays.</p>
           </div>
           <div className="big-o-compare-card">
-            <h4>Sort + sweep</h4>
-            <pre className="big-o-inline-code"><CodePanel code={`Meetings: [[0,30],[5,10],[15,20]]
-Sort by start: same order
-Check adjacent:
-  [0,30] vs [5,10] → conflict!
-Return false`} showLineNumbers={false} /></pre>
-            <p className="big-o-chart-note">Sort by one dimension, then scan adjacent pairs. Any conflict must be adjacent after sorting.</p>
+            <h4>Insertion Sort</h4>
+            <p className="big-o-chart-note">Build a sorted portion from the left. Take the next element and slide it into its correct spot — like sorting a hand of cards. Fast on nearly-sorted data (O(n) best case). Used in practice as the base case for hybrid sorts like Timsort.</p>
           </div>
         </div>
       </section>
-      <ScenarioSection scenarioId="three-sum" />
-      <ScenarioSection scenarioId="meeting-rooms" />
+      <ScenarioSection scenarioId="bubble-sort" />
+      <ScenarioSection scenarioId="insertion-sort" />
       <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">When should I think of Sorting Strategies?</h2>
-        <ol className="big-o-checklist">
-          <li>Brute force is <strong>O(n²) or O(n³)</strong> — sorting may drop a dimension</li>
-          <li>The problem involves <strong>pairs, triplets, or ranges</strong> where order matters</li>
-          <li>You need to <strong>find, count, or check</strong> — not modify the original data</li>
-          <li>Duplicates need to be <strong>grouped or skipped</strong></li>
-          <li>Keywords: "sort and then," "after sorting," "sorted array," "pair sum"</li>
-        </ol>
-        <p className="big-o-chart-note">⚠️ Sorting costs O(n log n). If a solution exists in O(n) without sorting (like hash map for two-sum), prefer the faster approach. Sorting strategies shine when O(n log n) is better than O(n²).</p>
+        <h2 className="big-o-chart-title">The clever ones: O(n log n)</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Merge Sort</h4>
+            <p className="big-o-chart-note">Split the array in half recursively until each piece is size 1 (trivially sorted). Then merge sorted halves back together. Guaranteed O(n log n) — never degrades. The cost: O(n) extra space.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Quick Sort</h4>
+            <p className="big-o-chart-note">Pick a pivot, partition so smaller elements go left and larger go right, then recurse on each side. O(n log n) average — often the fastest in practice. But O(n²) worst case if pivot choice is unlucky.</p>
+          </div>
+        </div>
       </section>
+      <ScenarioSection scenarioId="merge-sort" />
+      <ScenarioSection scenarioId="quick-sort" />
       <nav className="lesson-end-nav" aria-label="Pattern navigation">
-        <div><span className="eyebrow">End of Sorting Strategies</span><strong>Review or move on?</strong></div>
+        <div><span className="eyebrow">End of Sorting Algorithms</span><strong>Review or move on?</strong></div>
         <div className="lesson-end-actions">
           <button onClick={onPrevious}>← Prefix Sum</button>
           <button className="next-lesson-button" onClick={onNext}>Greedy →</button>
@@ -1266,7 +1248,7 @@ Last pad is within reach 🐸`} showLineNumbers={false} /></pre>
       <nav className="lesson-end-nav" aria-label="Pattern navigation">
         <div><span className="eyebrow">End of Greedy</span><strong>Review or move on?</strong></div>
         <div className="lesson-end-actions">
-          <button onClick={onPrevious}>← Sorting Strategies</button>
+          <button onClick={onPrevious}>← Sorting Algorithms</button>
           <button className="next-lesson-button" onClick={onNext}>DP →</button>
         </div>
       </nav>
