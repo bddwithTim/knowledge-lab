@@ -37,7 +37,7 @@ export const CodePanel = forwardRef<HTMLPreElement, CodePanelProps>(function Cod
       }}
     >
       {lines.map((line, i) => {
-        const isCurrent = currentLine !== undefined && i === currentLine
+        const isCurrent = currentLine !== undefined && i + 1 === currentLine
         return (
           <div
             key={i}

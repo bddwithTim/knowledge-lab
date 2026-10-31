@@ -1,4 +1,4 @@
-export type ScenarioId = 'pair-sum' | 'palindrome' | 'remove-duplicates' | 'container-water' | 'merge-sorted' | 'sliding-window' | 'big-o-1' | 'big-o-n' | 'big-o-n2' | 'big-o-logn'
+export type ScenarioId = 'pair-sum' | 'palindrome' | 'remove-duplicates' | 'container-water' | 'merge-sorted' | 'sliding-window' | 'smallest-subarray' | 'two-sum' | 'first-unique' | 'valid-anagram' | 'most-frequent' | 'big-o-1' | 'big-o-n' | 'big-o-n2' | 'big-o-logn'
 
 export type ScenarioStep = {
   description: string
@@ -26,7 +26,7 @@ export type VisualStep = {
 
 export type Scenario = {
   id: ScenarioId
-  category: 'big-o' | 'two-pointer'
+  category: 'big-o' | 'two-pointer' | 'sliding-window' | 'hash-map'
   title: string
   topic: string
   description: string
@@ -115,12 +115,14 @@ export const scenarios: Scenario[] = [
     },
     whenToUseSummary: 'Start pointers at both ends, move inward based on whether the current sum is too high or too low.',
     breakdown: [
-      'Two pointers start at opposite ends of a sorted array. Add them up. If the sum is too big, move the right pointer left (need a smaller number). If too small, move the left pointer right (need a bigger number). Because the array is sorted, this guaranteed finds the answer in one pass.',
+      'Two pointers start at opposite ends of a sorted array. Add them up. If the sum is too big, move the right pointer left (need a smaller number). If too small, move the left pointer right (need a bigger number). Because the array is <strong>sorted</strong>, each move eliminates not just one pair, but many — and you never need to backtrack.',
+      '**Why sorting matters:** When `sum < target`, only a bigger number can help — moving the left pointer gives you exactly that. When `sum > target`, only a smaller number helps — moving the right pointer gives you that. Without sorting, you cannot predict which direction to move.',
+      '**Compare to brute force:** Checking every pair with nested loops takes O(n²). For n=100, that is ~5,000 checks. Two pointers does it in O(n) — just 100 steps. The sorted order lets you skip almost all of them.',
       '**Position** — Start `left` at the smallest value (index 0) and `right` at the largest value (last index). Widest possible range.',
       '**Compute** — Add the two values. `sum = arr[left] + arr[right]`.',
       '**Compare** — If `sum === target`, return the indices. If `sum < target`, move `left` forward to a larger value. If `sum > target`, move `right` backward to a smaller value.',
       '**Repeat** — Continue until the pointers meet. If they cross without finding a match, no pair exists.',
-      'Since the array is sorted, moving `left` always gives a larger number and moving `right` always gives a smaller one. This means we never skip over the answer — each step narrows the search toward the target.',
+      'Moving `left` always gives a larger number and moving `right` always gives a smaller one — thanks to the sorted order. Each step eliminates multiple pairs at once, turning O(n²) into O(n).',
     ],
     jsConcepts: [
       '`===` — strict equality. Checks both value and type. Prefer over `==`.',
@@ -214,7 +216,7 @@ export const scenarios: Scenario[] = [
     category: 'two-pointer',
     title: 'Remove duplicates in-place',
     topic: 'Same direction · fast/slow',
-    description: 'Use a slow pointer to track the write position while a fast pointer scans for unique values. Returns a new array with duplicates removed.',
+    description: 'Fast pointer scans for unique values. Slow pointer builds the result in-place. Together, they remove duplicates in a single O(n) pass.',
     timeComplexity: 'O(n)',
     spaceComplexity: 'O(1)',
     debugCode: `function removeDuplicates(nums) {
@@ -259,7 +261,7 @@ export const scenarios: Scenario[] = [
     },
     whenToUseSummary: 'Loop through a sorted array and push only values that differ from the last one in the result. Simple, readable, O(n).',
     breakdown: [
-      '`read` explores the array looking for new values. `write` marks where the next unique value goes. Together they divide the array into two regions: unique values on the left, unprocessed values on the right.',
+      '<strong>Fast explores. Slow builds the result.</strong> The `read` pointer scans for values it hasn\'t seen before. The `write` pointer marks where the next unique value goes. Together they divide the array into two zones: unique values on the left, unprocessed values on the right.',
       '**Initialize** — The first element is always unique. Start `write` at index 1, reserving position 0 for the first unique value.',
       '**Scan** — `read` moves from left to right starting at index 1 (we already accepted index 0). Because the array is sorted, duplicates are always next to each other.',
       '**Detect** — Compare `nums[read]` with `nums[read - 1]` (the previous element). If they differ, we found a new unique value.',
@@ -367,13 +369,14 @@ export const scenarios: Scenario[] = [
     },
     whenToUseSummary: 'Start at both ends, calculate area, and always move the shorter line inward — the width can only decrease.',
     breakdown: [
-      'Two walls trap water between them. The water level cannot exceed the SHORTER wall — it would spill over. The area is `height × width`. Start at the widest possible container (both ends), then always move the shorter wall inward — it is the only way to potentially find a taller short wall and increase the area.',
+      'Two walls trap water between them. The water level cannot exceed the <strong>shorter wall</strong> — it would spill over. The area is height × width. Start at the widest possible container (both ends), then always move the shorter wall inward. Why? Because the shorter wall is the bottleneck.',
+      '**Why move the shorter side?** The container\'s height is capped by the shorter wall. If you move the taller wall, the width shrinks and the height cannot improve (still limited by the same short wall). Moving the shorter wall is the ONLY move with potential upside — you might find a taller wall.',
       '**Position** — Start `left` at the first wall and `right` at the last. This is the widest possible container.',
       '**Measure** — Compute height (`min` of the two walls) and width (`right - left`). Area = `h × w`.',
       '**Track** — Update `maxArea` if the current area is larger. `Math.max` keeps the best result.',
-      '**Move** — Always move the SHORTER wall. Why? Moving the taller one cannot increase the height (capped by the short wall), and the width only shrinks. Moving the shorter one is the only move with upside.',
+      '**Move** — Always move the SHORTER wall. This is the key insight. Moving the taller one cannot help — the height stays capped and the width only shrinks.',
       '**Repeat** — Continue until the walls meet. The best area found is the answer.',
-      'The shorter wall is the bottleneck. By always moving it, we explore every potentially better container exactly once. We never skip a better answer because moving the taller wall can never help.',
+      'This eliminates the need to check every pair (O(n²)). By always moving the bottleneck, we guarantee we explore every potentially better container in one O(n) pass.',
     ],
     jsConcepts: [
       '`Math.min(a, b)` — returns the smaller of two numbers.',
@@ -387,7 +390,7 @@ export const scenarios: Scenario[] = [
     category: 'two-pointer',
     title: 'Merge two sorted arrays',
     topic: 'Two arrays → one sorted',
-    description: 'Given two sorted arrays, merge them into one sorted result. Use an index for each input and pick the smaller element at each step.',
+    description: 'One pointer per array. Compare heads, take the smaller, advance that pointer. Like interleaving two sorted card piles into one. This is the two-array variation of Two Pointers.',
     timeComplexity: 'O(n + m)',
     spaceComplexity: 'O(n + m)',
     debugCode: `function merge(A, B) {
@@ -457,9 +460,9 @@ export const scenarios: Scenario[] = [
         'When one array runs out, drain the rest of the other — no comparisons needed.',
       ],
     },
-    whenToUseSummary: 'Two sorted inputs, one sorted result. Compare heads, take the smaller, advance. O(n+m) with three pointers.',
+    whenToUseSummary: 'One pointer per array. Compare heads, take the smaller, advance that pointer. O(n+m) with two independent pointers.',
     breakdown: [
-      'You have two sorted piles of cards. Look at the top card of each pile. Take the smaller one and place it in a new pile. Repeat. When one pile runs out, take all remaining cards from the other pile. Each card is looked at exactly once.',
+      'You have two sorted piles of cards. Two Pointers doesn&rsquo;t always mean two positions on the same array — here, one pointer tracks each array. Look at the top card of each pile, take the smaller one, and advance that pile&rsquo;s pointer.',
       '**Setup** — Create an empty `result` array. Two pointers `i` and `j` start at the beginning of each input array.',
       '**Compare** — While both arrays still have elements, compare `A[i]` and `B[j]`. Take the smaller one and push it to `result`, then advance that array\'s pointer.',
       '**Drain A** — If B is exhausted but A still has elements, copy all remaining from A. They are already sorted, so just push them in order.',
@@ -556,7 +559,7 @@ export const scenarios: Scenario[] = [
     category: 'big-o',
     title: 'O(1) — Constant time',
     topic: 'Array access by index',
-    description: 'No matter how big the array gets, accessing `arr[3]` takes the same amount of time. One operation, always.',
+    description: 'The amount of work stays the same no matter how big the input gets. Adding more items does not mean more steps.',
     timeComplexity: 'O(1)',
     spaceComplexity: 'O(1)',
     debugCode: `// O(1): Constant time
@@ -566,8 +569,8 @@ export const scenarios: Scenario[] = [
 const arr = [7, 2, 9, 4, 1, 6, 3, 8];
 const x = arr[3]; // one operation`,
     steps: [
-      { currentLine: 5, variables: { result: '~' }, description: 'We have an array of 8 numbers. No matter the size, accessing any index is 1 operation.' },
-      { currentLine: 6, variables: { result: 4 }, description: 'arr[3] directly grabs the 4th element. Done. Input size doesn\'t matter — it\'s always O(1).' },
+      { currentLine: 5, variables: { result: '~' }, description: '8 items in the array. Accessing index 3 is exactly 1 operation, no matter how big the array is.' },
+      { currentLine: 6, variables: { result: 4 }, description: 'The computer knows exactly where arr[3] lives in memory — one jump, one read. 10 items or 10 million, it\'s still 1 step.' },
     ],
     visualType: 'number-cells',
     visualData: [
@@ -575,18 +578,18 @@ const x = arr[3]; // one operation`,
       { items: [7, 2, 9, 4, 1, 6, 3, 8], leftIndex: 3, rightIndex: -1 },
     ],
     whyItWorks: {
-      title: 'One operation, no matter the input size.',
+      title: 'Same work, no matter the input size.',
       body: [
-        'Array elements are stored at contiguous memory addresses. The computer can calculate exactly where arr[3] lives, jump there, and read it — all in one step.',
-        'Whether the array has 10 items or 10 million, the number of operations stays the same. That\'s O(1).',
+        'Array elements live at known memory addresses. The computer calculates: base + (index × elementSize), jumps there, and reads it — all in one step.',
+        'O(1) does NOT mean "one second." It means the number of operations does not grow when input grows.',
       ],
     },
-    whenToUseSummary: 'Direct access — array index lookup, hash table get/set, stack push/pop. No loops needed.',
+    whenToUseSummary: 'Direct access — array index lookups, hash table get/set, stack push/pop. No loops needed.',
     breakdown: [
-      'Accessing an array by index is like looking up a page number in a book — you jump directly to it. No matter how thick the book is, going to page 50 takes the same time. That is O(1).',
-      '**Direct access** — `arr[3]` tells the computer: "go to the memory address at `base + (3 × elementSize)`." One calculation, one read — one operation.',
-      '**No scaling** — 10 elements or 10 million, the steps are the same. No loops, no searching. The input size does not affect the cost.',
-      'O(1) is the gold standard. It means the algorithm does not slow down as input grows. Hash table lookups, stack operations, and array indexing are all O(1).',
+      'Imagine you have a numbered shelf. You need item #3 — you walk directly to slot 3 and grab it. Whether the shelf has 10 slots or 10,000, finding slot 3 takes the same time. That is O(1).',
+      '**Why it works:** The computer knows where every array element lives in memory. `arr[3]` means: take the starting address of the array, add `3 × (size of one element)`, and read what\'s there. One calculation, one memory read.',
+      '**No scaling:** The input can be 10 items, 1,000 items, or 10 million items — the number of steps never changes. The cost does not depend on `n`.',
+      'O(1) is the best you can get. It means your algorithm won\'t slow down no matter how much data you throw at it. Hash table lookups, stack operations, and array indexing are all O(1).',
     ],
     jsConcepts: [
       '`arr[index]` — bracket notation. Accesses the element at a specific position in an array. Zero-indexed.',
@@ -599,7 +602,7 @@ const x = arr[3]; // one operation`,
     category: 'big-o',
     title: 'O(n) — Linear time',
     topic: 'Single loop through array',
-    description: 'If the input doubles in size, the work doubles too. A single `for` loop touching each element once grows in direct proportion to `n`.',
+    description: 'The work grows in direct proportion to the input size. If `n` doubles, the work doubles too. A single loop touching each element once is the classic O(n) pattern.',
     timeComplexity: 'O(n)',
     spaceComplexity: 'O(1)',
     debugCode: `// O(n): Linear time
@@ -638,10 +641,11 @@ function sum(arr) {
     },
     whenToUseSummary: 'Any algorithm that must examine each element once: summing, finding max, linear search.',
     breakdown: [
-      'Imagine counting items in a line. You point at each item once, say the number, and move on. 10 items → 10 counts. 100 items → 100 counts. The work grows at the same rate as the input. That is O(n).',
-      '**Visit each** — A single `for` loop from 0 to `n-1` touches every element exactly once. Each iteration costs a constant amount.',
-      '**Linear growth** — If you double the input, you double the work. The graph is a straight line.',
-      'O(n) is often the best you can do if you must examine every element. Examples: finding the max, summing values, linear search, counting occurrences.',
+      'Imagine counting toys in a line. Point at each one and say the number. 10 toys → 10 counts. 100 toys → 100 counts. The work grows at exactly the same rate as the input. That is O(n).',
+      '**What is `n`?** In this example, `n` is `arr.length` — the number of items. `n = 4` means the loop runs 4 times. `n = 1,000` means 1,000 times. The work grows proportionally to `n`.',
+      '**Linear growth** — if you double the input, you double the work. Triple the input, triple the work. The graph of O(n) is a straight line.',
+      'A single `for` loop is the classic O(n) pattern. Each iteration does a constant amount of work, and you visit every element exactly once.',
+      'O(n) is often the best you can do if you must examine every element. Examples: summing values, finding the maximum, linear search, counting occurrences.',
     ],
     jsConcepts: [
       '`for (let i = 0; i < arr.length; i++)` — three-part loop: initialize, condition, increment.',
@@ -695,10 +699,11 @@ function printPairs(arr) {
     },
     whenToUseSummary: 'Avoid when possible. Acceptable for small n (<100). Look for O(n log n) or O(n) alternatives.',
     breakdown: [
-      'For every person in a room, you shake hands with every person (including yourself). 4 people → 4×4 = 16 handshakes. 100 people → 10,000. Work grows MUCH faster than input — that is O(n²).',
-      '**Nested loops** — An outer loop runs `n` times. For EACH outer iteration, an inner loop runs `n` times. Total: `n × n = n²`.',
-      '**Explosive growth** — Multiply `n` by 10 → multiply work by 100. For `n=1000`, that is 1,000,000 operations. Things get slow fast.',
-      'Nested loops are the most common cause of O(n²). Always ask: can I avoid the inner loop? Often a hash map or two-pointer approach reduces it to O(n).',
+      'Imagine every person in a room shakes hands with every person (including themselves). 4 people → 4×4 = 16 handshakes. 100 people → 10,000 handshakes. Work grows MUCH faster than input — that is O(n²).',
+      '**Nested loops** — An outer loop runs `n` times. For EACH outer iteration, an inner loop runs `n` times. Total: `n × n = n²` operations.',
+      '**Important:** Two loops do NOT automatically mean O(n²). Two loops that run one after the other (not inside each other) are just `n + n = 2n`, which simplifies to O(n). Only nested loops multiply.',
+      '**Explosive growth** — Multiply `n` by 10 → multiply work by 100. For `n = 1,000`, that is 1,000,000 operations. Things get slow fast.',
+      'Nested loops are the most common cause of O(n²). Always ask: can I avoid the inner loop? A hash map or two-pointer approach often reduces O(n²) to O(n).',
     ],
     jsConcepts: [],
   },
@@ -709,7 +714,7 @@ function printPairs(arr) {
     category: 'big-o',
     title: 'O(log n) — Logarithmic time',
     topic: 'Binary search',
-    description: 'Each step cuts the search space in half. Even with a billion items, you only need ~30 steps. The algorithm gets faster relative to `n` as `n` grows.',
+    description: 'Each step cuts the search space in half. Even with a billion items, you only need about 30 steps. The more data you have, the more efficient this becomes compared to O(n).',
     timeComplexity: 'O(log n)',
     spaceComplexity: 'O(1)',
     debugCode: `// O(log n): Logarithmic time
@@ -726,10 +731,10 @@ function binarySearch(arr, target) {
   return -1;
 }`,
     steps: [
-      { currentLine: 4, variables: { lo: 0, hi: 7, mid: '~', found: '~' }, description: 'Searching for 6 in sorted array [1,2,3,4,5,6,7,8]. Range: indices 0–7 (8 elements).' },
-      { currentLine: 5, variables: { lo: 0, hi: 7, mid: 3, found: '~' }, description: 'mid = floor((0+7)/2) = 3. arr[3]=4 < target=6? Yes → eliminate left half. lo = 4.' },
-      { currentLine: 5, variables: { lo: 4, hi: 7, mid: 5, found: '~' }, description: 'Range now 4–7 (4 elements). mid = 5. arr[5]=6 === target? YES! Found at index 5.' },
-      { currentLine: 6, variables: { lo: 4, hi: 7, mid: 5, found: 5 }, description: 'Return index 5. Only 2 comparisons for 8 elements. 1 billion items → only ~30 comparisons.' },
+      { currentLine: 4, variables: { lo: 0, hi: 7, mid: '~', found: '~' }, description: 'Search for 6 in sorted [1,2,3,4,5,6,7,8]. Start: full range 0–7 (8 elements).' },
+      { currentLine: 5, variables: { lo: 0, hi: 7, mid: 3, found: '~' }, description: 'mid = 3 (value 4). 4 < 6 → target is on the right. Discard left half. lo = 4. Now only 4 elements remain.' },
+      { currentLine: 5, variables: { lo: 4, hi: 7, mid: 5, found: '~' }, description: 'mid = 5 (value 6). arr[5] === 6? YES! Found after only 2 comparisons — even though there are 8 elements.' },
+      { currentLine: 6, variables: { lo: 4, hi: 7, mid: 5, found: 5 }, description: 'Return index 5. 🚀 Cool fact: searching 1 billion sorted items takes only ~30 comparisons. Not a billion — thirty!' },
     ],
     visualType: 'number-cells',
     visualData: [
@@ -739,22 +744,344 @@ function binarySearch(arr, target) {
       { items: [1, 2, 3, 4, 5, 6, 7, 8], leftIndex: 5, rightIndex: -1, found: true },
     ],
     whyItWorks: {
-      title: 'Halving the search space each step.',
+      title: 'Halving the search space every step.',
       body: [
-        'After k steps, the search space is n / 2^k elements. We stop when this ≤ 1, so k ≈ log₂(n).',
-        'That\'s why binary search on a million items takes ~20 steps, not a million.',
+        'After k steps, the search space shrinks to n / 2ᵏ elements. We stop when this is ≤ 1, so k ≈ log₂(n).',
+        'That\'s why binary search on a million items takes ~20 steps, not a million. Growing n from 1 million to 1 billion only adds ~10 more steps.',
       ],
     },
-    whenToUseSummary: 'Searching in sorted data. Each comparison eliminates half the remaining elements.',
+    whenToUseSummary: 'Searching in sorted data. Each comparison eliminates half of the remaining elements.',
     breakdown: [
-      'You are looking for a word in a dictionary. Instead of flipping page by page, open to the middle, check if your word comes before or after, and throw away half the dictionary. Repeat. With a million pages, you need only ~20 flips. That is O(log n).',
-      '**Halve the range** — Each step, find the middle index with `Math.floor((lo + hi) / 2)`. Compare the middle element with the target.',
-      '**Eliminate half** — If `target > middle`, search the right half. If `target < middle`, search the left half. The other half is discarded — no need to ever look at it.',
-      '**Repeat** — Each iteration cuts the search space in half. After `k` steps, only `n / 2^k` elements remain. We stop when the range is empty or we found the target.',
-      'O(log n) is incredibly efficient. With 1 billion items, you need only ~30 comparisons. The input can be astronomically large and the algorithm barely notices.',
+      'You\'re looking for a word in a dictionary. Instead of flipping page by page (O(n)), open to the middle, see whether your word comes before or after, and throw away half the dictionary. Repeat. A million-page dictionary needs only ~20 flips.',
+      '**How it works:** Start with the full range. Compute `mid = Math.floor((lo + hi) / 2)`. If `target > mid`, search the right half (`lo = mid + 1`). If `target < mid`, search the left half (`hi = mid - 1`). Each comparison eliminates HALF the remaining elements — not just one.',
+      '**Visualize the halving:** 8 → 4 → 2 → 1. With 8 elements, binary search needs at most 3 comparisons. With 1,000 elements: ~10. With 1 billion: ~30.',
+      '🚀 **Why O(log n) is so fast:** Growing from 1,000 to 1,000,000 items only needs about 10 extra steps. The algorithm barely notices as `n` grows. That\'s why binary search, balanced trees, and divide-and-conquer algorithms are so powerful.',
+      'O(log n) only works with SORTED data. If the array is unsorted, you must use O(n) linear search — because you can\'t safely discard half.',
     ],
     jsConcepts: [
       '`Math.floor(x)` — rounds a number DOWN to the nearest integer. `Math.floor(3.7)` → `3`. Needed because array indices must be whole numbers.',
+    ],
+  },
+
+  /* ── Smallest Subarray (Variable Window) ────────── */
+  {
+    id: 'smallest-subarray',
+    category: 'sliding-window',
+    title: 'Smallest subarray with sum ≥ target',
+    topic: 'Variable-size window',
+    description: 'Find the shortest contiguous subarray whose sum is at least 7 in `[2, 1, 5, 1, 3, 2]`. Expand the window until the sum is enough, then shrink from the left to find the minimum length.',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function minSubarrayLen(arr, target) {
+  let left = 0, sum = 0, minLen = Infinity;
+  for (let right = 0; right < arr.length; right++) {
+    sum += arr[right];
+    while (sum >= target) {
+      minLen = Math.min(minLen, right - left + 1);
+      sum -= arr[left];
+      left++;
+    }
+  }
+  return minLen === Infinity ? 0 : minLen;
+}`,
+    steps: [
+      { currentLine: 2, variables: { left: 0, sum: 0, minLen: '∞', right: '~' }, description: 'Start with empty window. Target sum = 7.' },
+      { currentLine: 4, variables: { left: 0, sum: 2, minLen: '∞', right: 0 }, description: 'right=0: add arr[0]=2. Window [2], sum=2 < 7. Expand.' },
+      { currentLine: 4, variables: { left: 0, sum: 3, minLen: '∞', right: 1 }, description: 'right=1: add arr[1]=1. Window [2,1], sum=3 < 7. Expand.' },
+      { currentLine: 4, variables: { left: 0, sum: 8, minLen: '∞', right: 2 }, description: 'right=2: add arr[2]=5. Window [2,1,5], sum=8 ≥ 7! Valid — now shrink.' },
+      { currentLine: 6, variables: { left: 0, sum: 8, minLen: 3, right: 2 }, description: 'Length = 3. minLen updated to 3.' },
+      { currentLine: 7, variables: { left: 0, sum: 8, minLen: 3, right: 2 }, description: 'Shrink: drop arr[0]=2. sum = 6. left moves to 1.' },
+      { currentLine: 4, variables: { left: 1, sum: 6, minLen: 3, right: 3 }, description: 'sum=6 < 7. Expand again. right=3: add arr[3]=1. Window [1,5,1], sum=7 ≥ 7.' },
+      { currentLine: 6, variables: { left: 1, sum: 7, minLen: 3, right: 3 }, description: 'Length = 3. Same as current min — no change.' },
+      { currentLine: 7, variables: { left: 1, sum: 7, minLen: 3, right: 3 }, description: 'Shrink: drop arr[1]=1. sum = 6. left = 2.' },
+      { currentLine: 4, variables: { left: 2, sum: 11, minLen: 3, right: 4 }, description: 'sum=6 < 7. Expand: right=4, add arr[4]=3. Window [5,1,3], sum=9 ≥ 7.' },
+      { currentLine: 6, variables: { left: 2, sum: 9, minLen: 3, right: 4 }, description: 'Length = 3. Same.' },
+      { currentLine: 7, variables: { left: 2, sum: 9, minLen: 3, right: 4 }, description: 'Shrink: drop arr[2]=5. sum = 4.' },
+      { currentLine: 4, variables: { left: 3, sum: 6, minLen: 3, right: 5 }, description: 'Expand: right=5, add arr[5]=2. Window [1,3,2], sum=6 < 7. Still not enough.' },
+      { currentLine: 10, variables: { left: 3, sum: 6, minLen: 3, right: 5 }, description: 'End of array. No smaller window found. Return minLen = 3.' },
+    ],
+    visualType: 'sliding-window',
+    visualData: [
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: -1, windowEnd: -1, windowSum: 0 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 0, windowEnd: 0, windowSum: 2 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 0, windowEnd: 1, windowSum: 3 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 0, windowEnd: 2, windowSum: 8 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 0, windowEnd: 2, windowSum: 8 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 1, windowEnd: 2, windowSum: 6 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 1, windowEnd: 3, windowSum: 7 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 1, windowEnd: 3, windowSum: 7 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 2, windowEnd: 3, windowSum: 6 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 2, windowEnd: 4, windowSum: 9 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 2, windowEnd: 4, windowSum: 9 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 3, windowEnd: 4, windowSum: 4 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 3, windowEnd: 5, windowSum: 6 },
+      { items: [2,1,5,1,3,2], leftIndex: -1, rightIndex: -1, windowStart: 1, windowEnd: 3, windowSum: 7 },
+    ],
+    whyItWorks: {
+      title: 'Expand until valid, shrink to optimize.',
+      body: [
+        'The right pointer expands the window until the condition (sum ≥ target) is met. Then the left pointer shrinks it as much as possible while the condition still holds.',
+        'Every element enters and leaves the window at most once, so the total work is O(n) — not O(n²).',
+      ],
+    },
+    whenToUseSummary: 'Expand right until condition met, shrink left to find minimum. Both pointers move forward — each element processed at most twice.',
+    breakdown: [
+      'This is the <strong>variable-size</strong> sliding window. Unlike the fixed-size version, the window grows and shrinks dynamically. Expand until you meet the target sum, then shrink to see if a smaller window also works.',
+      '**Expand** — The `right` pointer moves forward, adding elements to `sum`. Keep expanding until `sum ≥ target`.',
+      '**Shrink** — Once valid, record the window length (`right - left + 1`). Then move `left` forward, subtracting from `sum`. Keep shrinking while `sum ≥ target` — you might find a smaller valid window.',
+      '**Repeat** — Continue expanding and shrinking. Each element enters the window once (when `right` passes it) and leaves once (when `left` passes it). That&rsquo;s at most 2n operations → O(n).',
+      '**Edge case** — If no window ever reaches the target sum, `minLen` stays at `Infinity`. Return `0` to indicate no valid subarray exists.',
+      '💡 The variable window pattern solves many problems: smallest subarray with sum ≥ k, longest substring without repeating characters, longest substring with at most k distinct characters, and more.',
+    ],
+    jsConcepts: [
+      '`Infinity` — a special numeric value larger than any number. Used as an initial &ldquo;no answer yet&rdquo; sentinel.',
+      '`Math.min(a, b)` — returns the smaller of two numbers. `Math.min(3, 5)` → `3`.',
+    ],
+  },
+
+  /* ── Two Sum (unordered) ────────────────────────── */
+  {
+    id: 'two-sum',
+    category: 'hash-map',
+    title: 'Two Sum (unordered)',
+    topic: 'Complement lookup',
+    description: 'Find two numbers in `[2, 7, 11, 15]` that add up to `9`. Without a hash map, you\'d check every pair (O(n²)). With one, look up the complement in O(1) — total O(n).',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function twoSum(nums, target) {
+  const seen = new Map();
+  for (let i = 0; i < nums.length; i++) {
+    const complement = target - nums[i];
+    if (seen.has(complement)) {
+      return [seen.get(complement), i];
+    }
+    seen.set(nums[i], i);
+  }
+  return [];
+}`,
+    steps: [
+      { currentLine: 2, variables: { seen: '{}', i: '~', complement: '~', result: '~' }, description: 'Create an empty map. Target = 9.' },
+      { currentLine: 4, variables: { seen: '{}', i: 0, complement: 7, result: '~' }, description: 'i=0, nums[0]=2. Complement is 9-2=7. Is 7 in the map? No → store {2→0}.' },
+      { currentLine: 8, variables: { seen: '{2:0}', i: 0, complement: 7, result: '~' }, description: 'Store nums[0]=2 at index 0.' },
+      { currentLine: 4, variables: { seen: '{2:0}', i: 1, complement: 2, result: '~' }, description: 'i=1, nums[1]=7. Complement is 9-7=2. Is 2 in the map? YES at index 0!' },
+      { currentLine: 6, variables: { seen: '{2:0}', i: 1, complement: 2, result: '[0, 1]' }, description: 'Return [0, 1] — numbers at those indices (2+7) sum to 9. The pair is [2, 7].' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [2, 7, 11, 15], leftIndex: -1, rightIndex: -1 },
+      { items: [2, 7, 11, 15], leftIndex: 0, rightIndex: -1 },
+      { items: [2, 7, 11, 15], leftIndex: 0, rightIndex: -1 },
+      { items: [2, 7, 11, 15], leftIndex: 1, rightIndex: -1 },
+      { items: [2, 7, 11, 15], leftIndex: 0, rightIndex: 1, found: true },
+    ],
+    whyItWorks: {
+      title: 'The complement is the key.',
+      body: [
+        'For each number, compute what it needs to reach the target (the complement). Check if that complement was already seen — if yes, you found the pair.',
+        'Hash map lookups are O(1), so the entire scan is O(n). Without the map, you would need nested loops (O(n²)).',
+      ],
+    },
+    whenToUseSummary: 'Store each value as you go. For each new value, check if its complement already exists. One pass, O(n).',
+    breakdown: [
+      'Instead of checking every pair (O(n²)), ask: for each number, what other number would make the target? That\'s the complement. Check if you\'ve already seen it — the map tells you instantly.',
+      '**Compute complement** — For each number `n`, the needed partner is `target - n`. If `n + complement = target`, we\'re done.',
+      '**Check the map** — `seen.has(complement)` is O(1). If the complement was already seen, return both indices.',
+      '**Store current** — `seen.set(nums[i], i)` stores the current value and its index. Future numbers can find it as their complement.',
+      '**Why O(n)?** — Single pass through the array. Each lookup and insertion is O(1). Total: O(n) time, O(n) space (the map stores up to n entries).',
+      'This is the most important hash map pattern: trade space for time. Use extra memory (the map) to avoid O(n²) nested loops.',
+      '**Index tracking:** The map stores the number AND its index (`seen.set(nums[i], i)`). We don\'t just remember <em>that</em> we saw a number — we remember <em>where</em> we saw it. That\'s the index/position tracking pattern.',
+    ],
+    jsConcepts: [
+      '`Map` — a collection of key-value pairs. `set(key, value)` stores, `get(key)` retrieves, `has(key)` checks existence. All O(1).',
+    ],
+  },
+
+  /* ── First Unique ───────────────────────────────── */
+  {
+    id: 'first-unique',
+    category: 'hash-map',
+    title: 'First unique character',
+    topic: 'Frequency counting',
+    description: 'Find the first character in `"pineapple"` that appears only once. Count all characters first, then scan for the first one with count = 1.',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function firstUnique(str) {
+  const count = new Map();
+  for (const ch of str) {
+    count.set(ch, (count.get(ch) ?? 0) + 1);
+  }
+  for (let i = 0; i < str.length; i++) {
+    if (count.get(str[i]) === 1) return i;
+  }
+  return -1;
+}`,
+    steps: [
+      { currentLine: 2, variables: { count: '{}', i: '~', ch: '~' }, description: 'Empty map. Scan the string once to count every character.' },
+      { currentLine: 4, variables: { count: '{p:3,i:1,n:1,e:2,a:1,l:1}', i: '~', ch: '~' }, description: 'Counts: p=3, i=1, n=1, e=2, a=1, l=1. "i" is the first character with count 1 that appears earliest.' },
+      { currentLine: 7, variables: { count: '{p:3,...}', i: 1, ch: '~' }, description: 'Second pass: str[0] = "p". count[p]=3 → skip. str[1] = "i". count[i]=1 → first unique! Return 1.' },
+    ],
+    visualType: 'char-cells',
+    visualData: [
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: -1, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: -1, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 1, rightIndex: -1, found: true },
+    ],
+    whyItWorks: {
+      title: 'Count first, then scan for the answer.',
+      body: [
+        'First pass counts every character. Second pass checks counts in original order — the first character with count 1 is the answer.',
+        'You cannot find the first unique in one pass because you don\'t know if a character appears again later.',
+      ],
+    },
+    whenToUseSummary: 'Two passes: count everything, then scan in order. Map keys are the characters, values are the frequencies.',
+    breakdown: [
+      'You need the FIRST character that appears exactly once. You can\'t know this on the first pass — a character might repeat later. So count everything first, then scan again.',
+      '**Pass 1 — Count:** Iterate through the string. For each character, increment its count in the map.',
+      '**Pass 2 — Find:** Scan the string again in original order. The first character with count 1 is your answer.',
+      '**Two-pass but still O(n):** Two O(n) passes = O(2n) = O(n). The map stores at most 26 keys (lowercase only) or 128 (ASCII), so space is O(1).',
+      'Frequency counting is one of the most common hash map patterns — count first, then use the counts to answer the question.',
+    ],
+    jsConcepts: [
+      '`count.get(ch) ?? 0` — returns the stored count, or 0 if the key doesn\'t exist yet. `??` only defaults on `null`/`undefined`, not on `0`.',
+    ],
+  },
+
+  /* ── Valid Anagram ──────────────────────────────── */
+  {
+    id: 'valid-anagram',
+    category: 'hash-map',
+    title: 'Valid anagram',
+    topic: 'Letter frequency comparison',
+    description: 'Check if `"anagram"` and `"nagaram"` contain the same letters in the same quantities. Count letters in one string, subtract from the other — if all counts reach zero, it\'s an anagram.',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function isAnagram(s, t) {
+  if (s.length !== t.length) return false;
+  const count = new Map();
+  for (const ch of s) {
+    count.set(ch, (count.get(ch) ?? 0) + 1);
+  }
+  for (const ch of t) {
+    const c = count.get(ch) ?? 0;
+    if (c === 0) return false;
+    count.set(ch, c - 1);
+  }
+  return true;
+}`,
+    steps: [
+      { currentLine: 2, variables: { s: 'anagram', t: 'nagaram', sLen: 7, tLen: 7, c: '~' }, description: 'Both strings have length 7 — proceed. If lengths differ, return false immediately.' },
+      { currentLine: 5, variables: { s: 'anagram', t: 'nagaram', count: '{a:3,n:1,g:1,r:1,m:1}', c: '~' }, description: 'Count letters in "anagram": a=3, n=1, g=1, r=1, m=1' },
+      { currentLine: 8, variables: { s: 'anagram', t: 'nagaram', count: '{a:3,n:1,g:1,r:1,m:1}', c: 1 }, description: 'Process "nagaram". "n" → c = count[n] = 1, decrement to 0.' },
+      { currentLine: 8, variables: { s: 'anagram', t: 'nagaram', count: '{a:3,n:0,g:1,r:1,m:1}', c: '~' }, description: '"a" → 3→2. "g" → 1→0. "a" → 2→1. "r" → 1→0. "a" → 1→0. "m" → 1→0.' },
+      { currentLine: 12, variables: { s: 'anagram', t: 'nagaram', count: '{a:0,n:0,g:0,r:0,m:0}', c: '~' }, description: 'All counts reached zero. Same letters, same quantities → anagram! Return true.' },
+    ],
+    visualType: 'char-cells',
+    visualData: [
+      { items: ['a','n','a','g','r','a','m'], leftIndex: -1, rightIndex: -1 },
+      { items: ['a','n','a','g','r','a','m'], leftIndex: -1, rightIndex: -1 },
+      { items: ['a','n','a','g','r','a','m'], leftIndex: -1, rightIndex: -1 },
+      { items: ['a','n','a','g','r','a','m'], leftIndex: -1, rightIndex: -1 },
+      { items: ['a','n','a','g','r','a','m'], leftIndex: -1, rightIndex: -1, found: true },
+    ],
+    whyItWorks: {
+      title: 'Same letters, same counts.',
+      body: [
+        'Count letters in the first string (increment). For each letter in the second string, decrement. If any count goes negative or doesn\'t reach zero, not an anagram.',
+        'If lengths differ, skip the counting entirely — they cannot be anagrams.',
+      ],
+    },
+    whenToUseSummary: 'Count first, subtract second. If all counts hit zero, it is an anagram. O(n) time, O(1) space (limited alphabet).',
+    breakdown: [
+      'An anagram rearranges the same letters. So both strings must have identical letter counts. Count letters in `s`, then subtract letters in `t` — if every count hits zero, they\'re anagrams.',
+      '**Early exit** — If `s.length !== t.length`, they cannot be anagrams. Return false immediately.',
+      '**Pass 1 — Count s:** For each character, increment its count.',
+      '**Pass 2 — Subtract t:** For each character in `t`, check its count. If count is 0, not an anagram. Otherwise decrement.',
+      '**Final check** — If we finish pass 2 without returning false, all counts reached zero — anagram confirmed.',
+      'This pattern (count + subtract) avoids sorting both strings (O(n log n)). Instead, O(n) with a hash map.',
+    ],
+    jsConcepts: [
+      '`count.get(ch) ?? 0` — retrieves the count or defaults to 0. `??` only kicks in for `null`/`undefined`, not falsy values.',
+    ],
+  },
+
+  /* ── Most Frequent ──────────────────────────────── */
+  {
+    id: 'most-frequent',
+    category: 'hash-map',
+    title: 'Most frequent element',
+    topic: 'Frequency + max tracking',
+    description: 'Find the number that appears most often in `[1, 3, 2, 1, 4, 1]`. Count frequencies as you go, tracking the current maximum on the fly.',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function mostFrequent(nums) {
+  if (nums.length === 0) return null;
+  const freq = new Map();
+  let maxCount = 0, result = nums[0];
+
+  for (const n of nums) {
+    const count = (freq.get(n) ?? 0) + 1;
+    freq.set(n, count);
+    if (count > maxCount) {
+      maxCount = count;
+      result = n;
+    }
+  }
+  return result;
+}`,
+    steps: [
+      { currentLine: 2, variables: { freq: '{}', maxCount: 0, result: '~', n: '~', count: '~' }, description: 'Guard: array is non-empty (length=6). Initialize empty frequency map, maxCount=0.' },
+      { currentLine: 4, variables: { freq: '{}', maxCount: 0, result: 1, n: '~', count: '~' }, description: 'Set result = nums[0] = 1 as the initial candidate.' },
+      { currentLine: 6, variables: { freq: '{}', maxCount: 0, result: 1, n: 1, count: 1 }, description: 'n=1: first occurrence. count = (undefined ?? 0) + 1 = 1.' },
+      { currentLine: 8, variables: { freq: '{1:1}', maxCount: 1, result: 1, n: 1, count: 1 }, description: 'Store freq[1]=1. count(1) > maxCount(0)? YES → update: maxCount=1, result=1.' },
+      { currentLine: 6, variables: { freq: '{1:1}', maxCount: 1, result: 1, n: 3, count: 1 }, description: 'n=3: new number. count = (undefined ?? 0) + 1 = 1.' },
+      { currentLine: 8, variables: { freq: '{1:1,3:1}', maxCount: 1, result: 1, n: 3, count: 1 }, description: 'Store freq[3]=1. count(1) > maxCount(1)? No → keep maxCount=1.' },
+      { currentLine: 6, variables: { freq: '{1:1,3:1}', maxCount: 1, result: 1, n: 2, count: 1 }, description: 'n=2: new number. count = (undefined ?? 0) + 1 = 1.' },
+      { currentLine: 8, variables: { freq: '{1:1,3:1,2:1}', maxCount: 1, result: 1, n: 2, count: 1 }, description: 'Store freq[2]=1. count(1) > maxCount(1)? No → no change.' },
+      { currentLine: 6, variables: { freq: '{1:1,3:1,2:1}', maxCount: 1, result: 1, n: 1, count: 2 }, description: 'n=1: seen before. count = freq[1] + 1 = 2.' },
+      { currentLine: 8, variables: { freq: '{1:2,3:1,2:1}', maxCount: 2, result: 1, n: 1, count: 2 }, description: 'Store freq[1]=2. count(2) > maxCount(1)? YES → update: maxCount=2, result=1.' },
+      { currentLine: 6, variables: { freq: '{1:2,3:1,2:1}', maxCount: 2, result: 1, n: 4, count: 1 }, description: 'n=4: new number. count = (undefined ?? 0) + 1 = 1.' },
+      { currentLine: 8, variables: { freq: '{1:2,3:1,2:1,4:1}', maxCount: 2, result: 1, n: 4, count: 1 }, description: 'Store freq[4]=1. count(1) > maxCount(2)? No → no change.' },
+      { currentLine: 6, variables: { freq: '{1:2,3:1,2:1,4:1}', maxCount: 2, result: 1, n: 1, count: 3 }, description: 'n=1: third occurrence. count = freq[1] + 1 = 3.' },
+      { currentLine: 8, variables: { freq: '{1:3,3:1,2:1,4:1}', maxCount: 3, result: 1, n: 1, count: 3 }, description: 'Store freq[1]=3. count(3) > maxCount(2)? YES → update: maxCount=3, result=1.' },
+      { currentLine: 14, variables: { freq: '{1:3,3:1,2:1,4:1}', maxCount: 3, result: 1, n: '~', count: '~' }, description: 'Loop finished. Return result = 1 (appears 3 times — more than any other).' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: -1, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 0, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 0, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 0, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 1, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 1, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 2, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 2, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 3, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 3, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 4, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 4, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 5, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 5, rightIndex: -1 },
+      { items: [1, 3, 2, 1, 4, 1], leftIndex: 5, rightIndex: -1, found: true },
+    ],
+    whyItWorks: {
+      title: 'Count and track max in one pass.',
+      body: [
+        'Instead of counting everything and then finding the max (two passes), track the max as you count. Each time a count exceeds the current max, update both maxCount and result.',
+        'This is a single O(n) pass with O(n) space for the frequency map.',
+      ],
+    },
+    whenToUseSummary: 'Count frequencies with a map, update the max on the fly. Guard empty arrays first. One pass, O(n) time.',
+    breakdown: [
+      'Track frequencies AND the current maximum in a single pass. Each time you increment a count, check: did it just become the new max? If yes, update both maxCount and result.',
+      '**Guard** — If the array is empty, return `null` immediately. No element exists to be \'most frequent\'. Without this, `nums[0]` would crash.',
+      '**Init** — Set `result = nums[0]` as the initial candidate. It appears at least once, so maxCount will be at least 1.',
+      '**Count** — For each element `n`, compute `(freq.get(n) ?? 0) + 1`. Store it with `freq.set(n, count)`.',
+      '**Compare** — If the new count exceeds `maxCount`, this element is now the most frequent. Update `maxCount` and `result`.',
+      '**Why one pass?** — You don\'t need a second pass over the map to find the max. The max can only increase, and every increment is a candidate.',
+      '**Tie-breaking** — If two elements tie for max count, the first one to reach that count wins (it was set as `result` earlier).',
+    ],
+    jsConcepts: [
+      'Tracking max on the fly — instead of a second loop, update every time a count changes. Works because counts only increase.',
     ],
   },
 ]

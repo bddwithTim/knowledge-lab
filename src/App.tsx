@@ -7,8 +7,9 @@ import { scenarios, type ScenarioId } from './algorithm-scenarios'
 import { BookOpen, CaretLeft, Code, Flask, Graph, List } from '@phosphor-icons/react'
 import { readStorage, writeStorage, display, runTS, executeExample, modLabel, runAssertions } from './utils'
 import { Kbd } from './components/Kbd'
+import { CodePanel } from './components/CodePanel'
 
-type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'ts-learn' | 'ts-lesson'
+type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'sliding-window' | 'hash-map' | 'ts-learn' | 'ts-lesson'
 type NavEntry = { v: View; lo?: number; to?: number; cid?: string }
 type Result = { label: string; passed: boolean; actual?: unknown; error?: string }
 type OutputFlash = 'idle' | 'success' | 'error'
@@ -243,7 +244,7 @@ export function App() {
             <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')}>
               <span><Graph size={16} /></span>Big O Notation
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
               <span><Graph size={16} /></span>Algorithm Patterns
             </button>
             <div className="sidebar-note">
@@ -266,7 +267,7 @@ export function App() {
             <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')} title="Big O Notation">
               <span><Graph size={16} /></span>
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
               <span><Graph size={16} /></span>
             </button>
           </div>
@@ -285,8 +286,10 @@ export function App() {
           />
         )}
         {view === 'big-o' && <BigOPage />}
-        {view === 'patterns' && <PatternsOverview onSelectPattern={() => navigateTo('pattern-detail')} />}
-        {view === 'pattern-detail' && <PatternDetailPage onBack={() => navigateTo('patterns')} onOpenChallenge={(c) => navigateTo('challenge', undefined, undefined, c)} />}
+        {view === 'patterns' && <PatternsOverview onSelectPattern={(v) => navigateTo(v)} />}
+        {view === 'pattern-detail' && <PatternDetailPage onBack={() => navigateTo('patterns')} onNext={() => navigateTo('sliding-window')} onOpenChallenge={(c) => navigateTo('challenge', undefined, undefined, c)} />}
+        {view === 'sliding-window' && <SlidingWindowPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('pattern-detail')} onNext={() => navigateTo('hash-map')} />}
+        {view === 'hash-map' && <HashMapPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('sliding-window')} />}
         {view === 'ts-learn' && <TSLearnIndex onOpen={(l) => navigateTo('ts-lesson', undefined, l)} />}
         {view === 'ts-lesson' && (
           <TSLessonPage
@@ -336,8 +339,8 @@ export function App() {
 
 function BigOPage() {
   const [showBackTop, setShowBackTop] = useState(false)
+  const bigOIds: ScenarioId[] = ['big-o-1', 'big-o-n', 'big-o-logn', 'big-o-n2']
 
-  // Scroll to top when page mounts
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
   useEffect(() => {
@@ -346,29 +349,204 @@ function BigOPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const bigOIds: ScenarioId[] = ['big-o-1', 'big-o-n', 'big-o-n2', 'big-o-logn']
-
   return (
     <>
       <header className="algorithm-head">
         <span className="eyebrow">Foundation</span>
         <h1>Big O Notation</h1>
-        <p>Big O describes how an algorithm <strong>slows down</strong> as the input grows. It\'s not about seconds — it\'s about <strong>growth rate</strong>. The chart below compares the four most common complexity classes side by side.</p>
+        <p>Big O helps us describe <strong>how much more work</strong> a program has to do when the input gets bigger. If you have 10 toys and your program takes 10 steps, what happens with 100 toys? Still 10 steps? 100 steps? 10,000? Big O answers that question.</p>
+        <p>It&rsquo;s <strong>not about seconds</strong>. It&rsquo;s about how the amount of work <strong>grows</strong> as the input grows.</p>
       </header>
+
+      {/* What Big O does NOT tell you */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What Big O does <em>not</em> tell you</h2>
+        <p className="big-o-chart-sub">Big O has limits. It does not tell you:</p>
+        <div className="big-o-dont-list">
+          <div className="big-o-dont-item">
+            <span className="big-o-dont-icon">⏱</span>
+            <div><strong>Exact seconds.</strong> Two O(n) algorithms may run at different speeds — one might be 10× faster because of how it\'s written. Big O only tells you how they both <em>grow</em> with more input.</div>
+          </div>
+          <div className="big-o-dont-item">
+            <span className="big-o-dont-icon">📏</span>
+            <div><strong>Exact operation count.</strong> O(n) might mean 2n steps or 100n steps. Big O drops the constant because it\'s about the <em>shape</em> of growth, not the precise number.</div>
+          </div>
+          <div className="big-o-dont-item">
+            <span className="big-o-dont-icon">🐢</span>
+            <div><strong>Which is faster for small inputs.</strong> An O(n²) algorithm can beat an O(n) algorithm when `n` is tiny — because constant factors matter at small scales. Big O shines when `n` gets large.</div>
+          </div>
+        </div>
+        <p className="big-o-chart-note">Big O is about one thing: <strong>how the workload grows as the input becomes very large.</strong></p>
+      </section>
+
+      {/* Meet n */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Meet <code>n</code></h2>
+        <p className="big-o-chart-sub">In Big O, we use <strong>n</strong> to represent the size of our input.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`const small  = [7, 2, 9];       // n = 3
+const medium = [7, 2, 9, 4, 1, 6];  // n = 6
+const large  = [7, 2, 9, 4, 1, 6, 3, 8];  // n = 8`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">Whenever you see O(n), think &ldquo;proportional to the input size.&rdquo; Whenever you see O(1), think &ldquo;doesn&rsquo;t depend on input size at all.&rdquo;</p>
+      </section>
 
       {/* Growth curve comparison chart */}
       <section className="big-o-chart-section">
         <h2 className="big-o-chart-title">Growth rate comparison</h2>
-        <p className="big-o-chart-sub">X-axis = input size (n) · Y-axis = number of operations</p>
+        <p className="big-o-chart-sub">X-axis = input size (n) · Y-axis = number of operations (log scale)</p>
         <BigOGrowthChart />
         <p className="big-o-chart-note">
-          O(1) is flat — input size doesn\'t matter. O(n) grows steadily. O(n²) explodes. O(log n) barely budges even for huge inputs.
+          O(1) stays flat — input size doesn&rsquo;t matter. O(log n) barely budges even for huge inputs. O(n) grows steadily. O(n log n) grows faster. O(n²) explodes.
         </p>
       </section>
 
+      {/* Time vs Space */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Time vs Space complexity</h2>
+        <p className="big-o-chart-sub">Big O can describe <strong>time</strong> (how much work) AND <strong>space</strong> (how much <strong>extra</strong> memory — beyond the input itself).</p>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>O(n) time, O(1) space</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`function sum(arr) {
+  let total = 0;         // one variable
+  for (const n of arr) { // loops n times
+    total += n;          // constant work
+  }
+  return total;
+}`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">We process every element (O(n) time) but only create <code>total</code> — one variable, no matter how big the input. That&rsquo;s O(1) space.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>O(n) time, O(n) space</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`function double(arr) {
+  const result = [];     // grows with input
+  for (const n of arr) {
+    result.push(n * 2);  // fills result
+  }
+  return result;
+}`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Now <code>result</code> grows with the input — one new slot per element. That&rsquo;s O(n) space.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Big O Rules */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Big O rules (two things to remember)</h2>
+        <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>1. Drop the constants</h3>
+        <p className="big-o-chart-sub">Big O cares about the <strong>shape</strong> of growth, not exact numbers. O(2n), O(5n), O(100n) — they all grow linearly. So we simplify to just O(n).</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Two loops — but they run one after the other, not inside each other.
+for (const item of arr) { console.log(item); }  // n steps
+for (const item of arr) { console.log(item); }  // n steps
+// Total: n + n = 2n → O(n)`} showLineNumbers={false} /></pre>
+        <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '1.5rem 0 0.5rem' }}>2. Keep only the fastest-growing part</h3>
+        <p className="big-o-chart-sub">When different kinds of work happen together, the fastest-growing term dominates. O(n + n²) → O(n²). As n gets large, n² makes n irrelevant.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// A loop followed by nested loops:
+for (const item of arr) { }        // O(n)
+for (const a of arr) {            // O(n²)
+  for (const b of arr) { }
+}
+// Total: O(n + n²) → O(n²)`} showLineNumbers={false} /></pre>
+      </section>
+
+      {/* Core scenarios */}
       {bigOIds.map((id) => (
         <ScenarioSection key={id} scenarioId={id} />
       ))}
+
+      {/* Best, Average, Worst Case */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Best, Average, and Worst case</h2>
+        <p className="big-o-chart-sub">When people say &ldquo;Big O&rdquo; without qualification, they usually mean <strong>worst case</strong>.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Search for a number in an unsorted array
+function find(arr, target) {
+  for (const item of arr) {
+    if (item === target) return true;
+  }
+  return false;
+}
+
+// [7, 2, 9, 4, 1]
+//  ↑ Best case: target is first → O(1)
+//        ↑ Average: somewhere in middle → O(n)
+//              ↑ Worst: last or not found → O(n)`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">Since worst case is the most important guarantee, &ldquo;this is O(n)&rdquo; means &ldquo;in the worst case, work grows proportionally to n.&rdquo;</p>
+      </section>
+
+      {/* Beyond the Basics */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Beyond the basics</h2>
+        <p className="big-o-chart-sub">The four complexity classes above cover most code you&rsquo;ll write. Here are three more you&rsquo;ll see in algorithm discussions:</p>
+        <table className="big-o-cheatsheet">
+          <thead>
+            <tr><th>Notation</th><th>Name</th><th>Example</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>O(n log n)</code></td>
+              <td>Linearithmic</td>
+              <td>Merge sort, quicksort — split (log n) × process all (n)</td>
+            </tr>
+            <tr>
+              <td><code>O(2ⁿ)</code></td>
+              <td>Exponential</td>
+              <td>Recursive Fibonacci, some backtracking — work doubles with each new item</td>
+            </tr>
+            <tr>
+              <td><code>O(n!)</code></td>
+              <td>Factorial</td>
+              <td>Trying every possible ordering — explodes catastrophically</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      {/* Cheat Sheet */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">How to recognize Big O</h2>
+        <p className="big-o-chart-sub">When looking at code, ask yourself these questions:</p>
+        <ol className="big-o-checklist">
+          <li><strong>Is the work fixed?</strong> No loops, just direct access → <code>O(1)</code></li>
+          <li><strong>Do I visit every item once?</strong> Single loop → <code>O(n)</code></li>
+          <li><strong>Do I repeatedly cut the problem in half?</strong> Binary search style → <code>O(log n)</code></li>
+          <li><strong>Does work happen inside another loop?</strong> Nested loops → often <code>O(n²)</code></li>
+          <li><strong>Am I sorting the data?</strong> Efficient sort → often <code>O(n log n)</code></li>
+        </ol>
+        <p className="big-o-chart-sub" style={{ marginTop: 'var(--space-lg)' }}>These are clues, not strict rules. For example, two loops one after another are still O(n). Only <strong>nested</strong> loops multiply. Always read the code, don&rsquo;t just count loops.</p>
+        <p className="big-o-chart-sub" style={{ marginTop: 'var(--space-md)' }}>Quick reference:</p>
+        <table className="big-o-cheatsheet">
+          <thead>
+            <tr><th>Pattern</th><th>Big O</th><th>Look for</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Fixed work</td><td><code>O(1)</code></td><td>No loops, direct access, hash table lookup</td></tr>
+            <tr><td>One pass</td><td><code>O(n)</code></td><td>Single loop through array</td></tr>
+            <tr><td>Cutting in half</td><td><code>O(log n)</code></td><td>Binary search, divide and conquer</td></tr>
+            <tr><td>Nested loops</td><td><code>O(n²)</code></td><td>Loop inside loop over same data</td></tr>
+            <tr><td>Sorting</td><td><code>O(n log n)</code></td><td>Merge sort, quicksort, any comparison sort</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      {/* Recap */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Big O in one picture</h2>
+        <table className="big-o-cheatsheet">
+          <thead>
+            <tr><th>Notation</th><th>Mental model</th><th>Example</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>O(1)</code></td><td>Fixed work — doesn&rsquo;t depend on input size</td><td><code>arr[3]</code></td></tr>
+            <tr><td><code>O(log n)</code></td><td>Keep cutting the problem in half</td><td>Binary search</td></tr>
+            <tr><td><code>O(n)</code></td><td>Visit every item once</td><td>One loop</td></tr>
+            <tr><td><code>O(n log n)</code></td><td>Divide-and-conquer, then process all</td><td>Merge sort</td></tr>
+            <tr><td><code>O(n²)</code></td><td>Compare many pairs — work explodes</td><td>Nested loops</td></tr>
+          </tbody>
+        </table>
+        <p className="big-o-chart-note"><strong>Remember:</strong> Big O describes how the amount of work grows as the input gets bigger. It&rsquo;s about the <strong>shape</strong> of growth, not exact speed.</p>
+      </section>
+
+      {/* Quiz */}
+      <BigOQuizSection />
 
       {showBackTop && (
         <button className="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -414,6 +592,11 @@ function BigOGrowthChart() {
     return `${x(n)},${y(n)}`
   }).join(' ')
 
+  const onlognPoints = Array.from({ length: steps }, (_, i) => {
+    const n = Math.max(1, (i / (steps - 1)) * maxN)
+    return `${x(n)},${y(n * Math.log2(n))}`
+  }).join(' ')
+
   const on2Points = Array.from({ length: steps }, (_, i) => {
     const n = (i / (steps - 1)) * maxN
     return `${x(n)},${y(n * n)}`
@@ -442,16 +625,118 @@ function BigOGrowthChart() {
       <polyline points={o1Points} fill="none" stroke="var(--accent)" strokeWidth="3" strokeDasharray="6,3" />
       <polyline points={olognPoints} fill="none" stroke="#5bb8f0" strokeWidth="3" />
       <polyline points={onPoints} fill="none" stroke="var(--kyu-6-text)" strokeWidth="2.5" />
+      <polyline points={onlognPoints} fill="none" stroke="#d4a853" strokeWidth="2" strokeDasharray="5,3" />
       <polyline points={on2Points} fill="none" stroke="#f28b82" strokeWidth="3" />
       {/* Legend */}
-      <rect x={pad.left + plotW - 145} y={pad.top + 2} width={140} height={62} rx={6} fill="var(--bg-inset)" opacity="0.85" />
-      <line x1={pad.left + plotW - 135} y1={pad.top + 16} x2={pad.left + plotW - 115} y2={pad.top + 16} stroke="#f28b82" strokeWidth="3" />
-      <text x={pad.left + plotW - 110} y={pad.top + 20} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)" fontWeight="600">O(n²)</text>
-      <line x1={pad.left + plotW - 135} y1={pad.top + 34} x2={pad.left + plotW - 115} y2={pad.top + 34} stroke="var(--kyu-6-text)" strokeWidth="2.5" />
-      <text x={pad.left + plotW - 110} y={pad.top + 38} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)" fontWeight="600">O(n)</text>
-      <line x1={pad.left + plotW - 135} y1={pad.top + 52} x2={pad.left + plotW - 115} y2={pad.top + 52} stroke="#5bb8f0" strokeWidth="3" />
-      <text x={pad.left + plotW - 110} y={pad.top + 56} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)">O(log n)</text>
+      <rect x={pad.left + plotW - 155} y={pad.top + 2} width={150} height={80} rx={6} fill="var(--bg-inset)" opacity="0.85" />
+      <line x1={pad.left + plotW - 145} y1={pad.top + 16} x2={pad.left + plotW - 125} y2={pad.top + 16} stroke="#f28b82" strokeWidth="3" />
+      <text x={pad.left + plotW - 120} y={pad.top + 20} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)" fontWeight="600">O(n²)</text>
+      <line x1={pad.left + plotW - 145} y1={pad.top + 34} x2={pad.left + plotW - 125} y2={pad.top + 34} stroke="#d4a853" strokeWidth="2" strokeDasharray="5,3" />
+      <text x={pad.left + plotW - 120} y={pad.top + 38} fill="var(--text-secondary)" fontSize="10" fontFamily="var(--font-mono)">O(n log n)</text>
+      <line x1={pad.left + plotW - 145} y1={pad.top + 52} x2={pad.left + plotW - 125} y2={pad.top + 52} stroke="var(--kyu-6-text)" strokeWidth="2.5" />
+      <text x={pad.left + plotW - 120} y={pad.top + 56} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)" fontWeight="600">O(n)</text>
+      <line x1={pad.left + plotW - 145} y1={pad.top + 70} x2={pad.left + plotW - 125} y2={pad.top + 70} stroke="#5bb8f0" strokeWidth="3" />
+      <text x={pad.left + plotW - 120} y={pad.top + 74} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)">O(log n)</text>
     </svg>
+  )
+}
+
+/* ── Big O Quiz ────────────────────────────────────── */
+function BigOQuizSection() {
+  type QuizItem = { question: string; code?: string; options: string[]; answer: number; explanation: string }
+  const quiz: QuizItem[] = [
+    {
+      question: 'What is the time complexity of this function?',
+      code: `function findMax(arr) {
+  let max = arr[0];
+  for (const n of arr) {
+    if (n > max) max = n;
+  }
+  return max;
+}`,
+      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
+      answer: 2,
+      explanation: 'One loop through the entire array — visits each element once. Time: O(n). Space is O(1) since only `max` is created.',
+    },
+    {
+      question: 'What is the space complexity of this function?',
+      code: `function find(arr, target) {
+  for (const item of arr) {
+    if (item === target) return true;
+  }
+  return false;
+}`,
+      options: ['O(1)', 'O(n)', 'O(n²)', 'O(log n)'],
+      answer: 0,
+      explanation: 'No extra data structures are created. Only the loop variable exists — O(1) space, even though time is O(n).',
+    },
+    {
+      question: 'Binary search on a sorted array has which time complexity?',
+      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
+      answer: 1,
+      explanation: 'Each comparison eliminates half the remaining items. 1 billion items → ~30 steps. That is O(log n).',
+    },
+    {
+      question: 'Is this O(n²) because there are two loops?',
+      code: `for (const item of arr) {
+  console.log(item);
+}
+
+for (const item of arr) {
+  console.log(item);
+}`,
+      options: ['Yes — two loops always means O(n²)', 'No — the loops run one after another, so it\'s still O(n)', 'No — it\'s O(log n) because of the console.log', 'Yes — any function with for-loops is O(n²)'],
+      answer: 1,
+      explanation: 'The loops run sequentially (one after another), not nested. Total: n + n = 2n → O(n). Only loops inside other loops multiply.',
+    },
+  ]
+
+  return (
+    <section className="big-o-chart-section">
+      <h2 className="big-o-chart-title">Quick check</h2>
+      {quiz.map((item, i) => (
+        <BigOQuizCard key={i} item={item} />
+      ))}
+    </section>
+  )
+}
+
+function BigOQuizCard({ item }: { item: { question: string; code?: string; options: string[]; answer: number; explanation: string } }) {
+  const [selected, setSelected] = useState<number | null>(null)
+  const correct = selected === item.answer
+
+  return (
+    <div className="big-o-quiz-card">
+      <p className="big-o-quiz-question">{item.question}</p>
+      {item.code && <pre className="big-o-inline-code"><CodePanel code={item.code} showLineNumbers={false} /></pre>}
+      <div className="big-o-quiz-options">
+        {item.options.map((opt, i) => {
+          let cls = ''
+          if (selected !== null) {
+            if (i === item.answer) cls = 'is-correct'
+            else if (i === selected && !correct) cls = 'is-wrong'
+          }
+          return (
+            <button
+              key={i}
+              className={cls}
+              disabled={selected !== null}
+              onClick={() => setSelected(i)}
+            >
+              <span className="big-o-quiz-letter">{(i + 10).toString(36).toUpperCase()}</span>
+              <code>{opt}</code>
+              {selected !== null && i === item.answer && <span className="big-o-quiz-check">✓</span>}
+              {selected !== null && i === selected && !correct && <span className="big-o-quiz-cross">✗</span>}
+            </button>
+          )
+        })}
+      </div>
+      {selected !== null && (
+        <p className={`big-o-quiz-result ${correct ? 'is-correct' : 'is-wrong'}`}>
+          {correct ? 'Correct! ' : 'Not quite. '}{item.explanation}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -678,7 +963,6 @@ function CollapsibleBreakdown({ breakdown, jsConcepts }: { breakdown: string[]; 
 /* ── Inline code renderer ── */
 // Matches: backtick-wrapped text, code patterns like O(...), variable names, numbers, string literals
 /* ── Inline code renderer ── */
-import { CodePanel } from './components/CodePanel'
 
 function CodeBlock({ text }: { text: string }) {
   return <CodePanel code={text} showLineNumbers={false} />
@@ -704,26 +988,33 @@ function CodeText({ text }: { text: string }) {
 /* ── PatternsOverview: cards for each pattern category ── */
 
 const patternEntries: { id: string; label: string; tags: string[]; active: boolean }[] = [
-  { id: 'two-pointer', label: 'Two Pointers', tags: ['6 scenarios', 'O(n)'], active: true },
-  { id: 'hash-map', label: 'Hash Map / Frequency', tags: ['Four sum', 'Anagrams', 'First unique', 'O(n)'], active: false },
+  { id: 'two-pointer', label: 'Two Pointers', tags: ['5 scenarios', 'O(n)'], active: true },
+  { id: 'sliding-window', label: 'Sliding Window', tags: ['2 scenarios', 'Fixed + Variable', 'O(n)'], active: true },
+  { id: 'hash-map', label: 'Hash Map / Frequency', tags: ['4 scenarios', 'Two sum', 'Anagrams', 'O(n)'], active: true },
   { id: 'fast-slow', label: 'Fast & Slow Pointers', tags: ['Cycle detection', 'O(n)'], active: false },
-  { id: 'merge-interval', label: 'Merge / Interval', tags: ['Overlapping intervals', 'O(n log n)'], active: false },
+  { id: 'merge-interval', label: 'Merge / Intervals', tags: ['Overlapping intervals', 'O(n log n)'], active: false },
   { id: 'prefix-sum', label: 'Prefix Sum', tags: ['Running sum', 'Subarray = K', 'O(n)'], active: false },
   { id: 'binary-search', label: 'Binary Search', tags: ['Sorted array', 'O(log n)'], active: false },
+  { id: 'stack', label: 'Stack', tags: ['Valid parens', 'Monotonic', 'O(n)'], active: false },
+  { id: 'sorting-strategies', label: 'Sorting Strategies', tags: ['Sort + two ptr', 'Sort + greedy', 'O(n log n)'], active: false },
+  { id: 'greedy', label: 'Greedy', tags: ['Best choice at each step', 'Activity selection'], active: false },
+  { id: 'recursion', label: 'Recursion', tags: ['Self-calling', 'Base case', 'Tree-like'], active: false },
+  { id: 'backtracking', label: 'Backtracking', tags: ['Permutations', 'Combinations', 'Advanced'], active: false },
 ]
 
-function PatternsOverview({ onSelectPattern }: { onSelectPattern: () => void }) {
+function PatternsOverview({ onSelectPattern }: { onSelectPattern: (view: View) => void }) {
   return (
     <>
       <header className="algorithm-head patterns-head">
         <span className="eyebrow">Patterns</span>
         <h1>Algorithm Patterns</h1>
-        <p>Proven strategies that solve entire classes of problems. Click Two Pointers to explore — the rest are coming soon.</p>
+        <p>Proven strategies for solving common classes of coding problems. Review the patterns, recognize when to use them, and understand why each approach works.</p>
       </header>
       <section className="patterns-grid-section">
-        {patternEntries.map((p) =>
-          p.active ? (
-            <button key={p.id} className="when-to-use-card" onClick={onSelectPattern} style={{ cursor: 'pointer' }}>
+        {patternEntries.map((p) => {
+          const targetView = p.id === 'two-pointer' ? 'pattern-detail' : p.id === 'sliding-window' ? 'sliding-window' : p.id === 'hash-map' ? 'hash-map' : null
+          return p.active && targetView ? (
+            <button key={p.id} className="when-to-use-card" onClick={() => onSelectPattern(targetView)} style={{ cursor: 'pointer' }}>
               <span className="when-to-use-label" style={{ fontSize: '1.125rem', fontWeight: 700 }}>{p.label}</span>
               <div style={{ marginTop: 'var(--space-sm)', display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>
                 {p.tags.map((t) => <span key={t} className="tag">{t}</span>)}
@@ -737,15 +1028,15 @@ function PatternsOverview({ onSelectPattern }: { onSelectPattern: () => void }) 
               </div>
             </div>
           )
-        )}
+        })}
       </section>
     </>
   )
 }
 
 /* ── PatternDetailPage: scrollable inline scenarios for a pattern ── */
-function PatternDetailPage({ onBack, onOpenChallenge }: { onBack: () => void; onOpenChallenge: (c: Challenge) => void }) {
-  const twoPointerIds: ScenarioId[] = ['pair-sum', 'palindrome', 'remove-duplicates', 'container-water', 'merge-sorted', 'sliding-window']
+function PatternDetailPage({ onBack, onNext, onOpenChallenge }: { onBack: () => void; onNext: () => void; onOpenChallenge: (c: Challenge) => void }) {
+  const twoPointerIds: ScenarioId[] = ['pair-sum', 'palindrome', 'remove-duplicates', 'container-water', 'merge-sorted']
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
@@ -755,11 +1046,295 @@ function PatternDetailPage({ onBack, onOpenChallenge }: { onBack: () => void; on
         <button className="back-link" onClick={onBack}>← Back to patterns</button>
         <span className="eyebrow">Algorithm Pattern</span>
         <h1>Two Pointers</h1>
-        <p>Two pointers traverse data from different positions — opposite ends, same direction, or one fast and one slow. Each variant solves a different class of problems with O(n) efficiency.</p>
+        <p>Use two positions to systematically eliminate unnecessary work. Instead of checking every pair (O(n²)), move pointers strategically based on what you see — and finish in O(n).</p>
       </header>
+
+      {/* What is Two Pointers? */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Two Pointers?</h2>
+        <p className="big-o-chart-sub">Two Pointers keeps track of <strong>two positions</strong> at the same time and moves them strategically. It is not one algorithm — it&rsquo;s a <strong>problem-solving pattern</strong>.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Instead of checking every pair (O(n²)):
+for (let i = 0; i < arr.length; i++) {
+  for (let j = i + 1; j < arr.length; j++) {
+    // check arr[i] and arr[j]
+  }
+}
+
+// Use two pointers and move them smartly (O(n)):
+let left = 0, right = arr.length - 1;
+while (left < right) {
+  // decide which pointer to move based on what you see
+}`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">The key insight: <strong>you know which pointer to move</strong> because the data has structure (sorted, symmetrical, etc.). You never need to backtrack.</p>
+      </section>
+
+      {/* Three patterns */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Three ways to use Two Pointers</h2>
+        <div className="big-o-compare" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <div className="big-o-compare-card">
+            <h4>← Opposite direction →</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`[1, 2, 3, 4, 5, 6]
+ L           R
+ →           ←`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Pointers start at opposite ends, move toward each other. Good for: pair sum, palindrome, container with most water.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>→ Same direction →</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`[1, 1, 2, 2, 3, 3]
+ S  F
+ slow→ fast→`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Both move left to right, usually at different speeds. Good for: remove duplicates, partitioning, cycle detection.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Two arrays ↕</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`A: [1, 3, 5] B: [2, 4, 6]
+    ↑          ↑`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">One pointer per array. Compare heads, take the smaller. Good for: merge sorted arrays, set intersection.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Scenarios */}
       {twoPointerIds.map((id) => (
         <ScenarioSection key={id} scenarioId={id} />
       ))}
+
+      {/* When to think of Two Pointers */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Two Pointers?</h2>
+        <ol className="big-o-checklist">
+          <li>You&rsquo;re working with an <strong>array or string</strong></li>
+          <li>You need to <strong>compare elements from different positions</strong></li>
+          <li>The data is <strong>sorted</strong> (or you can sort it)</li>
+          <li>You need to <strong>find pairs</strong> or combinations</li>
+          <li>You need to process the array <strong>in-place</strong></li>
+          <li>You can make progress by <strong>moving one pointer based on what you see</strong></li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ Two Pointers isn&rsquo;t always the answer. Look for a reason that moving a pointer lets you <strong>safely eliminate possibilities</strong> without checking every pair.</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div>
+          <span className="eyebrow">End of Two Pointers</span>
+          <strong>Ready for the next pattern?</strong>
+        </div>
+        <div className="lesson-end-actions">
+          <button onClick={onBack}>← Algorithm Patterns</button>
+          <button className="next-lesson-button" onClick={onNext}>Sliding Window →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── SlidingWindowPage ───────────────────────────── */
+function SlidingWindowPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Sliding Window</h1>
+        <p>A sliding window looks at a <strong>small, continuous chunk</strong> of an array or string at a time. Two pointers mark the start and end of that chunk — the &ldquo;window.&rdquo; As it moves, add what enters, drop what leaves — no need to start over.</p>
+      </header>
+
+      {/* What is Sliding Window? */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Sliding Window?</h2>
+        <p className="big-o-chart-sub">Instead of re-summing everything from scratch each time the window moves, we <strong>reuse the previous result</strong>. One subtraction, one addition — done.</p>
+        <p className="big-o-chart-sub">Here&rsquo;s the visual version first:</p>
+        <pre className="big-o-inline-code"><CodePanel code={`[2, 1, 5, 1, 3, 2]
+ └──────┘     Old window: 2+1+5 = 8
+
+[2, 1, 5, 1, 3, 2]
+    └──────┘  New window: 8 - 2 + 1 = 7
+              (drop what left, add what entered)`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-sub">And the code version:</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Without sliding window — re-sum every time (O(n×k)):
+for (let i = 0; i <= arr.length - k; i++) {
+  let sum = 0;
+  for (let j = i; j < i + k; j++) sum += arr[j];
+}
+
+// With sliding window — reuse the previous sum (O(n)):
+let windowSum = 0;
+for (let i = 0; i < k; i++) windowSum += arr[i];
+for (let i = k; i < arr.length; i++) {
+  windowSum += arr[i] - arr[i - k];  // add new, drop old
+}`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key insight:</strong> the window doesn&rsquo;t start over when it moves. We reuse what we already calculated — just add the new element and subtract the departing one.</p>
+      </section>
+
+      {/* Two types */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two types of sliding windows</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Fixed-size window</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`[2, 1, 5, 1, 3, 2]  k=3
+ [▁▁▁]           sum=8
+    [▁▁▁]        sum=7
+       [▁▁▁]     sum=9  ← max`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Window size stays constant (k). Slide one step, add the new element, drop the old. Good for: max sum, average of subarrays.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Variable-size window</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Find smallest subarray with sum ≥ 7
+
+[2, 1, 5, 1, 3, 2]
+ └─────────┘ sum=8 ✓
+    └──────┘  sum=7 ✓ ← smallest!
+       └───┘   sum=6 ✗
+
+Expand until condition met,
+shrink while it still holds.`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Window grows and shrinks dynamically. Expand until you break a condition, then shrink from the left. Good for: subarray sum, substring without repeats.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Connection to Two Pointers */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">How Sliding Window relates to Two Pointers</h2>
+        <p className="big-o-chart-sub">Both use two positions. The difference is intent:</p>
+        <table className="big-o-cheatsheet">
+          <thead>
+            <tr><th></th><th>Two Pointers</th><th>Sliding Window</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Focus</strong></td><td>Compare or process elements at two positions</td><td>Maintain a contiguous range</td></tr>
+            <tr><td><strong>Movement</strong></td><td>Move one pointer based on a condition</td><td>Move the window by expanding or shrinking its boundaries</td></tr>
+            <tr><td><strong>Key operation</strong></td><td>Compare left vs right</td><td>Add incoming, subtract outgoing</td></tr>
+            <tr><td><strong>Classic example</strong></td><td>Pair sum in sorted array</td><td>Max sum of k consecutive elements</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      {/* Scenarios */}
+      <ScenarioSection scenarioId="sliding-window" />
+      <ScenarioSection scenarioId="smallest-subarray" />
+
+      {/* When to use */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Sliding Window?</h2>
+        <ol className="big-o-checklist">
+          <li>You need to process <strong>contiguous subarrays or substrings</strong></li>
+          <li>The problem asks for <strong>maximum / minimum / average</strong> over a range</li>
+          <li>You&rsquo;re working with <strong>consecutive elements</strong> (not arbitrary combinations)</li>
+          <li>You can <strong>reuse the previous computation</strong> instead of starting fresh</li>
+          <li>You see keywords like &ldquo;subarray,&rdquo; &ldquo;substring,&rdquo; &ldquo;consecutive,&rdquo; &ldquo;k elements&rdquo;</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ Sliding Window needs <strong>contiguous</strong> elements. If the problem asks for arbitrary combinations (like &ldquo;any two numbers&rdquo;), Two Pointers or Hash Map may be better.</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div>
+          <span className="eyebrow">End of Sliding Window</span>
+          <strong>Review or move on?</strong>
+        </div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Two Pointers</button>
+          <button className="next-lesson-button" onClick={onNext}>Hash Map / Frequency →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── HashMapPage ─────────────────────────────────── */
+function HashMapPage({ onBack, onPrevious }: { onBack: () => void; onPrevious: () => void }) {
+  const hashMapIds: ScenarioId[] = ['two-sum', 'first-unique', 'valid-anagram', 'most-frequent']
+
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Hash Map / Frequency</h1>
+        <p>Use a map (dictionary) to store and look up values in <strong>O(1)</strong>. Trade a bit of memory for dramatically faster lookups — turn nested loops into single passes.</p>
+      </header>
+
+      {/* What is a Hash Map? */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is a Hash Map?</h2>
+        <p className="big-o-chart-sub">A hash map stores <strong>key-value pairs</strong>. You give it a key, it gives you back the value — instantly, in O(1) time. No searching, no scanning.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`const map = new Map();
+map.set('alice', 42);       // store
+map.get('alice');            // → 42  (O(1)!)
+map.has('alice');            // → true
+map.set('alice', 43);        // update
+
+// Compare: searching an array for 'alice'
+// requires scanning every element (O(n)).
+// A hash map finds it in one step.`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The core trade-off:</strong> hash maps use extra memory (O(n) space) to give you O(1) lookups. This is almost always worth it when it eliminates nested loops.</p>
+      </section>
+
+      {/* Common patterns */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Three common hash map patterns</h2>
+        <div className="big-o-compare" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <div className="big-o-compare-card">
+            <h4>Complement lookup</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`For each value x:
+  need = target - x
+  if map has 'need':
+    → found pair!`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Store seen values. For each new value, check if its complement exists. Good for: two sum, pair difference.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Frequency counting</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Count how many times
+each item appears.
+
+Then use the counts
+to answer questions.`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">First pass: count everything. Second pass: use the counts. Good for: first unique, most frequent, anagrams.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Index / position tracking</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`map.set(value, index)
+
+Remember WHERE you
+saw each value.
+O(1) lookup later.`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Store position alongside value. Good for: two sum (indices), first/last occurrence.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Scenarios */}
+      {hashMapIds.map((id) => (
+        <ScenarioSection key={id} scenarioId={id} />
+      ))}
+
+      {/* When to use */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of a Hash Map?</h2>
+        <ol className="big-o-checklist">
+          <li>You need to <strong>look things up quickly</strong> (not scan the whole array)</li>
+          <li>You&rsquo;re <strong>counting occurrences</strong> — characters, numbers, words</li>
+          <li>You need to check if something <strong>already exists</strong></li>
+          <li>You&rsquo;re doing a <strong>nested loop</strong> — can a map replace the inner loop?</li>
+          <li>You see keywords like &ldquo;find,&rdquo; &ldquo;count,&rdquo; &ldquo;duplicate,&rdquo; &ldquo;unique,&rdquo; &ldquo;pair&rdquo;</li>
+        </ol>
+        <p className="big-o-chart-note">💡 <strong>The core mental model:</strong> when you see a Hash Map problem, ask &ldquo;What information can I remember so I don&rsquo;t have to search for it again?&rdquo;</p>
+        <p className="big-o-chart-note">⚠️ Hash maps need <strong>extra memory</strong> (O(n) space). Usually worth it — but if space is very constrained, consider sorting + two pointers instead.</p>
+      </section>
+
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div>
+          <span className="eyebrow">End of Hash Map / Frequency</span>
+          <strong>Review or move on?</strong>
+        </div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Sliding Window</button>
+          <button className="next-lesson-button" onClick={onBack}>Algorithm Patterns</button>
+        </div>
+      </nav>
     </>
   )
 }
