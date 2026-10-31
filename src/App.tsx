@@ -7,67 +7,15 @@ import { scenarios, type ScenarioId } from './algorithm-scenarios'
 import { BookOpen, CaretLeft, Code, Flask, Graph, List } from '@phosphor-icons/react'
 
 type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'ts-learn' | 'ts-lesson'
-type WorkspaceMode = 'read' | 'split' | 'code'
 type Result = { label: string; passed: boolean; actual?: unknown; error?: string }
 type OutputFlash = 'idle' | 'success' | 'error'
 
 const topics: Array<Topic | 'All topics'> = ['All topics', 'Fundamentals', 'Strings', 'Arrays', 'Objects']
 const levels: Array<Kyu | 'All levels'> = ['All levels', '8 kyu', '7 kyu', '6 kyu', '5 kyu']
 const SIDEBAR_KEY = 'knowledge-lab-sidebar-collapsed'
-const SPLIT_KEY = 'knowledge-lab-reading-width'
-const WORKSPACE_MODE_KEY = 'knowledge-lab-workspace-mode'
 const modLabel = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'
 
-function readStorage(key: string): string | null {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function writeStorage(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    // Ignore storage failures in restricted environments.
-  }
-}
-
-function display(value: unknown): string {
-  const json = JSON.stringify(value, null, 2)
-  return json === undefined ? String(value) : json
-}
-
-/* Run TS code by trying as-is first, stripping types on syntax error */
-function runTS(source: string) {
-  // Try running as plain JS first (works if user wrote pure JS)
-  const r1 = executeExample(source)
-  if (!r1.error) return r1
-
-  const stripped = source
-    .replace(/^\s*(interface|type)\s+\w+\s*(=\s*)?\{[\s\S]*?\n?\}/gm, '')
-    .replace(/^\s*type\s+\w+\s*=\s*.+$/gm, '')
-    .replace(/<[A-Za-z_][\w,\s]*>(?=\s*\()/g, '')
-    .replace(/\breadonly\s+/g, '')
-    .replace(/\bas\s+const\b/g, '')
-    .replace(/\b(let|const|var)\s+(\w+)\s*:\s*(?:[A-Za-z_][\w<>\[\]|&\s]*|['"][\w\s|&'"\[\]]*['"])\s*(?=\s*=)/g, '$1 $2')
-    .replace(/(\w+)\s*\?:\s*[A-Za-z_][\w<>\[\]|&\s]*(?=\s*[,)])/g, '$1')
-    .replace(/(\w+)\s*:\s*[A-Za-z_][\w<>\[\]|&\s]*(?=\s*[,)])/g, '$1')
-    .replace(/\)\s*:\s*[A-Za-z_][\w<>\[\]|&\s]*(?=\s*\{)/g, ')')
-    .replace(/:\s*\w+\s+is\s+\w+(?=\s*[=;{])/g, '')
-  return executeExample(stripped)
-}
-
-function executeExample(source: string) {
-  const output: string[] = []
-  try {
-    new Function('console', source)({ log: (...values: unknown[]) => output.push(values.map(display).join(' ')) })
-    return { output, error: '' }
-  } catch (error) {
-    return { output, error: error instanceof Error ? error.message : 'This code could not run.' }
-  }
-}
+import { readStorage, writeStorage, display, runTS, executeExample } from './utils'
 
 function runAssertions(source: string, challenge: Challenge): Result[] {
   try {
@@ -125,14 +73,6 @@ export function App() {
   const [topic, setTopic] = useState<Topic | 'All topics'>('All topics')
   const [level, setLevel] = useState<Kyu | 'All levels'>('All levels')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readStorage(SIDEBAR_KEY) === 'true')
-  const [readingWidth, setReadingWidth] = useState(() => {
-    const saved = Number(readStorage(SPLIT_KEY))
-    return Number.isFinite(saved) && saved >= 25 && saved <= 65 ? saved : 48
-  })
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(() => {
-    const saved = readStorage(WORKSPACE_MODE_KEY)
-    return saved === 'split' || saved === 'code' || saved === 'read' ? saved : 'read'
-  })
 
   const runLessonRef = useRef<() => void>(() => {})
   const runChallengeRef = useRef<() => void>(() => {})
@@ -146,16 +86,9 @@ export function App() {
     setCode(lesson.starterCode)
     setOutput([])
     setError('')
-    setWorkspaceMode('read')
-    writeStorage(WORKSPACE_MODE_KEY, 'read')
     setSidebarCollapsed(true)
     writeStorage(SIDEBAR_KEY, 'true')
     setView('lesson')
-  }
-
-  function changeWorkspaceMode(mode: WorkspaceMode) {
-    setWorkspaceMode(mode)
-    writeStorage(WORKSPACE_MODE_KEY, mode)
   }
 
   function openChallenge(challenge: Challenge) {
@@ -210,8 +143,6 @@ export function App() {
     setCode(lesson.starterCode)
     setOutput([])
     setError('')
-    setWorkspaceMode('read')
-    writeStorage(WORKSPACE_MODE_KEY, 'read')
     setView('ts-lesson')
   }
 
@@ -380,16 +311,11 @@ export function App() {
             code={code}
             output={output}
             error={error}
-            readingWidth={readingWidth}
-            workspaceMode={workspaceMode}
             onCode={setCode}
             onRun={runLessonCode}
             onNext={goNextLesson}
             onPrevious={goPrevLesson}
             onHome={() => setView('learn')}
-            onResize={setReadingWidth}
-            onResizeEnd={(width) => writeStorage(SPLIT_KEY, String(width))}
-            onWorkspaceMode={changeWorkspaceMode}
           />
         )}
         {view === 'challenge' && (
@@ -763,58 +689,10 @@ function CollapsibleBreakdown({ breakdown, jsConcepts }: { breakdown: string[]; 
 /* ── Inline code renderer ── */
 // Matches: backtick-wrapped text, code patterns like O(...), variable names, numbers, string literals
 /* ── Inline code renderer ── */
-const CODE_WORDS = new Set([
-  'let', 'const', 'var', 'function', 'return', 'if', 'else', 'for', 'while',
-  'true', 'false', 'null', 'undefined', 'typeof', 'Math', 'console', 'log',
-  'arr', 'left', 'right', 'slow', 'fast', 'i', 'j', 'k', 'mid', 'lo', 'hi',
-  'n', 'm', 'sum', 'total', 'max', 'min', 'maxSum', 'windowSum',
-  'windowStart', 'windowEnd', 'target', 'result', 'height', 'area', 'ops',
-  'found', 'push', 'pop', 'map', 'filter', 'reduce', 'slice', 'splice',
-])
-
-// VSCode Dark Modern token colors
-const SK = '#569cd6'  // keywords
-const SS = '#ce9178'  // strings
-const SC = '#6a9955'  // comments
-const SN = '#b5cea8'  // numbers
-const SF = '#dcdcaa'  // function calls
-
-function highlightLine(line: string): ReactNode {
-  const cm = line.indexOf('//')
-  if (cm >= 0) return <>{highlightTokens(line.slice(0, cm))}<span style={{ color: SC }}>{line.slice(cm)}</span></>
-  return highlightTokens(line)
-}
-
-function highlightTokens(text: string): ReactNode {
-  const re = /('[^']*'|"[^"]*")|(\b[A-Za-z_]\w*\b)|(\d+(\.\d+)?)|([^A-Za-z0-9_'"]+)/g
-  const nodes: ReactNode[] = []
-  let m: RegExpExecArray | null
-  let i = 0
-  while ((m = re.exec(text)) !== null) {
-    const full = m[0], str = m[1], word = m[2], num = m[3]
-    if (str) {
-      nodes.push(<span key={i++} style={{ color: SS }}>{full}</span>)
-    } else if (word && CODE_WORDS.has(word)) {
-      nodes.push(<span key={i++} style={{ color: SK }}>{full}</span>)
-    } else if (word) {
-      const after = text.slice(m.index + full.length)
-      nodes.push(<span key={i++} style={{ color: /^\s*\(/.test(after) ? SF : 'inherit' }}>{full}</span>)
-    } else if (num) {
-      nodes.push(<span key={i++} style={{ color: SN }}>{full}</span>)
-    } else {
-      nodes.push(<span key={i++}>{full}</span>)
-    }
-  }
-  return <>{nodes}</>
-}
+import { CodePanel } from './components/CodePanel'
 
 function CodeBlock({ text }: { text: string }) {
-  const lines = text.split('\n')
-  return <>{lines.map((line, i) => (
-    <div key={i} style={{ lineHeight: '1.7' }}>
-      {highlightLine(line)}
-    </div>
-  ))}</>
+  return <CodePanel code={text} showLineNumbers={false} />
 }
 
 function CodeText({ text }: { text: string }) {
@@ -1053,7 +931,7 @@ function TSLessonPage({
         {lesson.sections.map((section) => (
           <CollapsibleSection key={section.title} title={section.title} defaultOpen>
             {section.body.map((paragraph) => <p key={paragraph}><CodeText text={paragraph} /></p>)}
-            {section.code && <pre className="code-sample"><CodeBlock text={section.code} /></pre>}
+            {section.code && <CodeBlock text={section.code} />}
           </CollapsibleSection>
         ))}
       </article>
@@ -1239,176 +1117,56 @@ function LessonPage({
   code,
   output,
   error,
-  readingWidth,
-  workspaceMode,
   onCode,
   onRun,
   onNext,
   onPrevious,
   onHome,
-  onResize,
-  onResizeEnd,
-  onWorkspaceMode,
 }: {
   lesson: Lesson
   code: string
   output: string[]
   error: string
-  readingWidth: number
-  workspaceMode: WorkspaceMode
   onCode: (code: string) => void
   onRun: () => void
   onNext: () => void
   onPrevious: () => void
   onHome: () => void
-  onResize: (width: number) => void
-  onResizeEnd: (width: number) => void
-  onWorkspaceMode: (mode: WorkspaceMode) => void
 }) {
-  const layoutRef = useRef<HTMLDivElement>(null)
-  const draggingRef = useRef(false)
   const hasPrevious = lesson.order > 1
   const hasNext = lesson.order < lessons.length
-  const nextTitle = hasNext ? lessons[lesson.order].title : ''
 
-  // Scroll to top when lesson changes
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [lesson.order])
-
-  function startResize(event: ReactMouseEvent<HTMLDivElement>) {
-    event.preventDefault()
-    draggingRef.current = true
-    document.body.classList.add('is-resizing')
-  }
-
-  function resizeWithKeyboard(event: ReactKeyboardEvent<HTMLDivElement>) {
-    const step = event.shiftKey ? 5 : 2
-    let nextWidth: number | null = null
-
-    if (event.key === 'ArrowLeft') nextWidth = readingWidth - step
-    if (event.key === 'ArrowRight') nextWidth = readingWidth + step
-    if (event.key === 'Home') nextWidth = 25
-    if (event.key === 'End') nextWidth = 65
-    if (nextWidth === null) return
-
-    event.preventDefault()
-    const boundedWidth = Math.min(65, Math.max(25, nextWidth))
-    onResize(boundedWidth)
-    onResizeEnd(boundedWidth)
-  }
-
-  useEffect(() => {
-    function onMove(event: MouseEvent) {
-      if (!draggingRef.current || !layoutRef.current) return
-      const rect = layoutRef.current.getBoundingClientRect()
-      const next = ((event.clientX - rect.left) / rect.width) * 100
-      onResize(Math.min(65, Math.max(25, next)))
-    }
-
-    function onUp() {
-      if (!draggingRef.current) return
-      draggingRef.current = false
-      document.body.classList.remove('is-resizing')
-      if (layoutRef.current) {
-        const rect = layoutRef.current.getBoundingClientRect()
-        const width = ((event as MouseEvent).clientX - rect.left) / rect.width * 100
-        onResizeEnd(Math.min(65, Math.max(25, width)))
-      }
-    }
-
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-      document.body.classList.remove('is-resizing')
-    }
-  }, [onResize, onResizeEnd])
+  useEffect(() => { window.scrollTo(0, 0) }, [lesson.order])
 
   return (
     <>
       <header className="lesson-head">
         <div>
-          <span className="eyebrow">
-            Lesson {lesson.order} of {lessons.length} · {lesson.topic}
-          </span>
+          <span className="eyebrow">Lesson {lesson.order} of {lessons.length} · {lesson.topic}</span>
           <h1>{lesson.title}</h1>
           <p>{lesson.summary}</p>
         </div>
-        <div className="workspace-switcher" aria-label="Lesson workspace mode">
-          {(['read', 'split', 'code'] as WorkspaceMode[]).map((mode) => (
-            <button
-              className={workspaceMode === mode ? 'active' : ''}
-              key={mode}
-              onClick={() => onWorkspaceMode(mode)}
-              aria-pressed={workspaceMode === mode}
-              title={mode === 'read' ? 'Focus on the lesson explanation' : mode === 'split' ? 'Show explanation and editor together' : 'Focus on writing and running code'}
-            >
-              {mode === 'read' ? 'Read' : mode === 'split' ? 'Split' : 'Code'}
-            </button>
-          ))}
-        </div>
       </header>
-      <div
-        ref={layoutRef}
-        className={`lesson-layout mode-${workspaceMode}`}
-        style={{ '--reading-width': `${readingWidth}%` } as CSSProperties}
-      >
-        {workspaceMode !== 'code' && (
-          <article className="reading">
-            {lesson.sections.map((section) => (
-              <CollapsibleSection key={section.title} title={section.title} defaultOpen>
-                {section.body.map((paragraph) => (
-                  <p key={paragraph}><CodeText text={paragraph} /></p>
-                ))}
-                {section.code && <pre className="code-sample"><CodeBlock text={section.code} /></pre>}
-              </CollapsibleSection>
-            ))}
-            <nav className="lesson-end-nav" aria-label="Lesson navigation">
-              <div>
-                <span className="eyebrow">End of lesson</span>
-                <strong>{hasNext ? 'Ready for the next concept?' : 'You reached the end of this path.'}</strong>
-              </div>
-              <div className="lesson-end-actions">
-                {hasPrevious && <button onClick={onPrevious} title={`Previous lesson (${modLabel} Shift ←)`}>← Back</button>}
-                <button onClick={onHome}>All lessons</button>
-                {hasNext && <button className="next-lesson-button" onClick={onNext} title={`Next lesson (${modLabel} Shift →)`}>Next →</button>}
-              </div>
-            </nav>
-          </article>
-        )}
-        {workspaceMode === 'split' && (
-          <div
-            className="split-divider"
-            onMouseDown={startResize}
-            onKeyDown={resizeWithKeyboard}
-            role="separator"
-            tabIndex={0}
-            aria-orientation="vertical"
-            aria-label="Resize reading and editor panels"
-            aria-valuemin={25}
-            aria-valuemax={65}
-            aria-valuenow={Math.round(readingWidth)}
-            aria-valuetext={`Reading panel ${Math.round(readingWidth)} percent wide. Use left and right arrow keys to resize.`}
-          />
-        )}
-        {workspaceMode !== 'read' && (
-          <Editor
-            title="lesson.js"
-            code={code}
-            onCode={onCode}
-            onRun={onRun}
-            output={output}
-            error={error}
-            runLabel="Run code"
-            showConsole
-            onPrevious={hasPrevious ? onPrevious : undefined}
-            onNext={hasNext ? onNext : undefined}
-            nextLabel={hasNext ? nextTitle : undefined}
-          />
-        )}
-      </div>
+      <article className="reading">
+        {lesson.sections.map((section) => (
+          <CollapsibleSection key={section.title} title={section.title} defaultOpen>
+            {section.body.map((paragraph) => <p key={paragraph}><CodeText text={paragraph} /></p>)}
+            {section.code && <CodeBlock text={section.code} />}
+          </CollapsibleSection>
+        ))}
+      </article>
+      <Editor title="lesson.js" code={code} onCode={onCode} onRun={onRun} output={output} error={error} />
+      <nav className="lesson-end-nav" aria-label="Lesson navigation">
+        <div>
+          <span className="eyebrow">End of lesson</span>
+          <strong>{hasNext ? 'Ready for the next concept?' : 'You reached the end of this path.'}</strong>
+        </div>
+        <div className="lesson-end-actions">
+          {hasPrevious && <button onClick={onPrevious}>← Back</button>}
+          <button onClick={onHome}>All lessons</button>
+          {hasNext && <button className="next-lesson-button" onClick={onNext}>Next →</button>}
+        </div>
+      </nav>
     </>
   )
 }
@@ -1446,52 +1204,56 @@ function ChallengePage({ challenge, code, results, showHint, onCode, onRun, onHi
         </div>
         <span className={`kyu kyu-${challenge.kyu[0]}`}>{challenge.kyu}</span>
       </header>
-      <div className="challenge-work">
-        <Editor title="solution.js" code={code} onCode={onCode} onRun={handleRun} output={[]} error="" runLabel="Run assertions" showConsole={false} />
-        <section
-          ref={panelRef}
-          className={`test-panel${panelFlash === 'success' ? ' flash-success' : ''}${panelFlash === 'error' ? ' flash-error' : ''}${results.length === 0 ? ' is-idle' : ''}${allPassed ? ' all-passed' : ''}${hasFailures ? ' has-failures' : ''}`}
-          aria-live="polite"
-        >
+      <Editor title="solution.js" code={code} onCode={onCode} onRun={handleRun} output={[]} error="" runLabel="Run assertions" showConsole={false} />
+      <section
+        ref={panelRef}
+        className={`test-panel${panelFlash === 'success' ? ' flash-success' : ''}${panelFlash === 'error' ? ' flash-error' : ''}${results.length === 0 ? ' is-idle' : ''}${allPassed ? ' all-passed' : ''}${hasFailures ? ' has-failures' : ''}`}
+        aria-live="polite"
+      >
+        <div>
           <div>
-            <div>
-              <span className="eyebrow">Assertions</span>
-              <h2>{results.length ? `${passed} of ${results.length} passing` : 'Run your solution'}</h2>
-            </div>
-            <button className="hint-button" onClick={onHint}>
-              {showHint ? 'Hide hint' : 'Need a hint?'}
-            </button>
+            <span className="eyebrow">Assertions</span>
+            <h2>{results.length ? `${passed} of ${results.length} passing` : 'Run your solution'}</h2>
           </div>
-          {showHint && <p className="hint">{challenge.hint}</p>}
-          {results.length === 0 ? (
-            <p className="test-placeholder">Press Run assertions (<Kbd>{modLabel} Enter</Kbd>) to evaluate your solution.</p>
-          ) : (
-            <ul>
-              {results.map((item) => (
-                <li className={item.passed ? 'passed' : 'failed'} key={item.label}>
-                  <span>{item.passed ? '✓' : '×'}</span>
-                  <div>
-                    <strong>{item.label}</strong>
-                    {!item.passed && (
-                      <small>
-                        Called: `{challenge.functionName}({challenge.cases.find((c) => c.label === item.label)?.args.map((a) => JSON.stringify(a)).join(', ')})`
-                        <br />
-                        {item.error || `Expected ${display(challenge.cases.find((test) => test.label === item.label)?.expected)}, received ${display(item.actual)}`}
-                      </small>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        {(onPrevious || onNext) && (
-          <nav className="challenge-nav">
-            <button onClick={onPrevious ?? undefined} disabled={!onPrevious}>← Previous</button>
-            <button className="step-next" onClick={onNext ?? undefined} disabled={!onNext}>Next →</button>
-          </nav>
+          <button className="hint-button" onClick={onHint}>
+            {showHint ? 'Hide hint' : 'Need a hint?'}
+          </button>
+        </div>
+        {showHint && <p className="hint">{challenge.hint}</p>}
+        {results.length === 0 ? (
+          <p className="test-placeholder">Press Run assertions (<Kbd>{modLabel} Enter</Kbd>) to evaluate your solution.</p>
+        ) : (
+          <ul>
+            {results.map((item) => (
+              <li className={item.passed ? 'passed' : 'failed'} key={item.label}>
+                <span>{item.passed ? '✓' : '×'}</span>
+                <div>
+                  <strong>{item.label}</strong>
+                  {!item.passed && (
+                    <small>
+                      Called: `{challenge.functionName}({challenge.cases.find((c) => c.label === item.label)?.args.map((a) => JSON.stringify(a)).join(', ')})`
+                      <br />
+                      {item.error || `Expected ${display(challenge.cases.find((test) => test.label === item.label)?.expected)}, received ${display(item.actual)}`}
+                    </small>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
-      </div>
+      </section>
+      {(onPrevious || onNext) && (
+        <nav className="lesson-end-nav" aria-label="Challenge navigation">
+          <div>
+            <span className="eyebrow">End of challenge</span>
+            <strong>{allPassed ? 'All assertions pass. Great work!' : 'Keep going — you can do this.'}</strong>
+          </div>
+          <div className="lesson-end-actions">
+            <button onClick={onPrevious ?? undefined} disabled={!onPrevious}>← Previous</button>
+            <button onClick={onNext ?? undefined} className={`next-lesson-button${!onNext ? ' disabled' : ''}`} disabled={!onNext}>Next →</button>
+          </div>
+        </nav>
+      )}
     </>
   )
 }
