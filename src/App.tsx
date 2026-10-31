@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { challenges, lessons, type Challenge, type Kyu, type Lesson, type Topic } from './content'
+import { Editor } from './editor'
+import { StepDebugger } from './debugger'
+import { scenarios, type ScenarioId } from './algorithm-scenarios'
+import { BookOpen, CaretLeft, Code, Flask, Graph, List } from '@phosphor-icons/react'
 
-type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'algorithms'
+type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail'
 type WorkspaceMode = 'read' | 'split' | 'code'
 type Result = { label: string; passed: boolean; actual?: unknown; error?: string }
 type OutputFlash = 'idle' | 'success' | 'error'
@@ -64,6 +68,27 @@ function runAssertions(source: string, challenge: Challenge): Result[] {
 
 function Kbd({ children }: { children: ReactNode }) {
   return <kbd className="kbd">{children}</kbd>
+}
+
+function CollapsibleSection({ title, defaultOpen = true, children }: { title: string; defaultOpen?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <section>
+      <button
+        className="lesson-section-header"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <h2>{title}</h2>
+        <span className={`lesson-section-arrow${open ? ' open' : ''}`}>&#9654;</span>
+      </button>
+      <div className={`lesson-section-body${open ? '' : ' collapsed'}`}>
+        <div style={{ paddingTop: 'var(--space-sm)' }}>
+          {children}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 export function App() {
@@ -185,7 +210,7 @@ export function App() {
 
       if (event.key === 'e' && view !== 'learn' && view !== 'practice') {
         event.preventDefault()
-        document.querySelector<HTMLTextAreaElement>('[aria-label="Code editor"]')?.focus()
+        ;(document.querySelector('.cm-editor') as HTMLElement | null)?.focus()
       }
     }
 
@@ -198,24 +223,27 @@ export function App() {
       <aside className="sidebar">
         <div className="sidebar-top">
           <button className="brand" onClick={() => setView('learn')} title="Back to lessons">
-            <span>⌁</span>
+            <span><Flask size={20} weight="fill" /></span>
             {!sidebarCollapsed && 'knowledge lab'}
           </button>
           <button className={`sidebar-toggle${sidebarCollapsed ? ' menu-toggle' : ''}`} onClick={toggleSidebar} title={`${sidebarCollapsed ? 'Open menu' : 'Collapse menu'} (${modLabel} B)`} aria-label={sidebarCollapsed ? 'Open menu' : 'Collapse menu'}>
-            {sidebarCollapsed ? '☰' : '‹'}
+            {sidebarCollapsed ? <List size={18} /> : <CaretLeft size={18} />}
           </button>
         </div>
         {!sidebarCollapsed && (
           <>
             <p className="nav-label">Explore</p>
             <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => setView('learn')}>
-              <span>◫</span>Learn
+              <span><BookOpen size={16} /></span>Learn
             </button>
             <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => setView('practice')}>
-              <span>⌘</span>Practice
+              <span><Code size={16} /></span>Practice
             </button>
-            <button className={`nav-link ${view === 'algorithms' ? 'active' : ''}`} onClick={() => setView('algorithms')}>
-              <span>◌</span>Algorithms
+            <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => setView('big-o')}>
+              <span><Graph size={16} /></span>Big O Notation
+            </button>
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' ? 'active' : ''}`} onClick={() => setView('patterns')}>
+              <span><Graph size={16} /></span>Algorithm Patterns
             </button>
             <div className="sidebar-note">
               <span>Personal reviewer</span>
@@ -226,13 +254,16 @@ export function App() {
         {sidebarCollapsed && (
           <div className="sidebar-icons">
             <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => setView('learn')} title="Learn">
-              <span>◫</span>
+              <span><BookOpen size={16} /></span>
             </button>
             <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => setView('practice')} title="Practice">
-              <span>⌘</span>
+              <span><Code size={16} /></span>
             </button>
-            <button className={`nav-link ${view === 'algorithms' ? 'active' : ''}`} onClick={() => setView('algorithms')} title="Algorithms">
-              <span>◌</span>
+            <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => setView('big-o')} title="Big O Notation">
+              <span><Graph size={16} /></span>
+            </button>
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' ? 'active' : ''}`} onClick={() => setView('patterns')} title="Algorithm Patterns">
+              <span><Graph size={16} /></span>
             </button>
           </div>
         )}
@@ -249,7 +280,9 @@ export function App() {
             onOpen={openChallenge}
           />
         )}
-        {view === 'algorithms' && <AlgorithmsPage />}
+        {view === 'big-o' && <BigOPage />}
+        {view === 'patterns' && <PatternsOverview onSelectPattern={() => setView('pattern-detail')} />}
+        {view === 'pattern-detail' && <PatternDetailPage onBack={() => setView('patterns')} onOpenChallenge={openChallenge} />}
         {view === 'lesson' && (
           <LessonPage
             lesson={activeLesson}
@@ -292,108 +325,298 @@ function useMemo<T>(factory: () => T, deps: unknown[]): T {
   return ref.current.value
 }
 
-const twoPointerSteps = [
-  { left: 0, right: 5, sum: 12, action: '12 is too large — move the right pointer left.' },
-  { left: 0, right: 4, sum: 9, action: '9 is too small — move the left pointer right.' },
-  { left: 1, right: 4, sum: 11, action: '11 is too large — move the right pointer left.' },
-  { left: 1, right: 3, sum: 9, action: '9 is too small — move the left pointer right.' },
-  { left: 2, right: 3, sum: 10, action: '10 matches the target — the pair is found.', found: true },
-]
+function BigOPage() {
+  const [showBackTop, setShowBackTop] = useState(false)
 
-const twoSumChallenge: Challenge = {
-  id: 'two-sum-sorted',
-  kyu: '6 kyu',
-  topic: 'Arrays',
-  title: 'Two Sum on a sorted array',
-  description: 'Return the indexes of two values in a sorted array that add up to target. Return an empty array when no pair exists.',
-  functionName: 'twoSumSorted',
-  starterCode: 'function twoSumSorted(numbers, target) {\n  let left = 0;\n  let right = numbers.length - 1;\n\n  while (left < right) {\n    const sum = numbers[left] + numbers[right];\n\n    // Write your pointer movement here.\n  }\n\n  return [];\n}',
-  cases: [
-    { label: 'finds a middle pair', args: [[1, 3, 4, 6, 8, 11], 10], expected: [2, 3] },
-    { label: 'finds the outer pair', args: [[1, 2, 4, 9], 10], expected: [0, 3] },
-    { label: 'returns empty when no pair exists', args: [[1, 3, 5], 8], expected: [] },
-  ],
-  hint: 'Because the array is sorted, a sum that is too small can only improve by moving left right. A sum that is too large can only improve by moving right left.',
-}
+  // Scroll to top when page mounts
+  useEffect(() => { window.scrollTo(0, 0) }, [])
 
-function AlgorithmsPage() {
-  const numbers = [1, 3, 4, 6, 8, 11]
-  const target = 10
-  const [stepIndex, setStepIndex] = useState(0)
-  const [code, setCode] = useState(twoSumChallenge.starterCode)
-  const [results, setResults] = useState<Result[]>([])
-  const [showHint, setShowHint] = useState(false)
-  const step = twoPointerSteps[stepIndex]
-  const allPassed = results.length > 0 && results.every((result) => result.passed)
+  useEffect(() => {
+    function onScroll() { setShowBackTop(window.scrollY > 400) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const bigOIds: ScenarioId[] = ['big-o-1', 'big-o-n', 'big-o-n2', 'big-o-logn']
 
   return (
     <>
       <header className="algorithm-head">
-        <span className="eyebrow">Algorithms · Arrays</span>
-        <h1>Two pointers,<br />one clear path.</h1>
-        <p>Two pointers use the sorted order of an array to discard impossible pairs instead of testing every combination.</p>
+        <span className="eyebrow">Foundation</span>
+        <h1>Big O Notation</h1>
+        <p>Big O describes how an algorithm <strong>slows down</strong> as the input grows. It\'s not about seconds — it\'s about <strong>growth rate</strong>. The chart below compares the four most common complexity classes side by side.</p>
       </header>
 
-      <section className="algorithm-visual" aria-labelledby="two-pointer-flow">
-        <div className="algorithm-visual-head">
+      {/* Growth curve comparison chart */}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Growth rate comparison</h2>
+        <p className="big-o-chart-sub">X-axis = input size (n) · Y-axis = number of operations</p>
+        <BigOGrowthChart />
+        <p className="big-o-chart-note">
+          O(1) is flat — input size doesn\'t matter. O(n) grows steadily. O(n²) explodes. O(log n) barely budges even for huge inputs.
+        </p>
+      </section>
+
+      {bigOIds.map((id) => (
+        <ScenarioSection key={id} scenarioId={id} />
+      ))}
+
+      {showBackTop && (
+        <button className="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          ↑
+        </button>
+      )}
+    </>
+  )
+}
+
+/* ── Big O Growth Chart (SVG) ── */
+function BigOGrowthChart() {
+  const W = 600
+  const H = 320
+  const pad = { top: 20, right: 20, bottom: 30, left: 45 }
+  const plotW = W - pad.left - pad.right
+  const plotH = H - pad.top - pad.bottom
+  const maxN = 50
+
+  function x(n: number) { return pad.left + (n / maxN) * plotW }
+
+  // Log scale Y: map log₁₀(ops) to plot height, min=0, max for n² at n=50 = log₁₀(2500) ≈ 3.4
+  const logMax = Math.log10(maxN * maxN)
+  function y(ops: number) {
+    const logVal = ops <= 0 ? 0 : Math.log10(ops)
+    return pad.top + plotH - (logVal / logMax) * plotH
+  }
+
+  const steps = 100
+
+  const o1Points = Array.from({ length: steps }, (_, i) => {
+    const n = (i / (steps - 1)) * maxN
+    return `${x(n)},${y(1)}`
+  }).join(' ')
+
+  const olognPoints = Array.from({ length: steps }, (_, i) => {
+    const n = Math.max(1, (i / (steps - 1)) * maxN)
+    return `${x(n)},${y(Math.log2(n) + 1)}`
+  }).join(' ')
+
+  const onPoints = Array.from({ length: steps }, (_, i) => {
+    const n = (i / (steps - 1)) * maxN
+    return `${x(n)},${y(n)}`
+  }).join(' ')
+
+  const on2Points = Array.from({ length: steps }, (_, i) => {
+    const n = (i / (steps - 1)) * maxN
+    return `${x(n)},${y(n * n)}`
+  }).join(' ')
+
+  // Y-axis reference labels (log scale: 1, 10, 100, 1000)
+  const yTicks = [1, 10, 100, 1000, 2500]
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="big-o-chart" role="img" aria-label="Big O growth curves comparison chart">
+      {/* Y-axis grid + labels */}
+      {yTicks.map((val) => (
+        <g key={`gy-${val}`}>
+          <line x1={pad.left} y1={y(val)} x2={pad.left + plotW} y2={y(val)} stroke="var(--border-subtle)" strokeWidth="0.5" />
+          <text x={pad.left - 6} y={y(val) + 4} textAnchor="end" fill="var(--text-muted)" fontSize="9" fontFamily="var(--font-mono)">{val}</text>
+        </g>
+      ))}
+      {/* Axes */}
+      <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + plotH} stroke="var(--text-muted)" strokeWidth="1" />
+      <line x1={pad.left} y1={pad.top + plotH} x2={pad.left + plotW} y2={pad.top + plotH} stroke="var(--text-muted)" strokeWidth="1" />
+      {/* X-axis: just show direction */}
+      <text x={pad.left + plotW / 2} y={H - 4} textAnchor="middle" fill="var(--text-muted)" fontSize="10">n grows →</text>
+      {/* Y-axis label */}
+      <text x={12} y={pad.top + plotH / 2} textAnchor="middle" fill="var(--text-muted)" fontSize="10" transform={`rotate(-90, 12, ${pad.top + plotH / 2})`}>operations (log scale)</text>
+      {/* Curves */}
+      <polyline points={o1Points} fill="none" stroke="var(--accent)" strokeWidth="3" strokeDasharray="6,3" />
+      <polyline points={olognPoints} fill="none" stroke="#5bb8f0" strokeWidth="3" />
+      <polyline points={onPoints} fill="none" stroke="var(--kyu-6-text)" strokeWidth="2.5" />
+      <polyline points={on2Points} fill="none" stroke="#f28b82" strokeWidth="3" />
+      {/* Legend */}
+      <rect x={pad.left + plotW - 145} y={pad.top + 2} width={140} height={62} rx={6} fill="var(--bg-inset)" opacity="0.85" />
+      <line x1={pad.left + plotW - 135} y1={pad.top + 16} x2={pad.left + plotW - 115} y2={pad.top + 16} stroke="#f28b82" strokeWidth="3" />
+      <text x={pad.left + plotW - 110} y={pad.top + 20} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)" fontWeight="600">O(n²)</text>
+      <line x1={pad.left + plotW - 135} y1={pad.top + 34} x2={pad.left + plotW - 115} y2={pad.top + 34} stroke="var(--kyu-6-text)" strokeWidth="2.5" />
+      <text x={pad.left + plotW - 110} y={pad.top + 38} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)" fontWeight="600">O(n)</text>
+      <line x1={pad.left + plotW - 135} y1={pad.top + 52} x2={pad.left + plotW - 115} y2={pad.top + 52} stroke="#5bb8f0" strokeWidth="3" />
+      <text x={pad.left + plotW - 110} y={pad.top + 56} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)">O(log n)</text>
+    </svg>
+  )
+}
+
+/* ── ScenarioSection: one inline scenario with viz + debugger ── */
+function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
+  const [stepIndex, setStepIndex] = useState(0)
+  const scenario = scenarios.find((s) => s.id === scenarioId)!
+  const step = scenario.visualData[stepIndex]
+  const debugStep = scenario.steps[stepIndex]
+
+  return (
+    <section className="scenario-section" id={scenarioId}>
+      <h2 className="scenario-section-title">{scenario.title}</h2>
+      <p className="scenario-section-desc">{scenario.description}</p>
+      <div className="scenario-section-meta">
+        <span>Time <strong>{scenario.timeComplexity}</strong></span>
+        <span>Space <strong>{scenario.spaceComplexity}</strong></span>
+      </div>
+      <div className="algorithm-study-panels">
+        {/* Left: Visualization */}
+        <div className="algorithm-visual algorithm-study-col">
           <div>
-            <span className="eyebrow">Visual flow</span>
-            <h2 id="two-pointer-flow">Find two values that equal {target}</h2>
+            <span className="eyebrow">Visualization</span>
           </div>
-          <div className="complexity">
-            <span>Time <strong>O(n)</strong></span>
-            <span>Extra space <strong>O(1)</strong></span>
-          </div>
-        </div>
-        <div className="pointer-track" aria-label={`Step ${stepIndex + 1} of ${twoPointerSteps.length}: ${step.action}`}>
-          {numbers.map((number, index) => (
-            <div className={`number-cell${index === step.left ? ' is-left' : ''}${index === step.right ? ' is-right' : ''}${step.found && (index === step.left || index === step.right) ? ' is-match' : ''}`} key={number}>
-              <span className="pointer-label">{index === step.left ? 'L' : index === step.right ? 'R' : ''}</span>
-              <strong>{number}</strong>
-              <small>{index}</small>
+          {scenario.visualType === 'bar-chart' ? (
+            <div className="bar-chart">
+              {step.leftIndex >= 0 && step.rightIndex >= 0 && step.leftIndex < step.rightIndex && (
+                <div className="bar-water-area" style={{
+                  left: `calc(${(step.leftIndex / (step.items.length - 1)) * 100}% + 16px)`,
+                  width: `calc(${((step.rightIndex - step.leftIndex) / (step.items.length - 1)) * 100}% - 28px)`,
+                  height: `${(Math.min(Number(step.items[step.leftIndex]), Number(step.items[step.rightIndex])) / 8) * 160}px`,
+                }} />
+              )}
+              {step.items.map((item, index) => {
+                const height = Number(item)
+                const isLeft = index === step.leftIndex
+                const isRight = index === step.rightIndex
+                const between = step.leftIndex >= 0 && step.rightIndex >= 0 && index > Math.min(step.leftIndex, step.rightIndex) && index < Math.max(step.leftIndex, step.rightIndex)
+                return (
+                  <div className="bar-col" key={index}>
+                    <div className={`bar-wrapper${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}`}>
+                      <div className={`bar${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}${between ? ' is-between' : ''}`} style={{ height: `${(height / 8) * 100}%` }}>
+                        <span className="pointer-label">{isLeft && 'L'}{isRight && !isLeft && 'R'}</span>
+                      </div>
+                    </div>
+                    <small>{index}</small>
+                    <span className="bar-value">{item}</span>
+                  </div>
+                )
+              })}
             </div>
-          ))}
+          ) : scenario.visualType === 'merge-arrays' ? (
+            <div className="merge-viz">
+              <div className="merge-row merge-row-a">
+                <span className="merge-label">A</span>
+                {step.itemsA!.map((item, index) => (
+                  <div className={`merge-cell${step.pointerA === index ? ' is-left' : ''}${step.pointerA !== undefined && step.pointerA > 0 && index < step.pointerA ? ' is-done' : ''}`} key={index}>
+                    {step.pointerA === index && <span className="pointer-label">i</span>}
+                    <strong>{item}</strong><small>{index}</small>
+                  </div>
+                ))}
+              </div>
+              <div className="merge-row merge-row-b">
+                <span className="merge-label">B</span>
+                {step.itemsB!.map((item, index) => (
+                  <div className={`merge-cell${step.pointerB === index ? ' is-right' : ''}${step.pointerB !== undefined && step.pointerB > 0 && index < step.pointerB ? ' is-done' : ''}`} key={index}>
+                    {step.pointerB === index && <span className="pointer-label">j</span>}
+                    <strong>{item}</strong><small>{index}</small>
+                  </div>
+                ))}
+              </div>
+              <div className="merge-row merge-row-result">
+                <span className="merge-label">R</span>
+                {step.result!.map((item, index) => (
+                  <div className="merge-cell is-result" key={index}><strong>{item}</strong><small>{index}</small></div>
+                ))}
+              </div>
+            </div>
+          ) : scenario.visualType === 'sliding-window' ? (
+            <div className="window-viz">
+              <div className="window-track">
+                {step.items.map((item, index) => {
+                  const inWindow = step.windowStart !== undefined && step.windowEnd !== undefined && step.windowStart >= 0 && index >= step.windowStart! && index <= step.windowEnd!
+                  const isFirst = inWindow && index === step.windowStart
+                  const isLast = inWindow && index === step.windowEnd
+                  const entering = inWindow && index === step.windowEnd
+                  return (
+                    <div className={`window-pane${inWindow ? ' is-visible' : ' is-dark'}${isFirst ? ' is-first' : ''}${isLast ? ' is-last' : ''}${entering ? ' is-entering' : ''}`} key={index}>
+                      <strong>{item}</strong><small>{index}</small>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="window-sum"><span>Sum in frame:</span><strong>{step.windowSum}</strong></div>
+            </div>
+          ) : (
+            <div className="pointer-track">
+              {step.items.map((item, index) => {
+                const isLeft = index === step.leftIndex
+                const isRight = index === step.rightIndex
+                const isSlow = step.slowIndex !== undefined && index === step.slowIndex
+                const isMatch = step.found && (isLeft || isRight)
+                const isInResult = step.slowIndex !== undefined && index <= step.slowIndex && index !== step.rightIndex
+                return (
+                  <div className={`number-cell${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}${isSlow ? ' is-slow' : ''}${isMatch ? ' is-match' : ''}${isInResult ? ' is-result' : isSlow === false && step.slowIndex !== undefined && index > step.slowIndex ? ' is-stale' : ''}`} key={index}>
+                    <span className="pointer-label">{isLeft && 'L'}{isRight && !isLeft && 'R'}{isSlow && !isLeft && !isRight && 'W'}</span>
+                    <strong>{item}</strong><small>{index}</small>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
-        <div className="step-status" aria-live="polite">
-          <strong>{numbers[step.left]} + {numbers[step.right]} = {step.sum}</strong>
-          <span>{step.action}</span>
-        </div>
-        <div className="step-controls">
-          <button onClick={() => setStepIndex((current) => Math.max(0, current - 1))} disabled={stepIndex === 0}>← Back</button>
-          <span>Step {stepIndex + 1} / {twoPointerSteps.length}</span>
-          <button className="step-next" onClick={() => setStepIndex((current) => Math.min(twoPointerSteps.length - 1, current + 1))} disabled={stepIndex === twoPointerSteps.length - 1}>Next step →</button>
-        </div>
-      </section>
-
-      <section className="algorithm-breakdown">
-        <div>
-          <span className="eyebrow">Why it works</span>
-          <h2>Sorted order gives every move meaning.</h2>
-          <p>When the sum is too large, moving the right pointer left is the only move that can lower it. When the sum is too small, moving the left pointer right is the only move that can raise it.</p>
-        </div>
-        <div className="complexity-compare">
-          <span>Check every pair</span><strong>O(n²)</strong>
-          <span>Move two pointers</span><strong>O(n)</strong>
-        </div>
-      </section>
-
-      <section className="algorithm-practice">
-        <div className="algorithm-practice-head">
+        {/* Right: Code */}
+        <div className="algorithm-visual algorithm-study-col">
           <div>
-            <span className="eyebrow">Coding exercise · 6 kyu</span>
-            <h2>Write the two-pointer solution</h2>
-            <p>{twoSumChallenge.description}</p>
+            <span className="eyebrow">Code</span>
           </div>
-          <button className="hint-button" onClick={() => setShowHint((current) => !current)}>{showHint ? 'Hide hint' : 'Need a hint?'}</button>
+          <StepDebugger
+            code={scenario.debugCode}
+            steps={scenario.steps}
+            currentStep={stepIndex}
+            onStep={setStepIndex}
+          />
         </div>
-        {showHint && <p className="algorithm-hint">{twoSumChallenge.hint}</p>}
-        <Editor title="two-sum.js" code={code} onCode={setCode} onRun={() => setResults(runAssertions(code, twoSumChallenge))} output={[]} error="" runLabel="Run assertions" showConsole={false} />
-        <div className={`algorithm-results${results.length ? ' has-results' : ''}${allPassed ? ' all-passed' : ''}`} aria-live="polite">
-          {results.length === 0 ? 'Run your solution to check the pointer logic.' : results.map((result) => (
-            <p className={result.passed ? 'passed' : 'failed'} key={result.label}>{result.passed ? '✓' : '×'} {result.label}{result.passed ? '' : ` — ${result.error || `Expected ${display(twoSumChallenge.cases.find((test) => test.label === result.label)?.expected)}, received ${display(result.actual)}`}`}</p>
-          ))}
-        </div>
+      </div>
+      {/* Why it works */}
+      <div className="scenario-why">
+        <h3>{scenario.whyItWorks.title}</h3>
+        {scenario.whyItWorks.body.map((line, i) => <p key={i}>{line}</p>)}
+      </div>
+    </section>
+  )
+}
+
+/* ── PatternsOverview: cards for each pattern category ── */
+function PatternsOverview({ onSelectPattern }: { onSelectPattern: () => void }) {
+  return (
+    <>
+      <header className="algorithm-head patterns-head">
+        <span className="eyebrow">Patterns</span>
+        <h1>Algorithm Patterns</h1>
+        <p>Proven strategies that solve entire classes of problems. Each pattern below contains multiple interactive scenarios — click one to explore.</p>
+      </header>
+      <section className="patterns-grid-section">
+        <button className="when-to-use-card" onClick={onSelectPattern} style={{ cursor: 'pointer' }}>
+          <span className="when-to-use-label" style={{ fontSize: '1.125rem', fontWeight: 700 }}>Two Pointers</span>
+          <div style={{ marginTop: 'var(--space-sm)', display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>
+            <span className="tag">6 scenarios</span>
+            <span className="tag">O(n)</span>
+          </div>
+        </button>
       </section>
+    </>
+  )
+}
+
+/* ── PatternDetailPage: scrollable inline scenarios for a pattern ── */
+function PatternDetailPage({ onBack, onOpenChallenge }: { onBack: () => void; onOpenChallenge: (c: Challenge) => void }) {
+  const twoPointerIds: ScenarioId[] = ['pair-sum', 'palindrome', 'remove-duplicates', 'container-water', 'merge-sorted', 'sliding-window']
+
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Two Pointers</h1>
+        <p>Two pointers traverse data from different positions — opposite ends, same direction, or one fast and one slow. Each variant solves a different class of problems with O(n) efficiency.</p>
+      </header>
+      {twoPointerIds.map((id) => (
+        <ScenarioSection key={id} scenarioId={id} />
+      ))}
     </>
   )
 }
@@ -600,13 +823,12 @@ function LessonPage({
         {workspaceMode !== 'code' && (
           <article className="reading">
             {lesson.sections.map((section) => (
-              <section key={section.title}>
-                <h2>{section.title}</h2>
+              <CollapsibleSection key={section.title} title={section.title} defaultOpen>
                 {section.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
                 {section.code && <pre className="code-sample">{section.code}</pre>}
-              </section>
+              </CollapsibleSection>
             ))}
             <nav className="lesson-end-nav" aria-label="Lesson navigation">
               <div>
@@ -728,109 +950,4 @@ function ChallengePage({ challenge, code, results, showHint, onCode, onRun, onHi
   )
 }
 
-function Editor({
-  title,
-  code,
-  onCode,
-  onRun,
-  output,
-  error,
-  runLabel = 'Run code',
-  showConsole = true,
-  onPrevious,
-  onNext,
-  nextLabel,
-}: {
-  title: string
-  code: string
-  onCode: (code: string) => void
-  onRun: () => void
-  output: string[]
-  error: string
-  runLabel?: string
-  showConsole?: boolean
-  onPrevious?: () => void
-  onNext?: () => void
-  nextLabel?: string
-}) {
-  const outputRef = useRef<HTMLDivElement>(null)
-  const [flash, setFlash] = useState<OutputFlash>('idle')
-  const [hasRun, setHasRun] = useState(false)
-  const isEmpty = output.length === 0 && !error
-  const runStatus = !hasRun ? 'Ready to run' : error ? 'Execution failed' : 'Ran just now'
 
-  function handleRun() {
-    onRun()
-    setHasRun(true)
-    setFlash('idle')
-    requestAnimationFrame(() => {
-      outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    })
-  }
-
-  useEffect(() => {
-    if (!hasRun) return
-    setFlash(error ? 'error' : 'success')
-    const timer = window.setTimeout(() => setFlash('idle'), 700)
-    return () => window.clearTimeout(timer)
-  }, [output, error, hasRun])
-
-  function handleEditorKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-      event.preventDefault()
-      handleRun()
-    }
-  }
-
-  return (
-    <section className="editor">
-      <div className="editor-bar">
-        <span>
-          <i />
-          {title}
-        </span>
-        <span>Editable</span>
-      </div>
-      <textarea value={code} onChange={(event) => onCode(event.target.value)} onKeyDown={handleEditorKeyDown} spellCheck={false} aria-label="Code editor" />
-      <div className="editor-footer">
-        <div className="editor-meta">
-          <span>{code.split('\n').length} lines</span>
-          <span className={`run-status${hasRun ? ' has-run' : ''}${error ? ' has-error' : ''}`} aria-live="polite">{runStatus}</span>
-        </div>
-        <div className="editor-footer-actions">
-          {onPrevious && (
-            <button className="nav-button" onClick={onPrevious} title={`Previous lesson (${modLabel} Shift ←)`}>
-              ← Prev
-            </button>
-          )}
-          {onNext && (
-            <button className={`nav-button${hasRun && !error ? ' is-ready' : ''}`} onClick={onNext} title={nextLabel ? `Next: ${nextLabel} (${modLabel} Shift →)` : `Next lesson (${modLabel} Shift →)`}>
-              {hasRun && !error ? 'Continue →' : 'Next →'}
-            </button>
-          )}
-          <button className="run-button" onClick={handleRun} title={`${runLabel} (${modLabel} Enter)`}>
-            ▶ {runLabel} <Kbd>{modLabel} ↵</Kbd>
-          </button>
-        </div>
-      </div>
-      {showConsole && (
-        <div
-          ref={outputRef}
-          className={`output${isEmpty ? ' is-empty' : ''}${error ? ' has-error' : hasRun ? ' has-success' : ''}${flash === 'success' ? ' flash-success' : ''}${flash === 'error' ? ' flash-error' : ''}`}
-        >
-          <span>Console</span>
-          {isEmpty ? (
-            <p className="output-placeholder">Press Run code (<Kbd>{modLabel} Enter</Kbd>) to see output here.</p>
-          ) : (
-            <>
-              {output.map((line, index) => (
-                <pre key={`${line}-${index}`}>{line}</pre>
-              ))}
-              {error && <pre className="output-error">{error}</pre>}
-            </>
-          )}
-        </div>
-      )}
-    </section>
-  )
-}
