@@ -7,6 +7,7 @@ import { scenarios, type ScenarioId } from './algorithm-scenarios'
 import { BookOpen, CaretLeft, Code, Flask, Graph, List } from '@phosphor-icons/react'
 
 type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'ts-learn' | 'ts-lesson'
+type NavEntry = { v: View; lo?: number; to?: number; cid?: string }
 type Result = { label: string; passed: boolean; actual?: unknown; error?: string }
 type OutputFlash = 'idle' | 'success' | 'error'
 
@@ -81,39 +82,38 @@ export function App() {
 
   const availableChallenges = useMemo(() => challenges.filter((item) => (topic === 'All topics' || item.topic === topic) && (level === 'All levels' || item.kyu === level)), [topic, level])
 
-  function openLesson(lesson: Lesson) {
-    setActiveLesson(lesson)
-    setCode(lesson.starterCode)
-    setOutput([])
-    setError('')
-    setSidebarCollapsed(true)
-    writeStorage(SIDEBAR_KEY, 'true')
-    setView('lesson')
-  }
+  const navigatingRef = useRef(false)
 
-  function openChallenge(challenge: Challenge) {
-    setActiveChallenge(challenge)
-    setCode(challenge.starterCode)
-    setResults([])
-    setShowHint(false)
-    setView('challenge')
-  }
+  function navigateTo(view: View, lesson?: Lesson, tsLesson?: TSLesson, challenge?: Challenge) {
+    setView(view)
+    if (lesson) setActiveLesson(lesson)
+    if (tsLesson) setActiveTSLesson(tsLesson)
+    if (challenge) setActiveChallenge(challenge)
 
-  function goToPractice() {
-    setView('practice')
+    if (lesson) { setCode(lesson.starterCode); setOutput([]); setError('') }
+    if (challenge) { setCode(challenge.starterCode); setResults([]); setShowHint(false) }
+    if (tsLesson) { setCode(tsLesson.starterCode); setOutput([]); setError('') }
+
+    if (!navigatingRef.current) {
+      const entry: NavEntry = { v: view }
+      if (lesson) entry.lo = lesson.order
+      if (tsLesson) entry.to = tsLesson.order
+      if (challenge) entry.cid = challenge.id
+      history.pushState(entry, '', '')
+    }
   }
 
   function goNextChallenge() {
     const idx = availableChallenges.indexOf(activeChallenge)
     if (idx >= 0 && idx < availableChallenges.length - 1) {
-      openChallenge(availableChallenges[idx + 1])
+      navigateTo('challenge', undefined, undefined, availableChallenges[idx + 1])
     }
   }
 
   function goPrevChallenge() {
     const idx = availableChallenges.indexOf(activeChallenge)
     if (idx > 0) {
-      openChallenge(availableChallenges[idx - 1])
+      navigateTo('challenge', undefined, undefined, availableChallenges[idx - 1])
     }
   }
 
@@ -130,30 +130,22 @@ export function App() {
 
   const goNextLesson = useCallback(() => {
     const next = lessons.find((item) => item.order === activeLesson.order + 1)
-    if (next) openLesson(next)
+    if (next) navigateTo('lesson', next)
   }, [activeLesson.order])
 
   const goPrevLesson = useCallback(() => {
     const previous = lessons.find((item) => item.order === activeLesson.order - 1)
-    if (previous) openLesson(previous)
+    if (previous) navigateTo('lesson', previous)
   }, [activeLesson.order])
-
-  function openTSLesson(lesson: TSLesson) {
-    setActiveTSLesson(lesson)
-    setCode(lesson.starterCode)
-    setOutput([])
-    setError('')
-    setView('ts-lesson')
-  }
 
   const goNextTSLesson = useCallback(() => {
     const next = tsLessons.find((item) => item.order === activeTSLesson.order + 1)
-    if (next) openTSLesson(next)
+    if (next) navigateTo('ts-lesson', undefined, next)
   }, [activeTSLesson.order])
 
   const goPrevTSLesson = useCallback(() => {
     const previous = tsLessons.find((item) => item.order === activeTSLesson.order - 1)
-    if (previous) openTSLesson(previous)
+    if (previous) navigateTo('ts-lesson', undefined, previous)
   }, [activeTSLesson.order])
 
   runLessonRef.current = runLessonCode
@@ -212,7 +204,8 @@ export function App() {
 
       if (event.key === 'e' && view !== 'learn' && view !== 'practice') {
         event.preventDefault()
-        ;(document.querySelector('.cm-editor') as HTMLElement | null)?.focus()
+        const editor = document.querySelector<HTMLElement>('.cm-editor')
+        editor?.focus()
       }
     }
 
@@ -220,11 +213,33 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [view])
 
+  // Browser back/forward navigation
+  useEffect(() => {
+    function onPopState(event: PopStateEvent) {
+      const entry = event.state as NavEntry | null
+      if (!entry) return
+      navigatingRef.current = true
+      setView(entry.v)
+      const lo = entry.lo; if (lo) { const l = lessons.find(x => x.order === lo); if (l) { setActiveLesson(l); setCode(l.starterCode); setOutput([]); setError('') } }
+      const to = entry.to; if (to) { const l = tsLessons.find(x => x.order === to); if (l) { setActiveTSLesson(l); setCode(l.starterCode); setOutput([]); setError('') } }
+      const cid = entry.cid; if (cid) { const c = challenges.find(x => x.id === cid); if (c) { setActiveChallenge(c); setCode(c.starterCode); setResults([]); setShowHint(false) } }
+      navigatingRef.current = false
+    }
+    window.addEventListener('popstate', onPopState)
+    // Restore state on refresh, or seed initial entry
+    if (history.state?.v) {
+      onPopState({ state: history.state } as PopStateEvent)
+    } else {
+      history.replaceState({ v: 'learn' } as NavEntry, '', '')
+    }
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
   return (
     <main className={`shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       <aside className="sidebar">
         <div className="sidebar-top">
-          <button className="brand" onClick={() => setView('learn')} title="Back to lessons">
+          <button className="brand" onClick={() => navigateTo('learn')} title="Back to lessons">
             <span><Flask size={20} weight="fill" /></span>
             {!sidebarCollapsed && 'knowledge lab'}
           </button>
@@ -235,19 +250,19 @@ export function App() {
         {!sidebarCollapsed && (
           <>
             <p className="nav-label">Explore</p>
-            <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => setView('learn')}>
+            <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => navigateTo('learn')}>
               <span><BookOpen size={16} /></span>JavaScript
             </button>
-            <button className={`nav-link ${view === 'ts-learn' || view === 'ts-lesson' ? 'active' : ''}`} onClick={() => setView('ts-learn')}>
+            <button className={`nav-link ${view === 'ts-learn' || view === 'ts-lesson' ? 'active' : ''}`} onClick={() => navigateTo('ts-learn')}>
               <span><BookOpen size={16} /></span>TypeScript
             </button>
-            <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => setView('practice')}>
+            <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => navigateTo('practice')}>
               <span><Code size={16} /></span>Practice
             </button>
-            <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => setView('big-o')}>
+            <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')}>
               <span><Graph size={16} /></span>Big O Notation
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' ? 'active' : ''}`} onClick={() => setView('patterns')}>
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
               <span><Graph size={16} /></span>Algorithm Patterns
             </button>
             <div className="sidebar-note">
@@ -258,26 +273,26 @@ export function App() {
         )}
         {sidebarCollapsed && (
           <div className="sidebar-icons">
-            <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => setView('learn')} title="JavaScript">
+            <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => navigateTo('learn')} title="JavaScript">
               <span><BookOpen size={16} /></span>
             </button>
-            <button className={`nav-link ${view === 'ts-learn' || view === 'ts-lesson' ? 'active' : ''}`} onClick={() => setView('ts-learn')} title="TypeScript">
+            <button className={`nav-link ${view === 'ts-learn' || view === 'ts-lesson' ? 'active' : ''}`} onClick={() => navigateTo('ts-learn')} title="TypeScript">
               <span><BookOpen size={16} weight="fill" /></span>
             </button>
-            <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => setView('practice')} title="Practice">
+            <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => navigateTo('practice')} title="Practice">
               <span><Code size={16} /></span>
             </button>
-            <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => setView('big-o')} title="Big O Notation">
+            <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')} title="Big O Notation">
               <span><Graph size={16} /></span>
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' ? 'active' : ''}`} onClick={() => setView('patterns')} title="Algorithm Patterns">
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
               <span><Graph size={16} /></span>
             </button>
           </div>
         )}
       </aside>
       <section className="main-content">
-        {view === 'learn' && <LearnIndex onOpen={openLesson} />}
+        {view === 'learn' && <LearnIndex onOpen={(l) => navigateTo('lesson', l)} />}
         {view === 'practice' && (
           <PracticeIndex
             challenges={availableChallenges}
@@ -285,13 +300,13 @@ export function App() {
             level={level}
             onTopic={setTopic}
             onLevel={setLevel}
-            onOpen={openChallenge}
+            onOpen={(c) => navigateTo('challenge', undefined, undefined, c)}
           />
         )}
         {view === 'big-o' && <BigOPage />}
-        {view === 'patterns' && <PatternsOverview onSelectPattern={() => setView('pattern-detail')} />}
-        {view === 'pattern-detail' && <PatternDetailPage onBack={() => setView('patterns')} onOpenChallenge={openChallenge} />}
-        {view === 'ts-learn' && <TSLearnIndex onOpen={openTSLesson} />}
+        {view === 'patterns' && <PatternsOverview onSelectPattern={() => navigateTo('pattern-detail')} />}
+        {view === 'pattern-detail' && <PatternDetailPage onBack={() => navigateTo('patterns')} onOpenChallenge={(c) => navigateTo('challenge', undefined, undefined, c)} />}
+        {view === 'ts-learn' && <TSLearnIndex onOpen={(l) => navigateTo('ts-lesson', undefined, l)} />}
         {view === 'ts-lesson' && (
           <TSLessonPage
             lesson={activeTSLesson}
@@ -302,7 +317,7 @@ export function App() {
             onRun={runLessonCode}
             onNext={goNextTSLesson}
             onPrevious={goPrevTSLesson}
-            onHome={() => setView('ts-learn')}
+            onHome={() => navigateTo('ts-learn')}
           />
         )}
         {view === 'lesson' && (
@@ -315,7 +330,7 @@ export function App() {
             onRun={runLessonCode}
             onNext={goNextLesson}
             onPrevious={goPrevLesson}
-            onHome={() => setView('learn')}
+            onHome={() => navigateTo('learn')}
           />
         )}
         {view === 'challenge' && (
@@ -327,7 +342,7 @@ export function App() {
             onCode={setCode}
             onRun={testSolution}
             onHint={() => setShowHint(!showHint)}
-            onBack={goToPractice}
+            onBack={() => navigateTo('practice')}
             onNext={availableChallenges.indexOf(activeChallenge) < availableChallenges.length - 1 ? goNextChallenge : null}
             onPrevious={availableChallenges.indexOf(activeChallenge) > 0 ? goPrevChallenge : null}
           />
