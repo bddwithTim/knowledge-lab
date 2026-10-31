@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { challenges, lessons, type Challenge, type Kyu, type Lesson, type Topic } from './content'
 import { Editor } from './editor'
 import { StepDebugger } from './debugger'
@@ -467,6 +467,37 @@ function BigOGrowthChart() {
   )
 }
 
+/* ── WaterLayer: ref-based water overlay for bar charts ── */
+function WaterLayer({ chartId, l, r, waterH, maxH, chartHeight }: {
+  chartId: string; l: number; r: number; waterH: number; maxH: number; chartHeight: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ left: number; width: number } | null>(null)
+
+  useLayoutEffect(() => {
+    const chart = document.getElementById(chartId)
+    if (!chart) return
+    const lb = chart.querySelector(`[data-bar-index="${l}"]`) as HTMLElement | null
+    const rb = chart.querySelector(`[data-bar-index="${r}"]`) as HTMLElement | null
+    if (!lb || !rb) return
+    const cr = chart.getBoundingClientRect()
+    const lr = lb.getBoundingClientRect()
+    const rr = rb.getBoundingClientRect()
+    setPos({
+      left: lr.left - cr.left,
+      width: rr.right - cr.left - (lr.left - cr.left),
+    })
+  }, [chartId, l, r])
+
+  const h = (waterH / maxH) * chartHeight
+
+  return <div ref={ref} className="bar-water-area" style={pos ? {
+    left: pos.left,
+    width: pos.width,
+    height: h,
+  } : { display: 'none' }} />
+}
+
 /* ── ScenarioSection: one inline scenario with viz + debugger ── */
 function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
   const [stepIndex, setStepIndex] = useState(0)
@@ -486,16 +517,15 @@ function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
         {/* Visualization */}
         <div className="algorithm-visual">
           {scenario.visualType === 'bar-chart' ? (
-            <div className="bar-chart">
-              {/* Water area overlay between L and R */}
+            <div className="bar-chart" id="bar-chart-root">
               {step.leftIndex >= 0 && step.rightIndex >= 0 && step.leftIndex < step.rightIndex && (
-                <div
-                  className="bar-water-area"
-                  style={{
-                    left: `${(step.leftIndex / (step.items.length - 1)) * 100}%`,
-                    width: `${((step.rightIndex - step.leftIndex) / (step.items.length - 1)) * 100}%`,
-                    height: `${(Math.min(Number(step.items[step.leftIndex]), Number(step.items[step.rightIndex])) / 8) * 160}px`,
-                  }}
+                <WaterLayer
+                  chartId="bar-chart-root"
+                  l={step.leftIndex}
+                  r={step.rightIndex}
+                  waterH={Math.min(Number(step.items[step.leftIndex]), Number(step.items[step.rightIndex]))}
+                  maxH={8}
+                  chartHeight={160}
                 />
               )}
               {step.items.map((item, index) => {
@@ -505,7 +535,7 @@ function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
                 const between = step.leftIndex >= 0 && step.rightIndex >= 0 && index > Math.min(step.leftIndex, step.rightIndex) && index < Math.max(step.leftIndex, step.rightIndex)
                 return (
                   <div className="bar-col" key={index}>
-                    <div className={`bar-wrapper${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}`}>
+                    <div className={`bar-wrapper${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}`} data-bar-index={index}>
                       <div className={`bar${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}${between ? ' is-between' : ''}`} style={{ height: `${(height / 8) * 100}%` }}>
                         <span className="pointer-label">{isLeft && 'L'}{isRight && !isLeft && 'R'}</span>
                       </div>
