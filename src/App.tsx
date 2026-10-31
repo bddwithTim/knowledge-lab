@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { challenges, lessons, type Challenge, type Kyu, type Lesson, type Topic } from './content'
+import { tsLessons, type TSLesson, type TSExercise } from './ts-content'
 import { Editor } from './editor'
 import { StepDebugger } from './debugger'
 import { scenarios, type ScenarioId } from './algorithm-scenarios'
 import { BookOpen, CaretLeft, Code, Flask, Graph, List } from '@phosphor-icons/react'
 
-type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail'
+type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'ts-learn' | 'ts-lesson'
 type WorkspaceMode = 'read' | 'split' | 'code'
 type Result = { label: string; passed: boolean; actual?: unknown; error?: string }
 type OutputFlash = 'idle' | 'success' | 'error'
@@ -36,6 +37,26 @@ function writeStorage(key: string, value: string) {
 function display(value: unknown): string {
   const json = JSON.stringify(value, null, 2)
   return json === undefined ? String(value) : json
+}
+
+/* Run TS code by trying as-is first, stripping types on syntax error */
+function runTS(source: string) {
+  // Try running as plain JS first (works if user wrote pure JS)
+  const r1 = executeExample(source)
+  if (!r1.error) return r1
+
+  const stripped = source
+    .replace(/^\s*(interface|type)\s+\w+\s*(=\s*)?\{[\s\S]*?\n?\}/gm, '')
+    .replace(/^\s*type\s+\w+\s*=\s*.+$/gm, '')
+    .replace(/<[A-Za-z_][\w,\s]*>(?=\s*\()/g, '')
+    .replace(/\breadonly\s+/g, '')
+    .replace(/\bas\s+const\b/g, '')
+    .replace(/\b(let|const|var)\s+(\w+)\s*:\s*(?:[A-Za-z_][\w<>\[\]|&\s]*|['"][\w\s|&'"\[\]]*['"])\s*(?=\s*=)/g, '$1 $2')
+    .replace(/(\w+)\s*\?:\s*[A-Za-z_][\w<>\[\]|&\s]*(?=\s*[,)])/g, '$1')
+    .replace(/(\w+)\s*:\s*[A-Za-z_][\w<>\[\]|&\s]*(?=\s*[,)])/g, '$1')
+    .replace(/\)\s*:\s*[A-Za-z_][\w<>\[\]|&\s]*(?=\s*\{)/g, ')')
+    .replace(/:\s*\w+\s+is\s+\w+(?=\s*[=;{])/g, '')
+  return executeExample(stripped)
 }
 
 function executeExample(source: string) {
@@ -94,6 +115,7 @@ function CollapsibleSection({ title, defaultOpen = true, children }: { title: st
 export function App() {
   const [view, setView] = useState<View>('learn')
   const [activeLesson, setActiveLesson] = useState<Lesson>(lessons[0])
+  const [activeTSLesson, setActiveTSLesson] = useState<TSLesson>(tsLessons[0])
   const [activeChallenge, setActiveChallenge] = useState<Challenge>(challenges[0])
   const [code, setCode] = useState(lessons[0].starterCode)
   const [output, setOutput] = useState<string[]>([])
@@ -124,6 +146,8 @@ export function App() {
     setCode(lesson.starterCode)
     setOutput([])
     setError('')
+    setWorkspaceMode('read')
+    writeStorage(WORKSPACE_MODE_KEY, 'read')
     setSidebarCollapsed(true)
     writeStorage(SIDEBAR_KEY, 'true')
     setView('lesson')
@@ -161,10 +185,11 @@ export function App() {
   }
 
   const runLessonCode = useCallback(() => {
-    const next = executeExample(code)
+    const src = view === 'ts-lesson' ? code : code  // TS code is handled by executeExample with strip fallback in runLessonCode
+    const next = view === 'ts-lesson' ? runTS(code) : executeExample(code)
     setOutput(next.output)
     setError(next.error)
-  }, [code])
+  }, [code, view])
 
   const testSolution = useCallback(() => {
     setResults(runAssertions(code, activeChallenge))
@@ -179,6 +204,26 @@ export function App() {
     const previous = lessons.find((item) => item.order === activeLesson.order - 1)
     if (previous) openLesson(previous)
   }, [activeLesson.order])
+
+  function openTSLesson(lesson: TSLesson) {
+    setActiveTSLesson(lesson)
+    setCode(lesson.starterCode)
+    setOutput([])
+    setError('')
+    setWorkspaceMode('read')
+    writeStorage(WORKSPACE_MODE_KEY, 'read')
+    setView('ts-lesson')
+  }
+
+  const goNextTSLesson = useCallback(() => {
+    const next = tsLessons.find((item) => item.order === activeTSLesson.order + 1)
+    if (next) openTSLesson(next)
+  }, [activeTSLesson.order])
+
+  const goPrevTSLesson = useCallback(() => {
+    const previous = tsLessons.find((item) => item.order === activeTSLesson.order - 1)
+    if (previous) openTSLesson(previous)
+  }, [activeTSLesson.order])
 
   runLessonRef.current = runLessonCode
   runChallengeRef.current = testSolution
@@ -206,24 +251,32 @@ export function App() {
       }
 
       if (event.key === 'Enter') {
-        if (view === 'lesson') {
+        if (view === 'lesson' || view === 'ts-lesson') {
           event.preventDefault()
-          runLessonRef.current()
+          runLessonCode()
         }
         if (view === 'challenge') {
           event.preventDefault()
-          runChallengeRef.current()
+          testSolution()
         }
       }
 
-      if (event.shiftKey && event.key === 'ArrowRight' && view === 'lesson') {
+      if (event.shiftKey && event.key === 'ArrowRight' && (view === 'lesson')) {
         event.preventDefault()
-        nextLessonRef.current()
+        goNextLesson()
+      }
+      if (event.shiftKey && event.key === 'ArrowRight' && (view === 'ts-lesson')) {
+        event.preventDefault()
+        goNextTSLesson()
       }
 
-      if (event.shiftKey && event.key === 'ArrowLeft' && view === 'lesson') {
+      if (event.shiftKey && event.key === 'ArrowLeft' && (view === 'lesson')) {
         event.preventDefault()
-        prevLessonRef.current()
+        goPrevLesson()
+      }
+      if (event.shiftKey && event.key === 'ArrowLeft' && (view === 'ts-lesson')) {
+        event.preventDefault()
+        goPrevTSLesson()
       }
 
       if (event.key === 'e' && view !== 'learn' && view !== 'practice') {
@@ -252,7 +305,10 @@ export function App() {
           <>
             <p className="nav-label">Explore</p>
             <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => setView('learn')}>
-              <span><BookOpen size={16} /></span>Learn
+              <span><BookOpen size={16} /></span>JavaScript
+            </button>
+            <button className={`nav-link ${view === 'ts-learn' || view === 'ts-lesson' ? 'active' : ''}`} onClick={() => setView('ts-learn')}>
+              <span><BookOpen size={16} /></span>TypeScript
             </button>
             <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => setView('practice')}>
               <span><Code size={16} /></span>Practice
@@ -271,8 +327,11 @@ export function App() {
         )}
         {sidebarCollapsed && (
           <div className="sidebar-icons">
-            <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => setView('learn')} title="Learn">
+            <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => setView('learn')} title="JavaScript">
               <span><BookOpen size={16} /></span>
+            </button>
+            <button className={`nav-link ${view === 'ts-learn' || view === 'ts-lesson' ? 'active' : ''}`} onClick={() => setView('ts-learn')} title="TypeScript">
+              <span><BookOpen size={16} weight="fill" /></span>
             </button>
             <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => setView('practice')} title="Practice">
               <span><Code size={16} /></span>
@@ -301,6 +360,20 @@ export function App() {
         {view === 'big-o' && <BigOPage />}
         {view === 'patterns' && <PatternsOverview onSelectPattern={() => setView('pattern-detail')} />}
         {view === 'pattern-detail' && <PatternDetailPage onBack={() => setView('patterns')} onOpenChallenge={openChallenge} />}
+        {view === 'ts-learn' && <TSLearnIndex onOpen={openTSLesson} />}
+        {view === 'ts-lesson' && (
+          <TSLessonPage
+            lesson={activeTSLesson}
+            code={code}
+            output={output}
+            error={error}
+            onCode={setCode}
+            onRun={runLessonCode}
+            onNext={goNextTSLesson}
+            onPrevious={goPrevTSLesson}
+            onHome={() => setView('ts-learn')}
+          />
+        )}
         {view === 'lesson' && (
           <LessonPage
             lesson={activeLesson}
@@ -745,11 +818,15 @@ function CodeBlock({ text }: { text: string }) {
 }
 
 function CodeText({ text }: { text: string }) {
-  const parts = text.split(/(`[^`]+`)/g)
+  /* Split on **bold** and `code` patterns */
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
   const nodes: ReactNode[] = []
   for (const [pi, part] of parts.entries()) {
-    if (part.startsWith('`') && part.endsWith('`')) {
-      nodes.push(<code key={`bt${pi}`}>{part.slice(1, -1)}</code>)
+    if (!part) continue
+    if (part.startsWith('**') && part.endsWith('**')) {
+      nodes.push(<strong key={`b${pi}`}>{part.slice(2, -2)}</strong>)
+    } else if (part.startsWith('`') && part.endsWith('`')) {
+      nodes.push(<code key={`c${pi}`}>{part.slice(1, -1)}</code>)
     } else {
       nodes.push(<span key={`t${pi}`}>{part}</span>)
     }
@@ -758,22 +835,42 @@ function CodeText({ text }: { text: string }) {
 }
 
 /* ── PatternsOverview: cards for each pattern category ── */
+
+const patternEntries: { id: string; label: string; tags: string[]; active: boolean }[] = [
+  { id: 'two-pointer', label: 'Two Pointers', tags: ['6 scenarios', 'O(n)'], active: true },
+  { id: 'hash-map', label: 'Hash Map / Frequency', tags: ['Four sum', 'Anagrams', 'First unique', 'O(n)'], active: false },
+  { id: 'fast-slow', label: 'Fast & Slow Pointers', tags: ['Cycle detection', 'O(n)'], active: false },
+  { id: 'merge-interval', label: 'Merge / Interval', tags: ['Overlapping intervals', 'O(n log n)'], active: false },
+  { id: 'prefix-sum', label: 'Prefix Sum', tags: ['Running sum', 'Subarray = K', 'O(n)'], active: false },
+  { id: 'binary-search', label: 'Binary Search', tags: ['Sorted array', 'O(log n)'], active: false },
+]
+
 function PatternsOverview({ onSelectPattern }: { onSelectPattern: () => void }) {
   return (
     <>
       <header className="algorithm-head patterns-head">
         <span className="eyebrow">Patterns</span>
         <h1>Algorithm Patterns</h1>
-        <p>Proven strategies that solve entire classes of problems. Each pattern below contains multiple interactive scenarios — click one to explore.</p>
+        <p>Proven strategies that solve entire classes of problems. Click Two Pointers to explore — the rest are coming soon.</p>
       </header>
       <section className="patterns-grid-section">
-        <button className="when-to-use-card" onClick={onSelectPattern} style={{ cursor: 'pointer' }}>
-          <span className="when-to-use-label" style={{ fontSize: '1.125rem', fontWeight: 700 }}>Two Pointers</span>
-          <div style={{ marginTop: 'var(--space-sm)', display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>
-            <span className="tag">6 scenarios</span>
-            <span className="tag">O(n)</span>
-          </div>
-        </button>
+        {patternEntries.map((p) =>
+          p.active ? (
+            <button key={p.id} className="when-to-use-card" onClick={onSelectPattern} style={{ cursor: 'pointer' }}>
+              <span className="when-to-use-label" style={{ fontSize: '1.125rem', fontWeight: 700 }}>{p.label}</span>
+              <div style={{ marginTop: 'var(--space-sm)', display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>
+                {p.tags.map((t) => <span key={t} className="tag">{t}</span>)}
+              </div>
+            </button>
+          ) : (
+            <div key={p.id} className="when-to-use-card is-placeholder" style={{ opacity: 0.5, cursor: 'default' }}>
+              <span className="when-to-use-label" style={{ fontSize: '1.125rem', fontWeight: 700 }}>{p.label}</span>
+              <div style={{ marginTop: 'var(--space-sm)', display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>
+                {p.tags.map((t) => <span key={t} className="tag" style={{ opacity: 0.6 }}>{t}</span>)}
+              </div>
+            </div>
+          )
+        )}
       </section>
     </>
   )
@@ -796,6 +893,41 @@ function PatternDetailPage({ onBack, onOpenChallenge }: { onBack: () => void; on
       {twoPointerIds.map((id) => (
         <ScenarioSection key={id} scenarioId={id} />
       ))}
+    </>
+  )
+}
+
+/* ── TS Learn Index ──────────────────────────────── */
+function TSLearnIndex({ onOpen }: { onOpen: (lesson: TSLesson) => void }) {
+  return (
+    <>
+      <header className="page-head">
+        <span className="eyebrow">Review TypeScript</span>
+        <h1>Type annotations, generics,<br />and type-level programming.</h1>
+        <p>Progressive lessons from basic annotations to advanced generics and discriminated unions. Every lesson includes exercises — not just reading, but finding and fixing real type errors.</p>
+      </header>
+      <section className="path-heading">
+        <div>
+          <span className="eyebrow">Reference path</span>
+          <h2>TypeScript fundamentals</h2>
+        </div>
+        <span>{tsLessons.length} detailed lessons</span>
+      </section>
+      <ol className="learning-path">
+        {tsLessons.map((lesson) => (
+          <li key={lesson.id}>
+            <span className="path-number">{String(lesson.order).padStart(2, '0')}</span>
+            <div>
+              <span className="lesson-topic">{lesson.block}</span>
+              <strong>{lesson.title}</strong>
+              <p>{lesson.summary}</p>
+            </div>
+            <button onClick={() => onOpen(lesson)}>
+              Review <b>→</b>
+            </button>
+          </li>
+        ))}
+      </ol>
     </>
   )
 }
@@ -881,6 +1013,225 @@ function PracticeIndex({ challenges: items, topic, level, onTopic, onLevel, onOp
       {items.length === 0 && <p className="empty-state">No challenges match these filters.</p>}
     </>
   )
+}
+
+function TSLessonPage({
+  lesson,
+  code,
+  output,
+  error,
+  onCode,
+  onRun,
+  onNext,
+  onPrevious,
+  onHome,
+}: {
+  lesson: TSLesson
+  code: string
+  output: string[]
+  error: string
+  onCode: (code: string) => void
+  onRun: () => void
+  onNext: () => void
+  onPrevious: () => void
+  onHome: () => void
+}) {
+  const hasPrevious = lesson.order > 1
+  const hasNext = lesson.order < tsLessons.length
+  useEffect(() => { window.scrollTo(0, 0) }, [lesson.order])
+
+  return (
+    <>
+      <header className="lesson-head">
+        <div>
+          <span className="eyebrow">Lesson {lesson.order} of {tsLessons.length} · {lesson.block}</span>
+          <h1>{lesson.title}</h1>
+          <p>{lesson.summary}</p>
+        </div>
+      </header>
+      <article className="reading ts-reading">
+        {lesson.sections.map((section) => (
+          <CollapsibleSection key={section.title} title={section.title} defaultOpen>
+            {section.body.map((paragraph) => <p key={paragraph}><CodeText text={paragraph} /></p>)}
+            {section.code && <pre className="code-sample"><CodeBlock text={section.code} /></pre>}
+          </CollapsibleSection>
+        ))}
+      </article>
+      <Editor title="lesson.ts" code={code} onCode={onCode} onRun={onRun} output={output} error={error} />
+      <div className="reading ts-reading">
+        {lesson.exercises.length > 0 && (
+          <section className="ts-exercises">
+            <h2>Exercises</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-lg)' }}>Each snippet below asks you to think, then click to reveal the answer.</p>
+            {lesson.exercises.map((ex, i) => <TSExerciseCard key={i} exercise={ex} index={i} />)}
+          </section>
+        )}
+        <nav className="lesson-end-nav" aria-label="Lesson navigation">
+          <div>
+            <span className="eyebrow">End of lesson</span>
+            <strong>{hasNext ? 'Ready for the next concept?' : 'You reached the end of this path.'}</strong>
+          </div>
+          <div className="lesson-end-actions">
+            {hasPrevious && <button onClick={onPrevious}>← Back</button>}
+            <button onClick={onHome}>All lessons</button>
+            {hasNext && <button className="next-lesson-button" onClick={onNext}>Next →</button>}
+          </div>
+        </nav>
+      </div>
+    </>
+  )
+}
+
+function TSExerciseCard({ exercise, index }: { exercise: TSExercise; index: number }) {
+  const [revealed, setRevealed] = useState(false)
+  const [revealedBlanks, setRevealedBlanks] = useState<Set<number>>(new Set())
+  const [selectedOption, setSelectedOption] = useState<number | null>(null)
+
+  function toggleBlank(i: number) {
+    setRevealedBlanks((prev) => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i); else next.add(i)
+      return next
+    })
+  }
+
+  return (
+    <div className="ts-exercise-card">
+      <div className="ts-exercise-header">
+        <span className="ts-exercise-badge">{index + 1}</span>
+        <span>{exercise.question}</span>
+      </div>
+
+      {exercise.kind === 'convert-js-ts' && (
+        <>
+          <div className="ts-ex-label">JavaScript</div>
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.jsCode} /></pre>
+          {!revealed ? (
+            <button className="ts-reveal-btn" onClick={() => setRevealed(true)}>Reveal TypeScript</button>
+          ) : (
+            <>
+              <div className="ts-ex-label">TypeScript</div>
+              <pre className="ts-exercise-code"><CodeBlock text={exercise.tsCode} /></pre>
+            </>
+          )}
+        </>
+      )}
+
+      {exercise.kind === 'fix-type' && (
+        <>
+          <div className="ts-ex-label">Broken code <span className="ts-error-desc">{exercise.errorDescription}</span></div>
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.brokenCode} /></pre>
+          {!revealed ? (
+            <button className="ts-reveal-btn" onClick={() => setRevealed(true)}>Reveal fix</button>
+          ) : (
+            <>
+              <div className="ts-ex-label" style={{ color: '#4caf88' }}>Fixed</div>
+              <pre className="ts-exercise-code ts-ex-fixed"><CodeBlock text={exercise.fixedCode} /></pre>
+            </>
+          )}
+        </>
+      )}
+
+      {exercise.kind === 'predict-type' && (
+        <>
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.code} /></pre>
+          {!revealed ? (
+            <button className="ts-reveal-btn" onClick={() => setRevealed(true)}>Reveal type</button>
+          ) : (
+            <div className="ts-ex-answer">{exercise.answer}</div>
+          )}
+        </>
+      )}
+
+      {exercise.kind === 'model-it' && (
+        <>
+          <div className="ts-ex-label">Data</div>
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.data} /></pre>
+          {!revealed ? (
+            <button className="ts-reveal-btn" onClick={() => setRevealed(true)}>Reveal interface</button>
+          ) : (
+            <>
+              <div className="ts-ex-label">Interface</div>
+              <pre className="ts-exercise-code ts-ex-fixed"><CodeBlock text={exercise.interface} /></pre>
+            </>
+          )}
+        </>
+      )}
+
+      {exercise.kind === 'choose-best' && (
+        <div className="ts-exercise-options">
+          {exercise.options.map((opt, i) => {
+            let cls = 'ts-option'
+            if (revealed) {
+              if (opt.isCorrect) cls += ' is-correct'
+              else if (i === selectedOption && !opt.isCorrect) cls += ' is-wrong'
+            }
+            return (
+              <button
+                key={i}
+                className={cls}
+                disabled={revealed}
+                onClick={() => { setSelectedOption(i); setRevealed(true) }}
+              >
+                <span className="ts-option-letter">{opt.label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>{opt.code}</span>
+                {revealed && opt.isCorrect && <span className="ts-option-check">✓</span>}
+                {revealed && i === selectedOption && !opt.isCorrect && <span className="ts-option-cross">✗</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {exercise.kind === 'fill-blank' && (
+        <>
+          <pre className="ts-exercise-code">{renderFillBlank(exercise.code, exercise.blanks, revealedBlanks, toggleBlank)}</pre>
+          {revealedBlanks.size < exercise.blanks.length && (
+            <p className="ts-blank-hint">Click each <code>___</code> to reveal the answer. {exercise.blanks.length - revealedBlanks.size} remaining.</p>
+          )}
+        </>
+      )}
+
+      {revealed && exercise.kind !== 'fill-blank' && (
+        <div className={`ts-exercise-result ${exercise.kind === 'choose-best' && selectedOption !== null && !exercise.options[selectedOption].isCorrect ? 'is-wrong' : 'is-correct'}`}>
+          {exercise.kind === 'choose-best' && selectedOption !== null && !exercise.options[selectedOption].isCorrect && (
+            <strong>✗ Not quite.</strong>
+          )}
+          <p>{exercise.explanation}</p>
+        </div>
+      )}
+      {revealedBlanks.size === (exercise.kind === 'fill-blank' ? exercise.blanks.length : 0) && exercise.kind === 'fill-blank' && (
+        <div className="ts-exercise-result is-correct">
+          <p>{exercise.explanation}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* Render code with clickable blanks */
+function renderFillBlank(
+  code: string,
+  blanks: { label: string; answer: string }[],
+  revealedBlanks: Set<number>,
+  toggleBlank: (i: number) => void,
+): ReactNode {
+  let result = code
+  const parts: ReactNode[] = []
+  let last = 0
+  blanks.forEach((blank, i) => {
+    const idx = result.indexOf('___', last)
+    if (idx === -1) return
+    parts.push(<span key={`t${i}`}>{result.slice(last, idx)}</span>)
+    last = idx + 3
+    if (revealedBlanks.has(i)) {
+      parts.push(<span key={`b${i}`} className="ts-blank filled">{blank.answer}</span>)
+    } else {
+      parts.push(<button key={`b${i}`} className="ts-blank" onClick={() => toggleBlank(i)} title={blank.label}>___</button>)
+    }
+  })
+  parts.push(<span key="end">{result.slice(last)}</span>)
+  return <>{parts}</>
 }
 
 function LessonPage({

@@ -202,11 +202,7 @@ export function Editor({
   return (
     <section className="editor">
       <div className="editor-bar">
-        <span>
-          <i />
-          {title}
-        </span>
-        <span>JavaScript</span>
+        <span>{title}</span>
       </div>
       <div ref={containerRef} className="cm-wrapper" />
       <div className="editor-footer">
