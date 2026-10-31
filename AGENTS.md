@@ -4,6 +4,20 @@ A local refresher app for JavaScript, TypeScript, and algorithm fundamentals.
 
 - Files under `sources/` are read-only reference material.
 
+## Approval Gate (MANDATORY)
+
+Before making ANY code change — edits, writes, new files, bash commands that
+modify files — you MUST:
+
+1. Present a concise plan of what you intend to change.
+2. Wait for explicit approval: "go ahead", "implement", "yes", "proceed",
+   or similar unambiguous confirmation.
+3. Only then make the change.
+
+Discussion, suggestions, brainstorming, and questions are NOT approval.
+If the user asks "how would you approach X?" or "what do you think?",
+answer with analysis — do NOT implement.
+
 ## Skill Routing (MANDATORY FIRST STEP)
 
 For EVERY request, your very first response must begin with one of:
@@ -57,5 +71,5 @@ Do not invoke a specialist simply to perform a redundant review.
 ## After every code change
 
 ```
-npx tsc --noEmit && npx vite build
+npm run typecheck && npm run build
 ```

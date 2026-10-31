@@ -980,6 +980,53 @@ p, .page-head p, header p {
 .prefix-cell.is-query-boundary strong { color: #f2c594; }
 .prefix-val { background: rgba(86, 156, 214, 0.05); }
 .prefix-val.is-last { background: rgba(86, 156, 214, 0.12); }
+
+/* ── Grid (DP / knapsack) ─────────────────────── */
+.grid-viz {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm);
+}
+.grid-row {
+  display: flex;
+  gap: 2px;
+}
+.grid-cell {
+  width: 48px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+.grid-cell strong {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.grid-cell small {
+  font-size: 0.55rem;
+  opacity: 0.5;
+}
+.grid-cell.is-active {
+  border-color: var(--accent);
+  background: rgba(86, 156, 214, 0.15);
+  color: var(--text);
+}
+.grid-cell.is-computed {
+  color: var(--text);
+}
+.grid-cell.is-computed strong {
+  color: #4caf88;
+}
+
 .number-cell.is-match {
   border-color: var(--accent);
   background: var(--accent-bg);

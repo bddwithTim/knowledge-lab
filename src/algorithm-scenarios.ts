@@ -1,4 +1,4 @@
-export type ScenarioId = 'pair-sum' | 'palindrome' | 'remove-duplicates' | 'container-water' | 'merge-sorted' | 'sliding-window' | 'smallest-subarray' | 'two-sum' | 'first-unique' | 'valid-anagram' | 'most-frequent' | 'big-o-1' | 'big-o-n' | 'big-o-n2' | 'big-o-logn' | 'binary-search-classic' | 'binary-search-boundary' | 'linked-list-cycle' | 'find-middle' | 'valid-parens' | 'next-greater' | 'merge-overlapping' | 'insert-interval' | 'range-sum' | 'pivot-index' | 'three-sum' | 'meeting-rooms'
+export type ScenarioId = 'pair-sum' | 'palindrome' | 'remove-duplicates' | 'container-water' | 'merge-sorted' | 'sliding-window' | 'smallest-subarray' | 'two-sum' | 'first-unique' | 'valid-anagram' | 'most-frequent' | 'big-o-1' | 'big-o-n' | 'big-o-n2' | 'big-o-logn' | 'binary-search-classic' | 'binary-search-boundary' | 'linked-list-cycle' | 'find-middle' | 'valid-parens' | 'next-greater' | 'merge-overlapping' | 'insert-interval' | 'range-sum' | 'pivot-index' | 'three-sum' | 'meeting-rooms' | 'activity-selection' | 'jump-game' | 'fib-dp' | 'knapsack' | 'n-queens' | 'permutations'
 
 export type ScenarioStep = {
   description: string
@@ -7,9 +7,9 @@ export type ScenarioStep = {
 }
 
 export type VisualStep = {
-  items: (string | number)[]
-  leftIndex: number
-  rightIndex: number
+  items?: (string | number)[]
+  leftIndex?: number
+  rightIndex?: number
   found?: boolean
   slowIndex?: number
   // merge-arrays fields
@@ -30,11 +30,15 @@ export type VisualStep = {
   prefix?: number[]
   queryStart?: number
   queryEnd?: number
+  // grid fields
+  grid?: number[][]
+  gridRow?: number
+  gridCol?: number
 }
 
 export type Scenario = {
   id: ScenarioId
-  category: 'big-o' | 'two-pointer' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-interval' | 'prefix-sum' | 'sorting-strategies'
+  category: 'big-o' | 'two-pointer' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-interval' | 'prefix-sum' | 'sorting-strategies' | 'greedy' | 'dp' | 'backtracking'
   title: string
   topic: string
   description: string
@@ -42,7 +46,7 @@ export type Scenario = {
   spaceComplexity: string
   debugCode: string
   steps: ScenarioStep[]
-  visualType: 'number-cells' | 'char-cells' | 'array-cells' | 'bar-chart' | 'merge-arrays' | 'sliding-window' | 'interval-timeline' | 'prefix-array'
+  visualType: 'number-cells' | 'char-cells' | 'array-cells' | 'bar-chart' | 'merge-arrays' | 'sliding-window' | 'interval-timeline' | 'prefix-array' | 'grid'
   visualData: VisualStep[]
   whyItWorks: { title: string; body: string[] }
   whenToUseSummary: string
@@ -1736,8 +1740,8 @@ function binarySearch(arr, target) {
     category: 'prefix-sum',
     title: 'Range sum queries',
     topic: 'Precomputation',
-    description: 'Given `[3, 1, 4, 1, 5, 9]`, answer sum queries like `sum(1,4)` in O(1). Precompute prefix sums — then any range sum is `prefix[r+1] - prefix[l]`.',
-    description: 'Imagine a number strip: [3, 1, 4, 1, 5, 9]. Someone asks: "What is the sum from position 1 to 4?" Instead of adding 1+4+1+5 every single time, precompute a running total once. Then any range sum becomes just one subtraction — instant, no matter how many times you are asked.',
+    description: 'Imagine a number strip: [3, 1, 4, 1, 5, 9]. Someone asks: "What is the sum from position 1 to 4?" Instead of adding 1+4+1+5 every single time, precompute a running total once. Then any range sum becomes just one subtraction - instant, no matter how many times you are asked.',
+    timeComplexity: 'Build O(n), Query O(1)',
     spaceComplexity: 'O(n)',
     debugCode: `function buildPrefix(nums) {
   const prefix = [0];
@@ -1813,8 +1817,8 @@ function rangeSum(prefix, l, r) {
     category: 'prefix-sum',
     title: 'Find pivot index',
     topic: 'Equilibrium point',
-    description: 'Find the index where the sum of all numbers strictly to the left equals the sum of all numbers strictly to the right. In `[1, 7, 3, 6, 5, 6]`, the pivot is index 3 (left=11, right=11).',
     description: 'Imagine a seesaw. Find the balance point where the weight on the left equals the weight on the right. In [1, 7, 3, 6, 5, 6], index 3 is the pivot — left side (1+7+3=11) equals right side (5+6=11). The element at the pivot itself does not count on either side.',
+    timeComplexity: 'O(n)',
     spaceComplexity: 'O(1)',
     debugCode: `function pivotIndex(nums) {
   const total = nums.reduce((a, b) => a + b, 0);
@@ -2030,4 +2034,426 @@ function rangeSum(prefix, l, r) {
       'Sort by first element — `a[0] - b[0]` sorts in ascending order. To sort by end time instead, use `a[1] - b[1]`.',
     ],
   },
+  /* ═══════════════════════════════════════════════════
+     GREEDY
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Activity Selection ─────────────────────────── */
+  {
+    id: 'activity-selection',
+    category: 'greedy',
+    title: 'Activity selection',
+    topic: 'Pick the one that leaves first',
+    description: 'You have ONE playroom. Four friends want to use it: [1-4], [3-5], [0-6], and [5-7]. Some times overlap. Simple rule: always pick the friend who LEAVES earliest. They free up the room fastest.',
+    timeComplexity: 'O(n log n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function selectActivities(intervals) {
+  intervals.sort((a, b) => a[1] - b[1]);
+  const picked = [intervals[0]];
+
+  for (let i = 1; i < intervals.length; i++) {
+    const last = picked[picked.length - 1];
+    if (intervals[i][0] >= last[1]) {
+      picked.push(intervals[i]);
+    }
+  }
+  return picked;
+}`,
+    steps: [
+      { currentLine: 2, variables: { lastEnd: '~', i: '~', picked: '~' }, description: 'Line up the friends by when they LEAVE. [1-4] leaves at 4 - earliest! [3-5] leaves at 5. [0-6] at 6. [5-7] at 7.' },
+      { currentLine: 3, variables: { lastEnd: 4, i: '~', picked: '[[1,4]]' }, description: 'Friend [1-4] leaves first. Let them use the room! The room is free again at 4.' },
+      { currentLine: 5, variables: { lastEnd: 4, i: 1, picked: '[[1,4]]' }, description: 'Next in line: [3-5]. They want to start at 3.' },
+      { currentLine: 6, variables: { lastEnd: 4, i: 1, picked: '[[1,4]]' }, description: 'But the room is busy until 4! 3 comes before 4 - they overlap. Sorry, skip this friend.' },
+      { currentLine: 5, variables: { lastEnd: 4, i: 2, picked: '[[1,4]]' }, description: 'Next: [0-6]. They want to start at 0.' },
+      { currentLine: 6, variables: { lastEnd: 4, i: 2, picked: '[[1,4]]' }, description: '0 is way before 4. The room is still busy. Skip.' },
+      { currentLine: 5, variables: { lastEnd: 4, i: 3, picked: '[[1,4]]' }, description: 'Next: [5-7]. They want to start at 5.' },
+      { currentLine: 6, variables: { lastEnd: 4, i: 3, picked: '[[1,4]]' }, description: '5 is AFTER 4! The room is free. Let them use it. Room is now busy until 7.' },
+      { currentLine: 7, variables: { lastEnd: 7, i: 3, picked: '[[1,4], [5,7]]' }, description: 'No more friends in line. We fit 2 friends: [1-4] and [5-7].' },
+      { currentLine: 10, variables: { lastEnd: 7, i: 3, picked: '[[1,4], [5,7]]' }, description: 'Done! Sorting by END time gave us the max. If we sorted by START time, [0-6] would block everyone else.' },
+    ],
+    visualType: 'interval-timeline',
+    visualData: [
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: -1 },
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: 0, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: 0, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: 2, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: 2, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: 3, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,4],[3,5],[0,6],[5,7]], current: 3, leftIndex: 0, rightIndex: 1 },
+      { items: [], intervals: [[1,4],[5,7],[0,6],[3,5]], current: 3, leftIndex: 0, rightIndex: 1, found: true },
+    ],
+    whyItWorks: {
+      title: 'The friend who leaves earliest frees up the room for the most other friends.',
+      body: [
+        'Line everyone up by when they LEAVE, not when they arrive. The earliest leaver can never be a bad choice.',
+        'After someone uses the room, only let in friends who start AFTER the room is free. One check per friend.',
+      ],
+    },
+    whenToUseSummary: 'Sort by end time. Always pick the activity that finishes first among those that can start. One pass.',
+    breakdown: [
+      'You have ONE playroom. Friends all want to use it, but at different times. Some overlap. Your goal: say yes to as MANY friends as possible.',
+      '**Line them up by leaving time.** Sort the list so the friend who leaves earliest is first. Do NOT sort by arrival time - that is the trap!',
+      '**Say yes to the first friend.** They leave earliest, so they free up the room fastest.',
+      '**Check each next friend.** Does this friend start AFTER the room is free? If yes, let them in! If no, skip.',
+      '**Why it cannot fail.** The friend who leaves earliest is ALWAYS a good choice. Any other friend would leave later and block MORE time.',
+      '**One pass, no take-backs.** You walk through the line once. You never second-guess a choice.',
+    ],
+    jsConcepts: [
+      '.sort((a, b) => a[1] - b[1]) - sort by the SECOND number in each pair (the ending time).',
+      'picked[picked.length - 1] - grab the last thing added to the list.',
+    ],
+  },
+
+  /* ── Jump Game ──────────────────────────────────── */
+  {
+    id: 'jump-game',
+    category: 'greedy',
+    title: 'Jump game',
+    topic: 'How far can the frog go?',
+    description: 'A frog sits on lily pads: [2, 3, 1, 1, 4]. Each number is how many pads the frog CAN skip. Start at pad 0. Can the frog reach the last pad? The frog always jumps as far as it can - greedy!',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function canJump(nums) {
+  let maxReach = 0;
+
+  for (let i = 0; i < nums.length; i++) {
+    if (i > maxReach) return false;
+    maxReach = Math.max(maxReach, i + nums[i]);
+    if (maxReach >= nums.length - 1) return true;
+  }
+  return false;
+}`,
+    steps: [
+      { currentLine: 2, variables: { i: '~', maxReach: 0 }, description: 'Frog starts on pad 0. So far, the farthest pad it can reach is pad 0.' },
+      { currentLine: 4, variables: { i: 0, maxReach: 0 }, description: 'Frog is on pad 0. Can the frog even get here? Yes - pad 0 is where it started!' },
+      { currentLine: 6, variables: { i: 0, maxReach: 2 }, description: 'Pad 0 says "2." The frog can reach up to pad 0+2 = pad 2.' },
+      { currentLine: 7, variables: { i: 0, maxReach: 2 }, description: 'Can the frog reach the last pad (pad 4) from pad 2? Not yet. Hop to the next pad.' },
+      { currentLine: 4, variables: { i: 1, maxReach: 2 }, description: 'Frog is on pad 1. Can it get here? Its reach (pad 2) is past pad 1 - yes!' },
+      { currentLine: 6, variables: { i: 1, maxReach: 4 }, description: 'Pad 1 says "3." The frog can now reach pad 1+3 = pad 4. That is the last pad!' },
+      { currentLine: 7, variables: { i: 1, maxReach: 4 }, description: 'Reach covers the last pad (4 >= 4). The frog made it! Return true.' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [2, 3, 1, 1, 4], leftIndex: -1, rightIndex: -1 },
+      { items: [2, 3, 1, 1, 4], leftIndex: 0, rightIndex: -1 },
+      { items: [2, 3, 1, 1, 4], leftIndex: 0, rightIndex: 2 },
+      { items: [2, 3, 1, 1, 4], leftIndex: 0, rightIndex: 2 },
+      { items: [2, 3, 1, 1, 4], leftIndex: 1, rightIndex: 2 },
+      { items: [2, 3, 1, 1, 4], leftIndex: 1, rightIndex: 4 },
+      { items: [2, 3, 1, 1, 4], leftIndex: 1, rightIndex: 4, found: true },
+    ],
+    whyItWorks: {
+      title: 'Always jump as far as you can - you can never jump too far.',
+      body: [
+        'The frog keeps track of the farthest pad it can reach. At each new pad, it stretches its reach further.',
+        'If the frog ever reaches or passes the last pad, it wins. If a pad is too far away, the frog is stuck.',
+      ],
+    },
+    whenToUseSummary: 'One number tracks the farthest pad reachable. Stretch it further at each step. O(n), one pass.',
+    breakdown: [
+      'A frog is hopping across a pond on lily pads. Each pad has a number: how many pads the frog can skip from there.',
+      '**The frog\'s reach.** The frog remembers the FARTHEST pad it can get to. We call this maxReach.',
+      '**Can the frog even get here?** At each pad, first check: is this pad within reach?',
+      '**Stretch the reach.** If the frog can get here, stretch the reach: maxReach = max(maxReach, i + nums[i]).',
+      '**Check for victory.** If the reach covers the last pad (or goes past it), the frog wins!',
+      '**Why jumping as far as possible never hurts.** Jumping LESS cannot help you reach MORE pads.',
+      '**One pass, two numbers.** The frog visits each pad at most once. No backtracking, no trying different paths.',
+    ],
+    jsConcepts: [
+      'Math.max(a, b) - picks the bigger number. Math.max(2, 5) gives 5.',
+      '>= - "greater than or equal to." The frog win condition: reach >= last pad.',
+    ],
+  },
+
+
+  /* ═══════════════════════════════════════════════════
+     DYNAMIC PROGRAMMING
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Fibonacci (DP, bottom-up) ─────────────────── */
+  {
+    id: 'fib-dp',
+    category: 'dp',
+    title: 'Fibonacci (bottom-up DP)',
+    topic: 'Build a table, reuse answers',
+    description: 'Fibonacci the smart way: build the sequence 0, 1, 1, 2, 3, 5, 8, 13, 21 from the bottom up. Each number is just the sum of the two before it. One loop, O(n) - no tree, no repeats.',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function fib(n) {
+  if (n <= 1) return n;
+  const dp = [0, 1];
+  for (let i = 2; i <= n; i++) {
+    dp[i] = dp[i - 1] + dp[i - 2];
+  }
+  return dp[n];
+}`,
+    steps: [
+      { currentLine: 3, variables: { i: '~', n: 8, 'dp[0]': 0, 'dp[1]': 1 }, description: 'Start with the two seeds: fib(0)=0, fib(1)=1. Table begins [0, 1].' },
+      { currentLine: 4, variables: { i: 2, n: 8, 'dp[i-1]': 1, 'dp[i-2]': 0 }, description: 'i=2: fib(2) = 1+0 = 1. Each cell adds the two before it.' },
+      { currentLine: 4, variables: { i: 3, n: 8, 'dp[i-1]': 1, 'dp[i-2]': 1 }, description: 'i=3: fib(3) = 1+1 = 2.' },
+      { currentLine: 4, variables: { i: 4, n: 8, 'dp[i-1]': 2, 'dp[i-2]': 1 }, description: 'i=4: fib(4) = 2+1 = 3.' },
+      { currentLine: 4, variables: { i: 5, n: 8, 'dp[i-1]': 3, 'dp[i-2]': 2 }, description: 'i=5: fib(5) = 3+2 = 5.' },
+      { currentLine: 4, variables: { i: 6, n: 8, 'dp[i-1]': 5, 'dp[i-2]': 3 }, description: 'i=6: fib(6) = 5+3 = 8.' },
+      { currentLine: 4, variables: { i: 7, n: 8, 'dp[i-1]': 8, 'dp[i-2]': 5 }, description: 'i=7: fib(7) = 8+5 = 13.' },
+      { currentLine: 4, variables: { i: 8, n: 8, 'dp[i-1]': 13, 'dp[i-2]': 8 }, description: 'i=8: fib(8) = 13+8 = 21. The sequence: 0, 1, 1, 2, 3, 5, 8, 13, 21.' },
+      { currentLine: 6, variables: { i: 8, n: 8, 'dp[n]': 21 }, description: 'Return dp[8] = 21. DP: 8 steps. Naive recursion: ~54 calls. That is the power of remembering answers.' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [0, 1, '·', '·', '·', '·', '·', '·', '·'], leftIndex: 1, rightIndex: -1 },
+      { items: [0, 1, 1, '·', '·', '·', '·', '·', '·'], leftIndex: 2, rightIndex: -1 },
+      { items: [0, 1, 1, 2, '·', '·', '·', '·', '·'], leftIndex: 3, rightIndex: -1 },
+      { items: [0, 1, 1, 2, 3, '·', '·', '·', '·'], leftIndex: 4, rightIndex: -1 },
+      { items: [0, 1, 1, 2, 3, 5, '·', '·', '·'], leftIndex: 5, rightIndex: -1 },
+      { items: [0, 1, 1, 2, 3, 5, 8, '·', '·'], leftIndex: 6, rightIndex: -1 },
+      { items: [0, 1, 1, 2, 3, 5, 8, 13, '·'], leftIndex: 7, rightIndex: -1 },
+      { items: [0, 1, 1, 2, 3, 5, 8, 13, 21], leftIndex: 8, rightIndex: -1 },
+      { items: [0, 1, 1, 2, 3, 5, 8, 13, 21], leftIndex: 8, rightIndex: -1, found: true },
+    ],
+    whyItWorks: {
+      title: 'Fill the table left to right. Each cell depends only on cells you already computed.',
+      body: [
+        'Store each Fibonacci number as you compute it. fib(i) = dp[i-1] + dp[i-2] - both values are already in the table.',
+        'No tree, no redundant calls. A single loop replaces the exponential explosion of naive recursion.',
+      ],
+    },
+    whenToUseSummary: 'When a recursive solution repeats the same subproblems, store answers in a table. Build from smallest to largest.',
+    breakdown: [
+      'Fibonacci is the simplest DP example. The recursive version calls fib(2) three separate times for fib(5). DP says: compute it ONCE, store it, reuse it.',
+      'Think of it like filling in a worksheet. Row 0 and row 1 are given (the base cases). Each row after that adds the two numbers above it.',
+      '**The table.** dp[0]=0, dp[1]=1. For i from 2 to n: dp[i] = dp[i-1] + dp[i-2]. One loop, O(n) time.',
+      '**Why DP is better.** Recursive Fibonacci makes ~2^n calls. For n=8, that is ~54 calls. DP does it in 8 steps.',
+    ],
+    jsConcepts: [
+      'Bottom-up - solving the smallest subproblems first, then combining them. Opposite of recursion (top-down).',
+      'Table / memo - the array that stores answers. dp[i] = answer for subproblem i.',
+    ],
+  },
+
+
+  /* ── 0/1 Knapsack ─────────────────────────────── */
+  {
+    id: 'knapsack',
+    category: 'dp',
+    title: '0/1 Knapsack',
+    topic: '2D table',
+    description: 'You can carry 5kg. Items: a 2kg gem worth $3, a 3kg toy worth $4, a 4kg book worth $5, a 5kg gadget worth $6. Which items give the most value? The DP grid tells you exactly what to pick.',
+    timeComplexity: 'O(n x W)',
+    spaceComplexity: 'O(n x W)',
+    debugCode: `function knapsack(items, capacity) {
+  const n = items.length;
+  const dp = Array.from({ length: n + 1 }, () => Array(capacity + 1).fill(0));
+
+  for (let i = 1; i <= n; i++) {
+    const [weight, value] = items[i - 1];
+    for (let w = 0; w <= capacity; w++) {
+      if (weight > w) {
+        dp[i][w] = dp[i - 1][w];
+      } else {
+        dp[i][w] = Math.max(dp[i - 1][w], dp[i - 1][w - weight] + value);
+      }
+    }
+  }
+  return dp[n][capacity];
+}`,
+    steps: [
+      { currentLine: 2, variables: { n: 4, capacity: 5 }, description: '4 items, capacity = 5kg. Build a 5-row x 6-column table. Row 0 and col 0 are all zeros.' },
+      { currentLine: 5, variables: { i: 1, weight: 2, value: 3, w: '~' }, description: 'Item 1: 2kg gem worth $3. Fill row 1.' },
+      { currentLine: 7, variables: { i: 1, weight: 2, value: 3, w: 2 }, description: 'At w=2: weight(2) <= 2? YES. Max(skip=0, take=0+3) = 3. Can carry the gem!' },
+      { currentLine: 6, variables: { i: 1, weight: 2, value: 3, w: 5 }, description: 'Row 1 done. From w=2 onward, value stays 3. Row 1 = [0,0,3,3,3,3].' },
+      { currentLine: 5, variables: { i: 2, weight: 3, value: 4, w: '~' }, description: 'Item 2: 3kg toy worth $4.' },
+      { currentLine: 7, variables: { i: 2, weight: 3, value: 4, w: 3 }, description: 'At w=3: Max(skip=dp[1][3]=3, take=dp[1][0]+4=4) = 4. Toy alone beats gem.' },
+      { currentLine: 7, variables: { i: 2, weight: 3, value: 4, w: 5 }, description: 'At w=5: Max(skip=dp[1][5]=3, take=dp[1][2]+4=3+4=7) = 7! Gem + toy = $7.' },
+      { currentLine: 5, variables: { i: 3, weight: 4, value: 5, w: '~' }, description: 'Item 3: 4kg book worth $5.' },
+      { currentLine: 7, variables: { i: 3, weight: 4, value: 5, w: 4 }, description: 'At w=4: Max(skip=dp[2][4]=4, take=dp[2][0]+5=5) = 5. Book beats toy for 4kg.' },
+      { currentLine: 7, variables: { i: 3, weight: 4, value: 5, w: 5 }, description: 'At w=5: Max(skip=dp[2][5]=7, take=dp[2][1]+5=5) = 7. Gem+toy still best.' },
+      { currentLine: 10, variables: { i: 4, weight: 5, value: 6, w: 5 }, description: 'Item 4: 5kg gadget worth $6. At w=5: Max(skip=dp[3][5]=7, take=dp[3][0]+6=6) = 7. The gem+toy pair wins! Best value = $7.' },
+    ],
+    visualType: 'grid',
+    visualData: [
+      { items: [], grid: [[0,0,0,0,0,0],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1]], gridRow: -1, gridCol: -1 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,-1,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1]], gridRow: 1, gridCol: -1 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1]], gridRow: 1, gridCol: 3 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,3,3],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1]], gridRow: 1, gridCol: -1 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,3,3],[0,0,0,-1,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1]], gridRow: 2, gridCol: -1 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,3,3],[0,0,0,4,-1,-1],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1]], gridRow: 2, gridCol: 3 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,3,3],[0,0,0,4,4,7],[0,-1,-1,-1,-1,-1],[0,-1,-1,-1,-1,-1]], gridRow: 2, gridCol: 5 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,3,3],[0,0,0,4,4,7],[0,0,0,0,-1,-1],[0,-1,-1,-1,-1,-1]], gridRow: 3, gridCol: -1 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,3,3],[0,0,0,4,4,7],[0,0,0,0,5,-1],[0,-1,-1,-1,-1,-1]], gridRow: 3, gridCol: 4 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,3,3],[0,0,0,4,4,7],[0,0,0,0,5,7],[0,-1,-1,-1,-1,-1]], gridRow: 3, gridCol: 5 },
+      { items: [], grid: [[0,0,0,0,0,0],[0,0,0,3,3,3],[0,0,0,4,4,7],[0,0,0,0,5,7],[0,0,0,0,0,7]], gridRow: 4, gridCol: 5 },
+    ],
+    whyItWorks: {
+      title: 'Each cell asks: with these items and this weight, what is my best value?',
+      body: [
+        'dp[i][w] = best value using first i items with weight limit w.',
+        'For each item, two choices: SKIP it (value = dp[i-1][w]) or TAKE it (value = dp[i-1][w-weight] + value). Always pick the better one.',
+      ],
+    },
+    whenToUseSummary: 'Problems where you choose items with constraints. Build a grid: rows=items, cols=capacity.',
+    breakdown: [
+      'You are packing a bag for a trip. You can carry 5kg. Each item has a weight and a value.',
+      '**The grid.** Rows = items, Columns = weight limits from 0 to capacity. Each cell dp[i][w] answers: best value with first i items and weight w.',
+      '**Fill one cell at a time.** For each item: SKIP (dp[i-1][w]) or TAKE (dp[i-1][w-weight] + value). Pick the MAX.',
+      '**Read the answer.** The bottom-right cell dp[n][capacity] holds the answer.',
+      '**O(n x W) time.** For 100 items and capacity 1000, that is 100,000 cells - very fast vs 2^100 brute force.',
+    ],
+    jsConcepts: [
+      'Array.from({ length: n }, () => Array(m).fill(0)) - creates a 2D array of zeros.',
+      'Math.max(a, b) - picks the larger value. The DP decision: skip or take, which is better?',
+    ],
+  },
+
+
+  /* ═══════════════════════════════════════════════════
+     BACKTRACKING
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Sudoku (4x4) ──────────────────────────────── */
+  {
+    id: 'n-queens',
+    category: 'backtracking',
+    title: 'Sudoku (4x4 mini)',
+    topic: 'Dead end → undo → retry',
+    description: 'Fill a 4x4 Sudoku. (2,1) can be 1 or 3. Try 1. It forces (2,2) to be either 3 or 4 — but look at column 2: 3 AND 4 are both already there! (2,2) has no valid number. Undo (2,1), try 3 instead. Everything resolves.',
+    timeComplexity: 'O(4^n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function solve(board, row, col) {
+  if (row === 4) return true;
+  const [nr, nc] = col === 3 ? [row + 1, 0] : [row, col + 1];
+  if (board[row][col] !== 0) return solve(board, nr, nc);
+  for (let num = 1; num <= 4; num++) {
+    if (isValid(board, row, col, num)) {
+      board[row][col] = num;
+      if (solve(board, nr, nc)) return true;
+      board[row][col] = 0;
+    }
+  }
+  return false;
+}`,
+    steps: [
+      { currentLine: 1, variables: { row: 0, col: 0 }, description: 'Givens: (0,0)=1, (0,3)=2, (1,0)=3, (1,3)=1. Four seeds. (0,1): row 0 has 1 and 2. Try 4 (3 is blocked by (1,0)=3 in same box).' },
+      { currentLine: 7, variables: { row: 0, col: 2, num: 3 }, description: '4 works. (0,2): row 0 has 1,4,2 — only 3 is left. Row 0 done: [1,4,3,2].' },
+      { currentLine: 4, variables: { row: 1, col: 1 }, description: '(1,1): row 1 has 3,1. Box top-left has 1,4,3 — only 2 is left. Must be 2.' },
+      { currentLine: 7, variables: { row: 1, col: 2, num: 4 }, description: '(1,2): row 1 has 3,2,1 — only 4 is left. Row 1 done: [3,2,4,1].' },
+      { currentLine: 4, variables: { row: 2, col: 0 }, description: '(2,0): col 0 has 1,3. Try 2 (4 is also available, the solver tries smallest first).' },
+      { currentLine: 7, variables: { row: 2, col: 1, num: 1 }, description: '(2,1): col 1 has 4,2. Row 2 has 2. Options: 1 or 3. Try 1 first.' },
+      { currentLine: 7, variables: { row: 2, col: 2 }, description: '1 is tentatively placed. Now (2,2): row 2 has 2,1 — needs 3 or 4. But LOOK at column 2: (0,2)=3, (1,2)=4. BOTH 3 AND 4 ARE TAKEN! (2,2) has NO valid number. Dead end.' },
+      { currentLine: 8, variables: { row: 2, col: 1, num: '~' }, description: 'solve() returns false. UNDO (2,1) — erase the 1 that got us stuck. You can SEE it go blank in the grid.' },
+      { currentLine: 7, variables: { row: 2, col: 1, num: 3 }, description: 'Try the other option: 3. Row 2 has 2. Col 1 has 4,2. 3 is new — no conflict.' },
+      { currentLine: 7, variables: { row: 2, col: 2, num: 1 }, description: '(2,2): row 2 has 2,3 — needs 1 or 4. Col 2 has 3,4. Try 1 (1 is not in col 2). 1 works — no dead end this time.' },
+      { currentLine: 7, variables: { row: 2, col: 3, num: 4 }, description: '(2,3): row 2 has 2,3,1 — only 4 is left. Row 2 done: [2,3,1,4].' },
+      { currentLine: 7, variables: { row: 3, col: 0, num: 4 }, description: '(3,0): col 0 has 1,3,2 — only 4 is left. Must be 4.' },
+      { currentLine: 7, variables: { row: 3, col: 1, num: 1 }, description: '(3,1): row 3 has 4. Col 1 has 4,2,3 — only 1 is left. Must be 1.' },
+      { currentLine: 7, variables: { row: 3, col: 2, num: 2 }, description: '(3,2): row 3 has 4,1. Col 2 has 3,4,1 — only 2 is left. Must be 2.' },
+      { currentLine: 2, variables: { row: 4, col: 0 }, description: '(3,3): row 3 has 4,1,2 — only 3 is left. Puzzle solved! One backtrack, one retry, everything falls into place.' },
+    ],
+    visualType: 'grid',
+    visualData: [
+      { items: [], grid: [[1,-1,-1, 2],[ 3,-1,-1, 1],[-1,-1,-1,-1],[-1,-1,-1,-1]], gridRow: -1, gridCol: -1 },
+      { items: [], grid: [[1, 4,-1, 2],[ 3,-1,-1, 1],[-1,-1,-1,-1],[-1,-1,-1,-1]], gridRow: 0, gridCol: 2 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3,-1,-1, 1],[-1,-1,-1,-1],[-1,-1,-1,-1]], gridRow: 1, gridCol: 1 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2,-1, 1],[-1,-1,-1,-1],[-1,-1,-1,-1]], gridRow: 1, gridCol: 2 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[-1,-1,-1,-1],[-1,-1,-1,-1]], gridRow: 2, gridCol: 0 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2,-1,-1,-1],[-1,-1,-1,-1]], gridRow: 2, gridCol: 1 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2, 1,-1,-1],[-1,-1,-1,-1]], gridRow: 2, gridCol: 2 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2,-1,-1,-1],[-1,-1,-1,-1]], gridRow: 2, gridCol: 1 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2, 3,-1,-1],[-1,-1,-1,-1]], gridRow: 2, gridCol: 2 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2, 3, 1,-1],[-1,-1,-1,-1]], gridRow: 2, gridCol: 3 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2, 3, 1, 4],[-1,-1,-1,-1]], gridRow: 3, gridCol: 0 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2, 3, 1, 4],[ 4,-1,-1,-1]], gridRow: 3, gridCol: 1 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2, 3, 1, 4],[ 4, 1,-1,-1]], gridRow: 3, gridCol: 2 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2, 3, 1, 4],[ 4, 1, 2,-1]], gridRow: 3, gridCol: 3 },
+      { items: [], grid: [[1, 4, 3, 2],[ 3, 2, 4, 1],[ 2, 3, 1, 4],[ 4, 1, 2, 3]], gridRow: -1, gridCol: -1 },
+    ],
+    whyItWorks: {
+      title: 'A dead end is a cell with ZERO valid numbers. You can see why — all options are blocked.',
+      body: [
+        '(2,1)=1 seemed fine. But then (2,2) needed 3 or 4 — and BOTH were already in column 2. No valid number. Dead end.',
+        'The undo erases the choice that led here and tries the next option. (2,1)=3 → (2,2)=1 works because 1 is not in col 2.',
+      ],
+    },
+    whenToUseSummary: 'Constraint puzzles. The solver tries numbers. When a cell has zero options, the PREVIOUS choice was wrong. Undo and retry.',
+    breakdown: [
+      'A dead end is not a wrong number placed on the board — it is a cell where no number from 1-4 is valid. The grid LOOKS fine, but the solver cannot continue.',
+      '**The dead end at (2,2).** Row 2 demands 3 or 4. But column 2 already has both (0,2)=3 and (1,2)=4. No valid option. Dead end.',
+      '**The blame goes backward.** (2,2) is not at fault — it was forced by (2,1)=1. So (2,1) must be wrong.',
+      '**The visual undo.** You SEE (2,1) go from 1 to blank. Then 3 appears. The undo is on line 8: board[row][col] = 0.',
+      '**After the retry.** (2,1)=3 → (2,2)=1 (1 is not in col 2). Everything resolves, one cell at a time.',
+      '**In a harder puzzle.** A wrong choice might cause a dead end 5-10 cells later. The undo still goes all the way back to the mistake.',
+    ],
+    jsConcepts: [
+      'Dead end vs conflict. A conflict is a number breaking rules NOW. A dead end is no valid moves LEFT.',
+      'Backtracking travels backward until it finds a cell with an untried option. Then it tries that option.',
+    ],
+  },
+
+  /* ── Permutations ──────────────────────────────── */
+  {
+    id: 'permutations',
+    category: 'backtracking',
+    title: 'Generate permutations',
+    topic: 'Try every ordering, undo and try again',
+    description: 'Find every way to arrange [1, 2, 3]. Swap two numbers, explore all orders starting that way, then swap BACK (undo) and try a different swap.',
+    timeComplexity: 'O(n!)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function permute(nums, start, result) {
+  if (start === nums.length) {
+    result.push([...nums]);
+    return;
+  }
+  for (let i = start; i < nums.length; i++) {
+    [nums[start], nums[i]] = [nums[i], nums[start]];
+    permute(nums, start + 1, result);
+    [nums[start], nums[i]] = [nums[i], nums[start]];
+  }
+}`,
+    steps: [
+      { currentLine: 1, variables: { start: 0, nums: '[1,2,3]', i: '~' }, description: 'Start with [1, 2, 3]. We need every possible ordering. Fix position 0 first.' },
+      { currentLine: 5, variables: { start: 0, nums: '[1,2,3]', i: 0 }, description: 'Swap nums[0] with nums[0] (no change). Now fix position 0 with 1, permute [2,3].' },
+      { currentLine: 6, variables: { start: 1, nums: '[1,2,3]', i: 1 }, description: 'At start=1: swap nums[1] with nums[1]. Fix position 1 with 2, permute [3].' },
+      { currentLine: 6, variables: { start: 2, nums: '[1,2,3]', i: 2 }, description: 'At start=2: swap nums[2] with nums[2]. We reached the end! Record [1,2,3].' },
+      { currentLine: 7, variables: { start: 2, nums: '[1,2,3]', i: 2 }, description: 'UNDO: swap back. Back at start=2, no more i values. Return to start=1.' },
+      { currentLine: 5, variables: { start: 1, nums: '[1,2,3]', i: 2 }, description: 'Back at start=1, try i=2: swap nums[1] with nums[2] -> [1,3,2]. Then [1,3,2] recorded.' },
+      { currentLine: 7, variables: { start: 1, nums: '[1,3,2]', i: 2 }, description: 'UNDO: swap back -> [1,2,3]. All i exhausted at start=1, return to start=0.' },
+      { currentLine: 5, variables: { start: 0, nums: '[1,2,3]', i: 1 }, description: 'Back at start=0, try i=1: swap 0<->1 -> [2,1,3]. Branch produces [2,1,3] and [2,3,1].' },
+      { currentLine: 7, variables: { start: 0, nums: '[2,1,3]', i: 1 }, description: 'UNDO. Try i=2: swap 0<->2 -> [3,2,1]. Branch produces [3,2,1] and [3,1,2].' },
+      { currentLine: 2, variables: { start: 3, nums: '[[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]', i: '~' }, description: 'All 6 permutations found! Every possible ordering generated by systematically swapping and undoing.' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [1, 2, 3], leftIndex: -1, rightIndex: -1 },
+      { items: [1, 2, 3], leftIndex: 0, rightIndex: -1 },
+      { items: [1, 2, 3], leftIndex: 1, rightIndex: -1 },
+      { items: [1, 2, 3], leftIndex: 2, rightIndex: -1 },
+      { items: [1, 2, 3], leftIndex: 1, rightIndex: -1 },
+      { items: [1, 3, 2], leftIndex: 1, rightIndex: -1 },
+      { items: [1, 2, 3], leftIndex: 0, rightIndex: -1 },
+      { items: [2, 1, 3], leftIndex: 1, rightIndex: -1 },
+      { items: [3, 2, 1], leftIndex: 0, rightIndex: -1 },
+      { items: [1, 2, 3], leftIndex: -1, rightIndex: -1, found: true },
+    ],
+    whyItWorks: {
+      title: 'Swap to make a choice, recurse, then swap BACK to undo.',
+      body: [
+        'Fixing one position at a time: start with index 0, try every number in that spot by swapping. Then recurse on the rest.',
+        'After exploring all permutations starting with a choice, swap back to restore the original order. The UNDO is essential.',
+      ],
+    },
+    whenToUseSummary: 'Generating all arrangements, subsets, or combinations. Pattern: choose, recurse, undo, try next.',
+    breakdown: [
+      'You have three number tiles: 1, 2, and 3. How many different orders? 3! = 6.',
+      '**Fix one position at a time.** Start with position 0. Try putting 1 there, then figure out all orders for positions 1 and 2.',
+      '**Swap to choose.** To put a number in position start, swap it with whatever is currently there.',
+      '**Undo is not optional.** If you forget to swap back, later branches see a corrupted array.',
+      '**Why 3! = 6.** For position 0: 3 choices. For each, position 1: 2 choices. For each, position 2: 1 choice. 3x2x1 = 6.',
+    ],
+    jsConcepts: [
+      'Destructuring swap - [a, b] = [b, a] exchanges two values in one line.',
+      '[...nums] - spread operator copies an array. Used to save a snapshot of the current permutation.',
+    ],
+  },
+
 ]

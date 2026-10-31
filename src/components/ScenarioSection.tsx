@@ -7,7 +7,7 @@ import { CollapsibleBreakdown } from './CollapsibleBreakdown'
 export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
   const [stepIndex, setStepIndex] = useState(0)
   const scenario = scenarios.find((s) => s.id === scenarioId)!
-  const step = scenario.visualData[stepIndex]
+  const step = scenario.visualData[stepIndex]!
   const debugStep = scenario.steps[stepIndex]
 
   return (
@@ -23,21 +23,21 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
         <div className="algorithm-visual">
           {scenario.visualType === 'bar-chart' ? (
             <div className="bar-chart" id="bar-chart-root">
-              {step.leftIndex >= 0 && step.rightIndex >= 0 && step.leftIndex < step.rightIndex && (
+              {step.leftIndex! >= 0 && step.rightIndex! >= 0 && step.leftIndex! < step.rightIndex! && (
                 <WaterLayer
                   chartId="bar-chart-root"
-                  l={step.leftIndex}
-                  r={step.rightIndex}
-                  waterH={Math.min(Number(step.items[step.leftIndex]), Number(step.items[step.rightIndex]))}
+                  l={step.leftIndex!}
+                  r={step.rightIndex!}
+                  waterH={Math.min(Number(step.items![step.leftIndex!]), Number(step.items![step.rightIndex!]))}
                   maxH={8}
                   chartHeight={160}
                 />
               )}
-              {step.items.map((item, index) => {
+              {step.items!.map((item, index) => {
                 const height = Number(item)
                 const isLeft = index === step.leftIndex
                 const isRight = index === step.rightIndex
-                const between = step.leftIndex >= 0 && step.rightIndex >= 0 && index > Math.min(step.leftIndex, step.rightIndex) && index < Math.max(step.leftIndex, step.rightIndex)
+                const between = step.leftIndex! >= 0 && step.rightIndex! >= 0 && index > Math.min(step.leftIndex!, step.rightIndex!) && index < Math.max(step.leftIndex!, step.rightIndex!)
                 return (
                   <div className="bar-col" key={index}>
                     <div className={`bar-wrapper${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}`} data-bar-index={index}>
@@ -81,7 +81,7 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
           ) : scenario.visualType === 'sliding-window' ? (
             <div className="window-viz">
               <div className="window-track">
-                {step.items.map((item, index) => {
+                {step.items!.map((item, index) => {
                   const inWindow = step.windowStart !== undefined && step.windowEnd !== undefined && step.windowStart >= 0 && index >= step.windowStart! && index <= step.windowEnd!
                   const isFirst = inWindow && index === step.windowStart
                   const isLast = inWindow && index === step.windowEnd
@@ -125,7 +125,7 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
             <div className="prefix-array-viz">
               <div className="prefix-row">
                 <span className="prefix-row-label">nums</span>
-                {step.items.map((item, index) => {
+                {step.items!.map((item, index) => {
                   const isCurrent = index === step.leftIndex
                   const inQuery = step.queryStart !== undefined && step.queryEnd !== undefined && index >= step.queryStart && index <= step.queryEnd
                   return (
@@ -150,9 +150,26 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
                 </div>
               )}
             </div>
+          ) : scenario.visualType === 'grid' ? (
+            <div className="grid-viz">
+              {step.grid?.map((row, ri) => (
+                <div className="grid-row" key={ri}>
+                  {row.map((cell, ci) => {
+                    const isActive = ri === step.gridRow && ci === step.gridCol
+                    const isComputed = ri < (step.gridRow ?? Infinity) || (ri === step.gridRow && ci < (step.gridCol ?? 0))
+                    return (
+                      <div className={`grid-cell${isActive ? ' is-active' : ''}${isComputed && !isActive ? ' is-computed' : ''}`} key={ci}>
+                        <strong>{cell === -1 ? '·' : cell}</strong>
+                        <small>{ri},{ci}</small>
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="pointer-track">
-              {step.items.map((item, index) => {
+              {step.items!.map((item, index) => {
                 const isLeft = index === step.leftIndex
                 const isRight = index === step.rightIndex
                 const isSlow = step.slowIndex !== undefined && index === step.slowIndex

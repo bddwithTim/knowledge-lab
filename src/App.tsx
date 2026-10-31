@@ -16,7 +16,7 @@ import { ScenarioSection } from './components/ScenarioSection'
 import { BigOPage } from './components/BigOPage'
 import { WaterLayer } from './components/WaterLayer'
 
-type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-intervals' | 'prefix-sum' | 'sorting-strategies' | 'ts-learn' | 'ts-lesson' | 'zod-learn' | 'zod-lesson'
+type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-intervals' | 'prefix-sum' | 'sorting-strategies' | 'greedy' | 'dp' | 'backtracking' | 'ts-learn' | 'ts-lesson' | 'zod-learn' | 'zod-lesson'
 type NavEntry = { v: View; lo?: number; to?: number; zo?: number; cid?: string }
 type Result = { label: string; passed: boolean; actual?: unknown; error?: string }
 type OutputFlash = 'idle' | 'success' | 'error'
@@ -259,7 +259,7 @@ export function App() {
             <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')}>
               <span><Graph size={16} /></span>Big O Notation
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-strategies' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-strategies' || view === 'greedy' || view === 'dp' || view === 'backtracking' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
               <span><Graph size={16} /></span>Algorithm Patterns
             </button>
             <div className="sidebar-note">
@@ -285,7 +285,7 @@ export function App() {
             <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')} title="Big O Notation">
               <span><Graph size={16} /></span>
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-strategies' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-strategies' || view === 'greedy' || view === 'dp' || view === 'backtracking' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
               <span><Graph size={16} /></span>
             </button>
           </div>
@@ -313,7 +313,10 @@ export function App() {
         {view === 'stack' && <StackPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('fast-slow')} onNext={() => navigateTo('merge-intervals')} />}
         {view === 'merge-intervals' && <MergeIntervalsPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('stack')} onNext={() => navigateTo('prefix-sum')} />}
         {view === 'prefix-sum' && <PrefixSumPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('merge-intervals')} onNext={() => navigateTo('sorting-strategies')} />}
-        {view === 'sorting-strategies' && <SortingStrategiesPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('prefix-sum')} />}
+        {view === 'sorting-strategies' && <SortingStrategiesPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('prefix-sum')} onNext={() => navigateTo('greedy')} />}
+        {view === 'greedy' && <GreedyPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('sorting-strategies')} onNext={() => navigateTo('dp')} />}
+        {view === 'dp' && <DpPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('greedy')} onNext={() => navigateTo('backtracking')} />}
+        {view === 'backtracking' && <BacktrackingPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('dp')} />}
         {view === 'ts-learn' && <TSLearnIndex onOpen={(l) => navigateTo('ts-lesson', undefined, l)} />}
         {view === 'ts-lesson' && (
           <TSLessonPage
@@ -387,9 +390,9 @@ const patternEntries: { id: string; label: string; tags: string[]; active: boole
   { id: 'binary-search', label: 'Binary Search', tags: ['Sorted array', 'Boundary', 'O(log n)'], active: true },
   { id: 'stack', label: 'Stack', tags: ['Valid parens', 'Monotonic', 'O(n)'], active: true },
   { id: 'sorting-strategies', label: 'Sorting Strategies', tags: ['Sort + two ptr', 'Sort + sweep', 'O(n log n)'], active: true },
-  { id: 'greedy', label: 'Greedy', tags: ['Best choice at each step', 'Activity selection'], active: false },
-  { id: 'recursion', label: 'Recursion', tags: ['Self-calling', 'Base case', 'Tree-like'], active: false },
-  { id: 'backtracking', label: 'Backtracking', tags: ['Permutations', 'Combinations', 'Advanced'], active: false },
+  { id: 'greedy', label: 'Greedy', tags: ['Best choice at each step', 'Activity selection'], active: true },
+  { id: 'dp', label: 'Dynamic Programming', tags: ['Memoization', 'Bottom-up', 'O(n) or O(n×W)'], active: true },
+  { id: 'backtracking', label: 'Backtracking', tags: ['Sudoku', 'Permutations', 'O(n!)'], active: true },
 ]
 
 function PatternsOverview({ onSelectPattern }: { onSelectPattern: (view: View) => void }) {
@@ -402,7 +405,7 @@ function PatternsOverview({ onSelectPattern }: { onSelectPattern: (view: View) =
       </header>
       <section className="patterns-grid-section">
         {patternEntries.map((p) => {
-          const targetView = p.id === 'two-pointer' ? 'pattern-detail' : p.id === 'sliding-window' ? 'sliding-window' : p.id === 'hash-map' ? 'hash-map' : p.id === 'binary-search' ? 'binary-search' : p.id === 'fast-slow' ? 'fast-slow' : p.id === 'stack' ? 'stack' : p.id === 'merge-interval' ? 'merge-intervals' : p.id === 'prefix-sum' ? 'prefix-sum' : p.id === 'sorting-strategies' ? 'sorting-strategies' : null
+          const targetView = p.id === 'two-pointer' ? 'pattern-detail' : p.id === 'sliding-window' ? 'sliding-window' : p.id === 'hash-map' ? 'hash-map' : p.id === 'binary-search' ? 'binary-search' : p.id === 'fast-slow' ? 'fast-slow' : p.id === 'stack' ? 'stack' : p.id === 'merge-interval' ? 'merge-intervals' : p.id === 'prefix-sum' ? 'prefix-sum' : p.id === 'sorting-strategies' ? 'sorting-strategies' : p.id === 'greedy' ? 'greedy' : p.id === 'dp' ? 'dp' : p.id === 'backtracking' ? 'backtracking' : null
           return p.active && targetView ? (
             <button key={p.id} className="when-to-use-card" onClick={() => onSelectPattern(targetView)} style={{ cursor: 'pointer' }}>
               <span className="when-to-use-label" style={{ fontSize: '1.125rem', fontWeight: 700 }}>{p.label}</span>
@@ -1113,7 +1116,7 @@ Pivot found!`} showLineNumbers={false} /></pre>
 }
 
 /* ── SortingStrategiesPage ──────────────────────── */
-function SortingStrategiesPage({ onBack, onPrevious }: { onBack: () => void; onPrevious: () => void }) {
+function SortingStrategiesPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
   useEffect(() => { window.scrollTo(0, 0) }, [])
   return (
     <>
@@ -1181,11 +1184,255 @@ Return false`} showLineNumbers={false} /></pre>
         <div><span className="eyebrow">End of Sorting Strategies</span><strong>Review or move on?</strong></div>
         <div className="lesson-end-actions">
           <button onClick={onPrevious}>← Prefix Sum</button>
+          <button className="next-lesson-button" onClick={onNext}>Greedy →</button>
         </div>
       </nav>
     </>
   )
 }
+
+/* ── GreedyPage ────────────────────────────────── */
+function GreedyPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Greedy</h1>
+        <p>Make the best choice RIGHT NOW and never look back. Like grabbing the biggest cookie first — you do not stop to wonder if a bigger one might appear later. For some problems, always taking the best available option gives you the perfect answer in one quick pass.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Greedy?</h2>
+        <p className="big-o-chart-sub">A greedy algorithm picks the BEST option at every step and never second-guesses. No backtracking, no "what if." It works when the problem has a special property: the best choice right now also leads to the best overall answer. Not all problems work this way — but when they do, greedy is the simplest and fastest solution.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Greedy recipe — three steps:
+function greedy(items) {
+  // Step 1: sort by the thing that matters
+  items.sort(bySomeRule);
+
+  // Step 2: take the first (best) one
+  let answer = items[0];
+
+  // Step 3: go through the rest,
+  // always grabbing the best available
+  for (const item of items) {
+    if (item fits with answer) {
+      answer = combine(answer, item);
+    }
+  }
+  return answer;
+}`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key idea:</strong> once you make a greedy choice, you never undo it. You trust that the best move right now is also the best move overall. Think of it like following a recipe — each step is the right thing to do, and when you finish, you have the perfect dish.</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two classic greedy patterns</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Pick the one that leaves first</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Friends want the playroom:
+[[1,4],[3,5],[0,6],[5,7]]
+Sort by leave time: [1,4] first
+Let [1,4] use it — leaves at 4
+[3,5]? Still busy → skip
+[0,6]? Still busy → skip
+[5,7]? Room free! → let them in!
+Result: 2 friends fit!`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Sort by LEAVE time, not arrive time. The friend who leaves earliest gives the room back fastest. A late-leaving friend blocks everyone else.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Frog on lily pads</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Pads: [2, 3, 1, 1, 4]
+Frog starts at pad 0
+Pad 0 → can reach pad 2
+Pad 1 → can reach pad 4!
+Last pad is within reach 🐸`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">At each pad, the frog stretches as far as it can. Jumping less never helps — you want to go as far as possible each time.</p>
+          </div>
+        </div>
+      </section>
+      <ScenarioSection scenarioId="activity-selection" />
+      <ScenarioSection scenarioId="jump-game" />
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Greedy?</h2>
+        <ol className="big-o-checklist">
+          <li>The problem asks for <strong>"maximum" or "minimum"</strong> of something</li>
+          <li>You can build the answer <strong>one step at a time</strong></li>
+          <li>Picking the <strong>best option right now</strong> never blocks a better future choice</li>
+          <li>Sorting the items <strong>reveals the greedy order</strong> (by finish time, by size, etc.)</li>
+          <li>Keywords: &ldquo;most activities,&rdquo; &ldquo;can you reach,&rdquo; &ldquo;fewest coins,&rdquo; &ldquo;earliest&rdquo;</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ Greedy does NOT work everywhere. Example: coins [1, 3, 4] for amount 6. Greedy grabs the biggest coin (4), then 1, then 1 = 3 coins. But the best answer is two 3-coins = 2 coins. Always test if greedy actually gives the right answer before using it.</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div><span className="eyebrow">End of Greedy</span><strong>Review or move on?</strong></div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Sorting Strategies</button>
+          <button className="next-lesson-button" onClick={onNext}>DP →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── DpPage ───────────────────────────────────── */
+function DpPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Dynamic Programming</h1>
+        <p>Solve big problems by <strong>breaking them into smaller ones</strong> and <strong>remembering the answers</strong>. Instead of recomputing the same thing over and over (like naive recursion), store each result in a table and reuse it. Turns exponential time into polynomial.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Dynamic Programming?</h2>
+        <p className="big-o-chart-sub">DP is not a single algorithm — it is a <strong>strategy</strong>. You fill in a table where each cell depends only on cells you have already computed. Two key ingredients: (1) overlapping subproblems — the same small problem appears many times, and (2) optimal substructure — the best solution for a big problem uses the best solutions for its small problems.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// The DP recipe:
+// 1. Define what each cell means
+//    dp[i] = best answer for first i items
+// 2. Figure out how cells relate
+//    dp[i] = max(dp[i-1], dp[i-w] + v)
+// 3. Fill the table left to right
+// 4. The last cell has your answer`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key idea:</strong> never compute the same thing twice. Fill a table once, then every answer is a single lookup. This is what turns the Fibonacci tree (O(2ⁿ)) into a single loop (O(n)).</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two classic DP patterns</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>1D table: Fibonacci</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`fib(0)=0, fib(1)=1
+fib(2) = 0+1 = 1
+fib(3) = 1+1 = 2
+fib(4) = 1+2 = 3
+fib(5) = 2+3 = 5
+fib(6) = 3+5 = 8
+fib(7) = 5+8 = 13
+fib(8) = 8+13 = 21
+
+Each cell = sum of two before it
+One loop, 8 steps — not ~54!`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Build the sequence from the ground up. Each number is the sum of the TWO previous numbers — which you have already computed. No tree, no repeats.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>2D grid: Knapsack</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Items: [2kg/$3, 3kg/$4, 4kg/$5, 5kg/$6]
+Capacity: 5kg
+
+Grid rows = items, cols = weights
+Cell[i][w] = max value using first i
+items with weight limit w`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Fill a grid row by row. Each cell asks: should I take this item or skip it? The answer is always the BETTER of the two options. O(n × W) time.</p>
+          </div>
+        </div>
+      </section>
+      <ScenarioSection scenarioId="fib-dp" />
+      <ScenarioSection scenarioId="knapsack" />
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of DP?</h2>
+        <ol className="big-o-checklist">
+          <li>You need the <strong>best / max / min</strong> of something (optimization)</li>
+          <li>The problem has <strong>overlapping subproblems</strong> — the same small thing is computed many times</li>
+          <li>You can <strong>build the answer from smaller answers</strong> (optimal substructure)</li>
+          <li>A <strong>recursive solution</strong> exists but is too slow — DP is the fix</li>
+          <li>Keywords: "maximum value," "minimum cost," "how many ways," "longest sequence"</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ DP trades time for space. The table costs O(n) or O(n×W) memory. For very large inputs, you may need space optimization (only keep the last row/column). Start with the full table first — optimize space later.</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div><span className="eyebrow">End of Dynamic Programming</span><strong>Review or move on?</strong></div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Greedy</button>
+          <button className="next-lesson-button" onClick={onNext}>Backtracking →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── BacktrackingPage ──────────────────────────── */
+function BacktrackingPage({ onBack, onPrevious }: { onBack: () => void; onPrevious: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Backtracking</h1>
+        <p><strong>Try a choice. If it works, keep going. If it fails, undo and try the next.</strong> Like exploring a maze — you walk until you hit a wall, then retrace your steps and take a different turn. The &ldquo;undo&rdquo; is what separates backtracking from blind guessing.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Backtracking?</h2>
+        <p className="big-o-chart-sub">Backtracking is recursion with a superpower: the ability to UNDO. You explore a tree of possibilities. At each step, you make a choice and go deeper. If the path fails, you undo the last choice and try the next option. This systematically explores every possibility while pruning dead ends early.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Backtracking recipe:
+function explore(state, position) {
+  if (position is complete) {
+    record solution;  // Found one!
+    return;
+  }
+  for (const choice of options) {
+    if (choice is valid) {
+      make choice;            // TRY
+      explore(state, pos+1);  // GO DEEPER
+      undo choice;            // UNDO (the key!)
+    }
+  }
+}`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key idea:</strong> the UNDO step. Without it, you would need a fresh copy of the entire state for every branch. With undo, you reuse one state and just revert changes. This is what makes backtracking memory-efficient despite exploring a huge search space.</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two classic backtracking problems</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Constraint satisfaction</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`4×4 Sudoku:
+Fill 1–4 in each row, col, box
+Try 2 at (0,1) — seems fine
+Continue filling...
+Dead end at row 2! ✗
+  → UNDO back to (0,1)
+  → Try 3 instead ✓
+Puzzle solved!`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Try a number, check the rules, continue. If you get stuck later, erase your last guess and try a different number. That undo is backtracking.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Generate all arrangements</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Permutations of [1,2,3]:
+Fix pos 0 = 1 → permute [2,3]
+  → [1,2,3], [1,3,2]
+UNDO, fix pos 0 = 2 → permute [1,3]
+  → [2,1,3], [2,3,1]
+UNDO, fix pos 0 = 3 → permute [1,2]
+  → [3,1,2], [3,2,1]
+6 total = 3!`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Swap to choose, recurse to explore, swap BACK to undo. The same swap line both makes and unmakes the choice. Generates n! arrangements systematically.</p>
+          </div>
+        </div>
+      </section>
+      <ScenarioSection scenarioId="n-queens" />
+      <ScenarioSection scenarioId="permutations" />
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Backtracking?</h2>
+        <ol className="big-o-checklist">
+          <li>You need <strong>all solutions</strong> or <strong>any valid solution</strong> to a constraint problem</li>
+          <li>Brute force is too slow — but <strong>pruning</strong> (stopping early) makes it feasible</li>
+          <li>The state can be <strong>incrementally built and undone</strong> (swap, push/pop, fill/clear)</li>
+          <li>The problem has <strong>permutations, combinations, subsets, or board placement</strong></li>
+          <li>Keywords: &ldquo;all arrangements,&rdquo; &ldquo;place N,&rdquo; &ldquo;generate all,&rdquo; &ldquo;solve puzzle&rdquo;</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ Backtracking explores a tree of possibilities. Worst case: O(n!) or O(2ⁿ) — it IS brute force. The value is in pruning: you stop exploring dead branches the moment you detect them, which can dramatically reduce the search space in practice.</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div><span className="eyebrow">End of Backtracking</span><strong>Review or move on?</strong></div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← DP</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
 
 /* ── TS Learn Index ──────────────────────────────── */
 function TSLearnIndex({ onOpen }: { onOpen: (lesson: TSLesson) => void }) {
