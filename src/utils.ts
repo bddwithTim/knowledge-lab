@@ -27,10 +27,87 @@ export function display(value: unknown): string {
 
 /* Run TS code by trying as-is first, stripping types on syntax error */
 export function runTS(source: string) {
-  const r1 = executeExample(source)
+  // Strip import lines — they cannot run in new Function()
+  let cleaned = source.replace(/^import\s+.*$/gm, '')
+
+  // Inject a lightweight Zod stub so z.object(), z.string(), etc. work
+  const zodStub = `
+const z = (() => {
+  const fail = (msg) => { throw new Error(msg) }
+  const chain = (type, methods = {}) => {
+    const base = {
+      parse: (v) => { if (typeof v === type || (type === 'any')) return v; fail('Expected ' + type + ', got ' + typeof v) },
+      safeParse: (v) => ({ success: typeof v === type || type === 'any', data: v, error: typeof v === type || type === 'any' ? undefined : { issues: [{ message: 'Expected ' + type + ', got ' + typeof v }] } }),
+      optional: () => chain(type, { ...methods, optional: true }),
+      nullable: () => chain(type, { ...methods, nullable: true }),
+      nullish: () => chain(type, { ...methods, nullish: true }),
+      default: (d) => chain(type, { ...methods, default: d }),
+      refine: () => chain(type),
+      transform: () => chain(type),
+      brand: () => chain(type),
+      pipe: () => chain(type),
+      describe: () => chain(type),
+      min: () => chain(type),
+      max: () => chain(type),
+      positive: () => chain(type),
+      int: () => chain(type),
+      email: () => chain(type),
+      url: () => chain(type),
+      regex: () => chain(type),
+      startsWith: () => chain(type),
+      trim: () => chain(type),
+      toLowerCase: () => chain(type),
+      catch: (d) => chain(type, { ...methods, catch: d }),
+      ...methods
+    }
+    return base
+  }
+  const coerce = { number: () => chain('number'), string: () => chain('string'), boolean: () => chain('boolean'), date: () => chain('string') }
+  return {
+    string: () => chain('string'),
+    number: () => chain('number'),
+    boolean: () => chain('boolean'),
+    object: (shape) => ({
+      parse: (v) => { if (typeof v !== 'object' || v === null) fail('Expected object'); return v },
+      safeParse: (v) => (typeof v === 'object' && v !== null ? { success: true, data: v } : { success: false, error: { issues: [{ message: 'Expected object' }] } }),
+      extend: (ext) => chain('any'),
+      merge: (other) => chain('any'),
+      pick: () => chain('any'),
+      omit: () => chain('any'),
+      partial: () => chain('any'),
+      required: () => chain('any'),
+      passthrough: () => chain('any'),
+      strict: () => chain('any'),
+    }),
+    array: (schema) => ({
+      parse: (v) => { if (!Array.isArray(v)) fail('Expected array'); return v },
+      safeParse: (v) => (Array.isArray(v) ? { success: true, data: v } : { success: false, error: { issues: [{ message: 'Expected array' }] } }),
+    }),
+    union: (schemas) => chain('any'),
+    enum: (vals) => ({
+      parse: (v) => { if (!vals.includes(v)) fail('Expected one of: ' + vals.join(', ')); return v },
+      safeParse: (v) => (vals.includes(v) ? { success: true, data: v } : { success: false, error: { issues: [{ message: 'Expected one of: ' + vals.join(', ') }] } }),
+    }),
+    literal: (val) => ({
+      parse: (v) => { if (v !== val) fail('Expected ' + val); return v },
+      safeParse: (v) => (v === val ? { success: true, data: v } : { success: false, error: { issues: [{ message: 'Expected ' + val }] } }),
+    }),
+    discriminatedUnion: (key, schemas) => chain('any'),
+    tuple: (schemas) => chain('any'),
+    record: (k, v) => chain('any'),
+    lazy: (fn) => chain('any'),
+    nativeEnum: (e) => chain('any'),
+    coerce,
+    infer: null,
+  }
+})()`
+
+  cleaned = zodStub + '\n' + cleaned
+
+  const r1 = executeExample(cleaned)
   if (!r1.error) return r1
 
-  const stripped = source
+  const stripped = cleaned
     .replace(/^\s*(interface|type)\s+\w+\s*(=\s*)?\{[\s\S]*?\n?\}/gm, '')
     .replace(/^\s*type\s+\w+\s*=\s*.+$/gm, '')
     .replace(/<[A-Za-z_][\w,\s]*>(?=\s*\()/g, '')

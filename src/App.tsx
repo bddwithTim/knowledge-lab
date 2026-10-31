@@ -1,48 +1,35 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { challenges, lessons, type Challenge, type Kyu, type Lesson, type Topic } from './content'
 import { tsLessons, type TSLesson, type TSExercise } from './ts-content'
+import { zodLessons, type ZodLesson, type ZodExercise } from './zod-content'
 import { Editor } from './editor'
-import { StepDebugger } from './debugger'
-import { scenarios, type ScenarioId } from './algorithm-scenarios'
+import { type ScenarioId } from './algorithm-scenarios'
 import { BookOpen, CaretLeft, Code, Flask, Graph, List } from '@phosphor-icons/react'
 import { readStorage, writeStorage, display, runTS, executeExample, modLabel, runAssertions } from './utils'
 import { Kbd } from './components/Kbd'
 import { CodePanel } from './components/CodePanel'
+import { CollapsibleSection } from './components/CollapsibleSection'
+import { CollapsibleBreakdown } from './components/CollapsibleBreakdown'
+import { CodeText } from './components/CodeText'
+import { CodeBlock } from './components/CodeBlock'
+import { ScenarioSection } from './components/ScenarioSection'
+import { BigOPage } from './components/BigOPage'
+import { WaterLayer } from './components/WaterLayer'
 
-type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'sliding-window' | 'hash-map' | 'ts-learn' | 'ts-lesson'
-type NavEntry = { v: View; lo?: number; to?: number; cid?: string }
+type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-intervals' | 'prefix-sum' | 'sorting-strategies' | 'ts-learn' | 'ts-lesson' | 'zod-learn' | 'zod-lesson'
+type NavEntry = { v: View; lo?: number; to?: number; zo?: number; cid?: string }
 type Result = { label: string; passed: boolean; actual?: unknown; error?: string }
 type OutputFlash = 'idle' | 'success' | 'error'
 
-const topics: Array<Topic | 'All topics'> = ['All topics', 'Fundamentals', 'Strings', 'Arrays', 'Objects']
+const topics: Array<Topic | 'All topics'> = ['All topics', 'Fundamentals', 'Strings', 'Arrays', 'Objects', 'Modern JS']
 const levels: Array<Kyu | 'All levels'> = ['All levels', '8 kyu', '7 kyu', '6 kyu', '5 kyu']
 const SIDEBAR_KEY = 'knowledge-lab-sidebar-collapsed'
-
-function CollapsibleSection({ title, defaultOpen = true, children }: { title: string; defaultOpen?: boolean; children: ReactNode }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <section>
-      <button
-        className="lesson-section-header"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
-        <h2>{title}</h2>
-        <span className={`lesson-section-arrow${open ? ' open' : ''}`}>&#9654;</span>
-      </button>
-      <div className={`lesson-section-body${open ? '' : ' collapsed'}`}>
-        <div style={{ paddingTop: 'var(--space-sm)' }}>
-          {children}
-        </div>
-      </div>
-    </section>
-  )
-}
 
 export function App() {
   const [view, setView] = useState<View>('learn')
   const [activeLesson, setActiveLesson] = useState<Lesson>(lessons[0])
   const [activeTSLesson, setActiveTSLesson] = useState<TSLesson>(tsLessons[0])
+  const [activeZodLesson, setActiveZodLesson] = useState<ZodLesson>(zodLessons[0])
   const [activeChallenge, setActiveChallenge] = useState<Challenge>(challenges[0])
   const [code, setCode] = useState(lessons[0].starterCode)
   const [output, setOutput] = useState<string[]>([])
@@ -59,25 +46,30 @@ export function App() {
   const prevLessonRef = useRef<() => void>(() => {})
   const nextTSLessonRef = useRef<() => void>(() => {})
   const prevTSLessonRef = useRef<() => void>(() => {})
+  const nextZodLessonRef = useRef<() => void>(() => {})
+  const prevZodLessonRef = useRef<() => void>(() => {})
 
   const availableChallenges = useMemo(() => challenges.filter((item) => (topic === 'All topics' || item.topic === topic) && (level === 'All levels' || item.kyu === level)), [topic, level])
 
   const navigatingRef = useRef(false)
 
-  function navigateTo(view: View, lesson?: Lesson, tsLesson?: TSLesson, challenge?: Challenge) {
+  function navigateTo(view: View, lesson?: Lesson, tsLesson?: TSLesson, challenge?: Challenge, zodLesson?: ZodLesson) {
     setView(view)
     if (lesson) setActiveLesson(lesson)
     if (tsLesson) setActiveTSLesson(tsLesson)
+    if (zodLesson) setActiveZodLesson(zodLesson)
     if (challenge) setActiveChallenge(challenge)
 
     if (lesson) { setCode(lesson.starterCode); setOutput([]); setError('') }
     if (challenge) { setCode(challenge.starterCode); setResults([]); setShowHint(false) }
     if (tsLesson) { setCode(tsLesson.starterCode); setOutput([]); setError('') }
+    if (zodLesson) { setCode(zodLesson.starterCode); setOutput([]); setError('') }
 
     if (!navigatingRef.current) {
       const entry: NavEntry = { v: view }
       if (lesson) entry.lo = lesson.order
       if (tsLesson) entry.to = tsLesson.order
+      if (zodLesson) entry.zo = zodLesson.order
       if (challenge) entry.cid = challenge.id
       history.pushState(entry, '', '')
     }
@@ -98,8 +90,8 @@ export function App() {
   }
 
   const runLessonCode = useCallback(() => {
-    const src = view === 'ts-lesson' ? code : code  // TS code is handled by executeExample with strip fallback in runLessonCode
-    const next = view === 'ts-lesson' ? runTS(code) : executeExample(code)
+    const src = view === 'ts-lesson' || view === 'zod-lesson' ? code : code
+    const next = view === 'ts-lesson' || view === 'zod-lesson' ? runTS(code) : executeExample(code)
     setOutput(next.output)
     setError(next.error)
   }, [code, view])
@@ -128,12 +120,24 @@ export function App() {
     if (previous) navigateTo('ts-lesson', undefined, previous)
   }, [activeTSLesson.order])
 
+  const goNextZodLesson = useCallback(() => {
+    const next = zodLessons.find((item) => item.order === activeZodLesson.order + 1)
+    if (next) navigateTo('zod-lesson', undefined, undefined, undefined, next)
+  }, [activeZodLesson.order])
+
+  const goPrevZodLesson = useCallback(() => {
+    const previous = zodLessons.find((item) => item.order === activeZodLesson.order - 1)
+    if (previous) navigateTo('zod-lesson', undefined, undefined, undefined, previous)
+  }, [activeZodLesson.order])
+
   runLessonRef.current = runLessonCode
   runChallengeRef.current = testSolution
   nextLessonRef.current = goNextLesson
   prevLessonRef.current = goPrevLesson
   nextTSLessonRef.current = goNextTSLesson
   prevTSLessonRef.current = goPrevTSLesson
+  nextZodLessonRef.current = goNextZodLesson
+  prevZodLessonRef.current = goPrevZodLesson
 
   function toggleSidebar() {
     setSidebarCollapsed((current) => {
@@ -156,7 +160,7 @@ export function App() {
       }
 
       if (event.key === 'Enter') {
-        if (view === 'lesson' || view === 'ts-lesson') {
+        if (view === 'lesson' || view === 'ts-lesson' || view === 'zod-lesson') {
           event.preventDefault()
           runLessonRef.current()
         }
@@ -174,6 +178,10 @@ export function App() {
         event.preventDefault()
         nextTSLessonRef.current()
       }
+      if (event.shiftKey && event.key === 'ArrowRight' && (view === 'zod-lesson')) {
+        event.preventDefault()
+        nextZodLessonRef.current()
+      }
 
       if (event.shiftKey && event.key === 'ArrowLeft' && (view === 'lesson')) {
         event.preventDefault()
@@ -182,6 +190,10 @@ export function App() {
       if (event.shiftKey && event.key === 'ArrowLeft' && (view === 'ts-lesson')) {
         event.preventDefault()
         prevTSLessonRef.current()
+      }
+      if (event.shiftKey && event.key === 'ArrowLeft' && (view === 'zod-lesson')) {
+        event.preventDefault()
+        prevZodLessonRef.current()
       }
 
       if (event.key === 'e' && view !== 'learn' && view !== 'practice') {
@@ -238,13 +250,16 @@ export function App() {
             <button className={`nav-link ${view === 'ts-learn' || view === 'ts-lesson' ? 'active' : ''}`} onClick={() => navigateTo('ts-learn')}>
               <span><BookOpen size={16} /></span>TypeScript
             </button>
+            <button className={`nav-link ${view === 'zod-learn' || view === 'zod-lesson' ? 'active' : ''}`} onClick={() => navigateTo('zod-learn')}>
+              <span><Flask size={16} /></span>Zod
+            </button>
             <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => navigateTo('practice')}>
               <span><Code size={16} /></span>Practice
             </button>
             <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')}>
               <span><Graph size={16} /></span>Big O Notation
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-strategies' ? 'active' : ''}`} onClick={() => navigateTo('patterns')}>
               <span><Graph size={16} /></span>Algorithm Patterns
             </button>
             <div className="sidebar-note">
@@ -261,13 +276,16 @@ export function App() {
             <button className={`nav-link ${view === 'ts-learn' || view === 'ts-lesson' ? 'active' : ''}`} onClick={() => navigateTo('ts-learn')} title="TypeScript">
               <span><BookOpen size={16} weight="fill" /></span>
             </button>
+            <button className={`nav-link ${view === 'zod-learn' || view === 'zod-lesson' ? 'active' : ''}`} onClick={() => navigateTo('zod-learn')} title="Zod">
+              <span><Flask size={16} weight="fill" /></span>
+            </button>
             <button className={`nav-link ${view === 'practice' || view === 'challenge' ? 'active' : ''}`} onClick={() => navigateTo('practice')} title="Practice">
               <span><Code size={16} /></span>
             </button>
             <button className={`nav-link ${view === 'big-o' ? 'active' : ''}`} onClick={() => navigateTo('big-o')} title="Big O Notation">
               <span><Graph size={16} /></span>
             </button>
-            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
+            <button className={`nav-link ${view === 'patterns' || view === 'pattern-detail' || view === 'sliding-window' || view === 'hash-map' || view === 'binary-search' || view === 'fast-slow' || view === 'stack' || view === 'merge-intervals' || view === 'prefix-sum' || view === 'sorting-strategies' ? 'active' : ''}`} onClick={() => navigateTo('patterns')} title="Algorithm Patterns">
               <span><Graph size={16} /></span>
             </button>
           </div>
@@ -290,6 +308,12 @@ export function App() {
         {view === 'pattern-detail' && <PatternDetailPage onBack={() => navigateTo('patterns')} onNext={() => navigateTo('sliding-window')} onOpenChallenge={(c) => navigateTo('challenge', undefined, undefined, c)} />}
         {view === 'sliding-window' && <SlidingWindowPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('pattern-detail')} onNext={() => navigateTo('hash-map')} />}
         {view === 'hash-map' && <HashMapPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('sliding-window')} />}
+        {view === 'binary-search' && <BinarySearchPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('hash-map')} onNext={() => navigateTo('fast-slow')} />}
+        {view === 'fast-slow' && <FastSlowPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('binary-search')} onNext={() => navigateTo('stack')} />}
+        {view === 'stack' && <StackPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('fast-slow')} onNext={() => navigateTo('merge-intervals')} />}
+        {view === 'merge-intervals' && <MergeIntervalsPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('stack')} onNext={() => navigateTo('prefix-sum')} />}
+        {view === 'prefix-sum' && <PrefixSumPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('merge-intervals')} onNext={() => navigateTo('sorting-strategies')} />}
+        {view === 'sorting-strategies' && <SortingStrategiesPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('prefix-sum')} />}
         {view === 'ts-learn' && <TSLearnIndex onOpen={(l) => navigateTo('ts-lesson', undefined, l)} />}
         {view === 'ts-lesson' && (
           <TSLessonPage
@@ -302,6 +326,20 @@ export function App() {
             onNext={goNextTSLesson}
             onPrevious={goPrevTSLesson}
             onHome={() => navigateTo('ts-learn')}
+          />
+        )}
+        {view === 'zod-learn' && <ZodLearnIndex onOpen={(l) => navigateTo('zod-lesson', undefined, undefined, undefined, l)} />}
+        {view === 'zod-lesson' && (
+          <ZodLessonPage
+            lesson={activeZodLesson}
+            code={code}
+            output={output}
+            error={error}
+            onCode={setCode}
+            onRun={runLessonCode}
+            onNext={goNextZodLesson}
+            onPrevious={goPrevZodLesson}
+            onHome={() => navigateTo('zod-learn')}
           />
         )}
         {view === 'lesson' && (
@@ -337,666 +375,18 @@ export function App() {
 }
 
 
-function BigOPage() {
-  const [showBackTop, setShowBackTop] = useState(false)
-  const bigOIds: ScenarioId[] = ['big-o-1', 'big-o-n', 'big-o-logn', 'big-o-n2']
-
-  useEffect(() => { window.scrollTo(0, 0) }, [])
-
-  useEffect(() => {
-    function onScroll() { setShowBackTop(window.scrollY > 400) }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  return (
-    <>
-      <header className="algorithm-head">
-        <span className="eyebrow">Foundation</span>
-        <h1>Big O Notation</h1>
-        <p>Big O helps us describe <strong>how much more work</strong> a program has to do when the input gets bigger. If you have 10 toys and your program takes 10 steps, what happens with 100 toys? Still 10 steps? 100 steps? 10,000? Big O answers that question.</p>
-        <p>It&rsquo;s <strong>not about seconds</strong>. It&rsquo;s about how the amount of work <strong>grows</strong> as the input grows.</p>
-      </header>
-
-      {/* What Big O does NOT tell you */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">What Big O does <em>not</em> tell you</h2>
-        <p className="big-o-chart-sub">Big O has limits. It does not tell you:</p>
-        <div className="big-o-dont-list">
-          <div className="big-o-dont-item">
-            <span className="big-o-dont-icon">⏱</span>
-            <div><strong>Exact seconds.</strong> Two O(n) algorithms may run at different speeds — one might be 10× faster because of how it\'s written. Big O only tells you how they both <em>grow</em> with more input.</div>
-          </div>
-          <div className="big-o-dont-item">
-            <span className="big-o-dont-icon">📏</span>
-            <div><strong>Exact operation count.</strong> O(n) might mean 2n steps or 100n steps. Big O drops the constant because it\'s about the <em>shape</em> of growth, not the precise number.</div>
-          </div>
-          <div className="big-o-dont-item">
-            <span className="big-o-dont-icon">🐢</span>
-            <div><strong>Which is faster for small inputs.</strong> An O(n²) algorithm can beat an O(n) algorithm when `n` is tiny — because constant factors matter at small scales. Big O shines when `n` gets large.</div>
-          </div>
-        </div>
-        <p className="big-o-chart-note">Big O is about one thing: <strong>how the workload grows as the input becomes very large.</strong></p>
-      </section>
-
-      {/* Meet n */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">Meet <code>n</code></h2>
-        <p className="big-o-chart-sub">In Big O, we use <strong>n</strong> to represent the size of our input.</p>
-        <pre className="big-o-inline-code"><CodePanel code={`const small  = [7, 2, 9];       // n = 3
-const medium = [7, 2, 9, 4, 1, 6];  // n = 6
-const large  = [7, 2, 9, 4, 1, 6, 3, 8];  // n = 8`} showLineNumbers={false} /></pre>
-        <p className="big-o-chart-note">Whenever you see O(n), think &ldquo;proportional to the input size.&rdquo; Whenever you see O(1), think &ldquo;doesn&rsquo;t depend on input size at all.&rdquo;</p>
-      </section>
-
-      {/* Growth curve comparison chart */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">Growth rate comparison</h2>
-        <p className="big-o-chart-sub">X-axis = input size (n) · Y-axis = number of operations (log scale)</p>
-        <BigOGrowthChart />
-        <p className="big-o-chart-note">
-          O(1) stays flat — input size doesn&rsquo;t matter. O(log n) barely budges even for huge inputs. O(n) grows steadily. O(n log n) grows faster. O(n²) explodes.
-        </p>
-      </section>
-
-      {/* Time vs Space */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">Time vs Space complexity</h2>
-        <p className="big-o-chart-sub">Big O can describe <strong>time</strong> (how much work) AND <strong>space</strong> (how much <strong>extra</strong> memory — beyond the input itself).</p>
-        <div className="big-o-compare">
-          <div className="big-o-compare-card">
-            <h4>O(n) time, O(1) space</h4>
-            <pre className="big-o-inline-code"><CodePanel code={`function sum(arr) {
-  let total = 0;         // one variable
-  for (const n of arr) { // loops n times
-    total += n;          // constant work
-  }
-  return total;
-}`} showLineNumbers={false} /></pre>
-            <p className="big-o-chart-note">We process every element (O(n) time) but only create <code>total</code> — one variable, no matter how big the input. That&rsquo;s O(1) space.</p>
-          </div>
-          <div className="big-o-compare-card">
-            <h4>O(n) time, O(n) space</h4>
-            <pre className="big-o-inline-code"><CodePanel code={`function double(arr) {
-  const result = [];     // grows with input
-  for (const n of arr) {
-    result.push(n * 2);  // fills result
-  }
-  return result;
-}`} showLineNumbers={false} /></pre>
-            <p className="big-o-chart-note">Now <code>result</code> grows with the input — one new slot per element. That&rsquo;s O(n) space.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Big O Rules */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">Big O rules (two things to remember)</h2>
-        <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>1. Drop the constants</h3>
-        <p className="big-o-chart-sub">Big O cares about the <strong>shape</strong> of growth, not exact numbers. O(2n), O(5n), O(100n) — they all grow linearly. So we simplify to just O(n).</p>
-        <pre className="big-o-inline-code"><CodePanel code={`// Two loops — but they run one after the other, not inside each other.
-for (const item of arr) { console.log(item); }  // n steps
-for (const item of arr) { console.log(item); }  // n steps
-// Total: n + n = 2n → O(n)`} showLineNumbers={false} /></pre>
-        <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '1.5rem 0 0.5rem' }}>2. Keep only the fastest-growing part</h3>
-        <p className="big-o-chart-sub">When different kinds of work happen together, the fastest-growing term dominates. O(n + n²) → O(n²). As n gets large, n² makes n irrelevant.</p>
-        <pre className="big-o-inline-code"><CodePanel code={`// A loop followed by nested loops:
-for (const item of arr) { }        // O(n)
-for (const a of arr) {            // O(n²)
-  for (const b of arr) { }
-}
-// Total: O(n + n²) → O(n²)`} showLineNumbers={false} /></pre>
-      </section>
-
-      {/* Core scenarios */}
-      {bigOIds.map((id) => (
-        <ScenarioSection key={id} scenarioId={id} />
-      ))}
-
-      {/* Best, Average, Worst Case */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">Best, Average, and Worst case</h2>
-        <p className="big-o-chart-sub">When people say &ldquo;Big O&rdquo; without qualification, they usually mean <strong>worst case</strong>.</p>
-        <pre className="big-o-inline-code"><CodePanel code={`// Search for a number in an unsorted array
-function find(arr, target) {
-  for (const item of arr) {
-    if (item === target) return true;
-  }
-  return false;
-}
-
-// [7, 2, 9, 4, 1]
-//  ↑ Best case: target is first → O(1)
-//        ↑ Average: somewhere in middle → O(n)
-//              ↑ Worst: last or not found → O(n)`} showLineNumbers={false} /></pre>
-        <p className="big-o-chart-note">Since worst case is the most important guarantee, &ldquo;this is O(n)&rdquo; means &ldquo;in the worst case, work grows proportionally to n.&rdquo;</p>
-      </section>
-
-      {/* Beyond the Basics */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">Beyond the basics</h2>
-        <p className="big-o-chart-sub">The four complexity classes above cover most code you&rsquo;ll write. Here are three more you&rsquo;ll see in algorithm discussions:</p>
-        <table className="big-o-cheatsheet">
-          <thead>
-            <tr><th>Notation</th><th>Name</th><th>Example</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>O(n log n)</code></td>
-              <td>Linearithmic</td>
-              <td>Merge sort, quicksort — split (log n) × process all (n)</td>
-            </tr>
-            <tr>
-              <td><code>O(2ⁿ)</code></td>
-              <td>Exponential</td>
-              <td>Recursive Fibonacci, some backtracking — work doubles with each new item</td>
-            </tr>
-            <tr>
-              <td><code>O(n!)</code></td>
-              <td>Factorial</td>
-              <td>Trying every possible ordering — explodes catastrophically</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      {/* Cheat Sheet */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">How to recognize Big O</h2>
-        <p className="big-o-chart-sub">When looking at code, ask yourself these questions:</p>
-        <ol className="big-o-checklist">
-          <li><strong>Is the work fixed?</strong> No loops, just direct access → <code>O(1)</code></li>
-          <li><strong>Do I visit every item once?</strong> Single loop → <code>O(n)</code></li>
-          <li><strong>Do I repeatedly cut the problem in half?</strong> Binary search style → <code>O(log n)</code></li>
-          <li><strong>Does work happen inside another loop?</strong> Nested loops → often <code>O(n²)</code></li>
-          <li><strong>Am I sorting the data?</strong> Efficient sort → often <code>O(n log n)</code></li>
-        </ol>
-        <p className="big-o-chart-sub" style={{ marginTop: 'var(--space-lg)' }}>These are clues, not strict rules. For example, two loops one after another are still O(n). Only <strong>nested</strong> loops multiply. Always read the code, don&rsquo;t just count loops.</p>
-        <p className="big-o-chart-sub" style={{ marginTop: 'var(--space-md)' }}>Quick reference:</p>
-        <table className="big-o-cheatsheet">
-          <thead>
-            <tr><th>Pattern</th><th>Big O</th><th>Look for</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Fixed work</td><td><code>O(1)</code></td><td>No loops, direct access, hash table lookup</td></tr>
-            <tr><td>One pass</td><td><code>O(n)</code></td><td>Single loop through array</td></tr>
-            <tr><td>Cutting in half</td><td><code>O(log n)</code></td><td>Binary search, divide and conquer</td></tr>
-            <tr><td>Nested loops</td><td><code>O(n²)</code></td><td>Loop inside loop over same data</td></tr>
-            <tr><td>Sorting</td><td><code>O(n log n)</code></td><td>Merge sort, quicksort, any comparison sort</td></tr>
-          </tbody>
-        </table>
-      </section>
-
-      {/* Recap */}
-      <section className="big-o-chart-section">
-        <h2 className="big-o-chart-title">Big O in one picture</h2>
-        <table className="big-o-cheatsheet">
-          <thead>
-            <tr><th>Notation</th><th>Mental model</th><th>Example</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>O(1)</code></td><td>Fixed work — doesn&rsquo;t depend on input size</td><td><code>arr[3]</code></td></tr>
-            <tr><td><code>O(log n)</code></td><td>Keep cutting the problem in half</td><td>Binary search</td></tr>
-            <tr><td><code>O(n)</code></td><td>Visit every item once</td><td>One loop</td></tr>
-            <tr><td><code>O(n log n)</code></td><td>Divide-and-conquer, then process all</td><td>Merge sort</td></tr>
-            <tr><td><code>O(n²)</code></td><td>Compare many pairs — work explodes</td><td>Nested loops</td></tr>
-          </tbody>
-        </table>
-        <p className="big-o-chart-note"><strong>Remember:</strong> Big O describes how the amount of work grows as the input gets bigger. It&rsquo;s about the <strong>shape</strong> of growth, not exact speed.</p>
-      </section>
-
-      {/* Quiz */}
-      <BigOQuizSection />
-
-      {showBackTop && (
-        <button className="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          ↑
-        </button>
-      )}
-    </>
-  )
-}
-
-/* ── Big O Growth Chart (SVG) ── */
-function BigOGrowthChart() {
-  const W = 600
-  const H = 320
-  const pad = { top: 20, right: 20, bottom: 30, left: 45 }
-  const plotW = W - pad.left - pad.right
-  const plotH = H - pad.top - pad.bottom
-  const maxN = 50
-
-  function x(n: number) { return pad.left + (n / maxN) * plotW }
-
-  // Log scale Y: map log₁₀(ops) to plot height, min=0, max for n² at n=50 = log₁₀(2500) ≈ 3.4
-  const logMax = Math.log10(maxN * maxN)
-  function y(ops: number) {
-    const logVal = ops <= 0 ? 0 : Math.log10(ops)
-    return pad.top + plotH - (logVal / logMax) * plotH
-  }
-
-  const steps = 100
-
-  const o1Points = Array.from({ length: steps }, (_, i) => {
-    const n = (i / (steps - 1)) * maxN
-    return `${x(n)},${y(1)}`
-  }).join(' ')
-
-  const olognPoints = Array.from({ length: steps }, (_, i) => {
-    const n = Math.max(1, (i / (steps - 1)) * maxN)
-    return `${x(n)},${y(Math.log2(n) + 1)}`
-  }).join(' ')
-
-  const onPoints = Array.from({ length: steps }, (_, i) => {
-    const n = (i / (steps - 1)) * maxN
-    return `${x(n)},${y(n)}`
-  }).join(' ')
-
-  const onlognPoints = Array.from({ length: steps }, (_, i) => {
-    const n = Math.max(1, (i / (steps - 1)) * maxN)
-    return `${x(n)},${y(n * Math.log2(n))}`
-  }).join(' ')
-
-  const on2Points = Array.from({ length: steps }, (_, i) => {
-    const n = (i / (steps - 1)) * maxN
-    return `${x(n)},${y(n * n)}`
-  }).join(' ')
-
-  // Y-axis reference labels (log scale: 1, 10, 100, 1000)
-  const yTicks = [1, 10, 100, 1000, 2500]
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="big-o-chart" role="img" aria-label="Big O growth curves comparison chart">
-      {/* Y-axis grid + labels */}
-      {yTicks.map((val) => (
-        <g key={`gy-${val}`}>
-          <line x1={pad.left} y1={y(val)} x2={pad.left + plotW} y2={y(val)} stroke="var(--border-subtle)" strokeWidth="0.5" />
-          <text x={pad.left - 6} y={y(val) + 4} textAnchor="end" fill="var(--text-muted)" fontSize="9" fontFamily="var(--font-mono)">{val}</text>
-        </g>
-      ))}
-      {/* Axes */}
-      <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + plotH} stroke="var(--text-muted)" strokeWidth="1" />
-      <line x1={pad.left} y1={pad.top + plotH} x2={pad.left + plotW} y2={pad.top + plotH} stroke="var(--text-muted)" strokeWidth="1" />
-      {/* X-axis: just show direction */}
-      <text x={pad.left + plotW / 2} y={H - 4} textAnchor="middle" fill="var(--text-muted)" fontSize="10">n grows →</text>
-      {/* Y-axis label */}
-      <text x={12} y={pad.top + plotH / 2} textAnchor="middle" fill="var(--text-muted)" fontSize="10" transform={`rotate(-90, 12, ${pad.top + plotH / 2})`}>operations (log scale)</text>
-      {/* Curves */}
-      <polyline points={o1Points} fill="none" stroke="var(--accent)" strokeWidth="3" strokeDasharray="6,3" />
-      <polyline points={olognPoints} fill="none" stroke="#5bb8f0" strokeWidth="3" />
-      <polyline points={onPoints} fill="none" stroke="var(--kyu-6-text)" strokeWidth="2.5" />
-      <polyline points={onlognPoints} fill="none" stroke="#d4a853" strokeWidth="2" strokeDasharray="5,3" />
-      <polyline points={on2Points} fill="none" stroke="#f28b82" strokeWidth="3" />
-      {/* Legend */}
-      <rect x={pad.left + plotW - 155} y={pad.top + 2} width={150} height={80} rx={6} fill="var(--bg-inset)" opacity="0.85" />
-      <line x1={pad.left + plotW - 145} y1={pad.top + 16} x2={pad.left + plotW - 125} y2={pad.top + 16} stroke="#f28b82" strokeWidth="3" />
-      <text x={pad.left + plotW - 120} y={pad.top + 20} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)" fontWeight="600">O(n²)</text>
-      <line x1={pad.left + plotW - 145} y1={pad.top + 34} x2={pad.left + plotW - 125} y2={pad.top + 34} stroke="#d4a853" strokeWidth="2" strokeDasharray="5,3" />
-      <text x={pad.left + plotW - 120} y={pad.top + 38} fill="var(--text-secondary)" fontSize="10" fontFamily="var(--font-mono)">O(n log n)</text>
-      <line x1={pad.left + plotW - 145} y1={pad.top + 52} x2={pad.left + plotW - 125} y2={pad.top + 52} stroke="var(--kyu-6-text)" strokeWidth="2.5" />
-      <text x={pad.left + plotW - 120} y={pad.top + 56} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)" fontWeight="600">O(n)</text>
-      <line x1={pad.left + plotW - 145} y1={pad.top + 70} x2={pad.left + plotW - 125} y2={pad.top + 70} stroke="#5bb8f0" strokeWidth="3" />
-      <text x={pad.left + plotW - 120} y={pad.top + 74} fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono)">O(log n)</text>
-    </svg>
-  )
-}
-
-/* ── Big O Quiz ────────────────────────────────────── */
-function BigOQuizSection() {
-  type QuizItem = { question: string; code?: string; options: string[]; answer: number; explanation: string }
-  const quiz: QuizItem[] = [
-    {
-      question: 'What is the time complexity of this function?',
-      code: `function findMax(arr) {
-  let max = arr[0];
-  for (const n of arr) {
-    if (n > max) max = n;
-  }
-  return max;
-}`,
-      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
-      answer: 2,
-      explanation: 'One loop through the entire array — visits each element once. Time: O(n). Space is O(1) since only `max` is created.',
-    },
-    {
-      question: 'What is the space complexity of this function?',
-      code: `function find(arr, target) {
-  for (const item of arr) {
-    if (item === target) return true;
-  }
-  return false;
-}`,
-      options: ['O(1)', 'O(n)', 'O(n²)', 'O(log n)'],
-      answer: 0,
-      explanation: 'No extra data structures are created. Only the loop variable exists — O(1) space, even though time is O(n).',
-    },
-    {
-      question: 'Binary search on a sorted array has which time complexity?',
-      options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
-      answer: 1,
-      explanation: 'Each comparison eliminates half the remaining items. 1 billion items → ~30 steps. That is O(log n).',
-    },
-    {
-      question: 'Is this O(n²) because there are two loops?',
-      code: `for (const item of arr) {
-  console.log(item);
-}
-
-for (const item of arr) {
-  console.log(item);
-}`,
-      options: ['Yes — two loops always means O(n²)', 'No — the loops run one after another, so it\'s still O(n)', 'No — it\'s O(log n) because of the console.log', 'Yes — any function with for-loops is O(n²)'],
-      answer: 1,
-      explanation: 'The loops run sequentially (one after another), not nested. Total: n + n = 2n → O(n). Only loops inside other loops multiply.',
-    },
-  ]
-
-  return (
-    <section className="big-o-chart-section">
-      <h2 className="big-o-chart-title">Quick check</h2>
-      {quiz.map((item, i) => (
-        <BigOQuizCard key={i} item={item} />
-      ))}
-    </section>
-  )
-}
-
-function BigOQuizCard({ item }: { item: { question: string; code?: string; options: string[]; answer: number; explanation: string } }) {
-  const [selected, setSelected] = useState<number | null>(null)
-  const correct = selected === item.answer
-
-  return (
-    <div className="big-o-quiz-card">
-      <p className="big-o-quiz-question">{item.question}</p>
-      {item.code && <pre className="big-o-inline-code"><CodePanel code={item.code} showLineNumbers={false} /></pre>}
-      <div className="big-o-quiz-options">
-        {item.options.map((opt, i) => {
-          let cls = ''
-          if (selected !== null) {
-            if (i === item.answer) cls = 'is-correct'
-            else if (i === selected && !correct) cls = 'is-wrong'
-          }
-          return (
-            <button
-              key={i}
-              className={cls}
-              disabled={selected !== null}
-              onClick={() => setSelected(i)}
-            >
-              <span className="big-o-quiz-letter">{(i + 10).toString(36).toUpperCase()}</span>
-              <code>{opt}</code>
-              {selected !== null && i === item.answer && <span className="big-o-quiz-check">✓</span>}
-              {selected !== null && i === selected && !correct && <span className="big-o-quiz-cross">✗</span>}
-            </button>
-          )
-        })}
-      </div>
-      {selected !== null && (
-        <p className={`big-o-quiz-result ${correct ? 'is-correct' : 'is-wrong'}`}>
-          {correct ? 'Correct! ' : 'Not quite. '}{item.explanation}
-        </p>
-      )}
-    </div>
-  )
-}
-
-/* ── WaterLayer: ref-based water overlay for bar charts ── */
-function WaterLayer({ chartId, l, r, waterH, maxH, chartHeight }: {
-  chartId: string; l: number; r: number; waterH: number; maxH: number; chartHeight: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ left: number; width: number } | null>(null)
-
-  useLayoutEffect(() => {
-    const chart = document.getElementById(chartId)
-    if (!chart) return
-    const lb = chart.querySelector(`[data-bar-index="${l}"]`) as HTMLElement | null
-    const rb = chart.querySelector(`[data-bar-index="${r}"]`) as HTMLElement | null
-    if (!lb || !rb) return
-    const cr = chart.getBoundingClientRect()
-    const lr = lb.getBoundingClientRect()
-    const rr = rb.getBoundingClientRect()
-    setPos({
-      left: lr.left - cr.left,
-      width: rr.right - cr.left - (lr.left - cr.left),
-    })
-  }, [chartId, l, r])
-
-  const h = (waterH / maxH) * chartHeight
-
-  return <div ref={ref} className="bar-water-area" style={pos ? {
-    left: pos.left,
-    width: pos.width,
-    height: h,
-  } : { display: 'none' }} />
-}
-
-/* ── ScenarioSection: one inline scenario with viz + debugger ── */
-function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
-  const [stepIndex, setStepIndex] = useState(0)
-  const scenario = scenarios.find((s) => s.id === scenarioId)!
-  const step = scenario.visualData[stepIndex]
-  const debugStep = scenario.steps[stepIndex]
-
-  return (
-    <section className="scenario-section" id={scenarioId}>
-      <h2 className="scenario-section-title">{scenario.title}</h2>
-      <p className="scenario-section-desc">{scenario.description}</p>
-      <div className="scenario-section-meta">
-        <span>Time <strong>{scenario.timeComplexity}</strong></span>
-        <span>Space <strong>{scenario.spaceComplexity}</strong></span>
-      </div>
-      <div className="scenario-viz-stack">
-        {/* Visualization */}
-        <div className="algorithm-visual">
-          {scenario.visualType === 'bar-chart' ? (
-            <div className="bar-chart" id="bar-chart-root">
-              {step.leftIndex >= 0 && step.rightIndex >= 0 && step.leftIndex < step.rightIndex && (
-                <WaterLayer
-                  chartId="bar-chart-root"
-                  l={step.leftIndex}
-                  r={step.rightIndex}
-                  waterH={Math.min(Number(step.items[step.leftIndex]), Number(step.items[step.rightIndex]))}
-                  maxH={8}
-                  chartHeight={160}
-                />
-              )}
-              {step.items.map((item, index) => {
-                const height = Number(item)
-                const isLeft = index === step.leftIndex
-                const isRight = index === step.rightIndex
-                const between = step.leftIndex >= 0 && step.rightIndex >= 0 && index > Math.min(step.leftIndex, step.rightIndex) && index < Math.max(step.leftIndex, step.rightIndex)
-                return (
-                  <div className="bar-col" key={index}>
-                    <div className={`bar-wrapper${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}`} data-bar-index={index}>
-                      <div className={`bar${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}${between ? ' is-between' : ''}`} style={{ height: `${(height / 8) * 100}%` }}>
-                        <span className="pointer-label">{isLeft && 'L'}{isRight && !isLeft && 'R'}</span>
-                      </div>
-                    </div>
-                    <small>{index}</small>
-                    <span className="bar-value">{item}</span>
-                  </div>
-                )
-              })}
-            </div>
-          ) : scenario.visualType === 'merge-arrays' ? (
-            <div className="merge-viz">
-              <div className="merge-row merge-row-a">
-                <span className="merge-label">A</span>
-                {step.itemsA!.map((item, index) => (
-                  <div className={`merge-cell${step.pointerA === index ? ' is-left' : ''}${step.pointerA !== undefined && step.pointerA > 0 && index < step.pointerA ? ' is-done' : ''}`} key={index}>
-                    {step.pointerA === index && <span className="pointer-label">i</span>}
-                    <strong>{item}</strong><small>{index}</small>
-                  </div>
-                ))}
-              </div>
-              <div className="merge-row merge-row-b">
-                <span className="merge-label">B</span>
-                {step.itemsB!.map((item, index) => (
-                  <div className={`merge-cell${step.pointerB === index ? ' is-right' : ''}${step.pointerB !== undefined && step.pointerB > 0 && index < step.pointerB ? ' is-done' : ''}`} key={index}>
-                    {step.pointerB === index && <span className="pointer-label">j</span>}
-                    <strong>{item}</strong><small>{index}</small>
-                  </div>
-                ))}
-              </div>
-              <div className="merge-row merge-row-result">
-                <span className="merge-label">R</span>
-                {step.result!.map((item, index) => (
-                  <div className="merge-cell is-result" key={index}><strong>{item}</strong><small>{index}</small></div>
-                ))}
-              </div>
-            </div>
-          ) : scenario.visualType === 'sliding-window' ? (
-            <div className="window-viz">
-              <div className="window-track">
-                {step.items.map((item, index) => {
-                  const inWindow = step.windowStart !== undefined && step.windowEnd !== undefined && step.windowStart >= 0 && index >= step.windowStart! && index <= step.windowEnd!
-                  const isFirst = inWindow && index === step.windowStart
-                  const isLast = inWindow && index === step.windowEnd
-                  const entering = inWindow && index === step.windowEnd
-                  return (
-                    <div className={`window-pane${inWindow ? ' is-visible' : ' is-dark'}${isFirst ? ' is-first' : ''}${isLast ? ' is-last' : ''}${entering ? ' is-entering' : ''}`} key={index}>
-                      <strong>{item}</strong><small>{index}</small>
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="window-sum"><span>Sum in frame:</span><strong>{step.windowSum}</strong></div>
-            </div>
-          ) : (
-            <div className="pointer-track">
-              {step.items.map((item, index) => {
-                const isLeft = index === step.leftIndex
-                const isRight = index === step.rightIndex
-                const isSlow = step.slowIndex !== undefined && index === step.slowIndex
-                const isMatch = step.found && (isLeft || isRight)
-                const isInResult = step.slowIndex !== undefined && index <= step.slowIndex && index !== step.rightIndex
-                return (
-                  <div className={`number-cell${isLeft ? ' is-left' : ''}${isRight ? ' is-right' : ''}${isSlow ? ' is-slow' : ''}${isMatch ? ' is-match' : ''}${isInResult ? ' is-result' : isSlow === false && step.slowIndex !== undefined && index > step.slowIndex ? ' is-stale' : ''}`} key={index}>
-                    <span className="pointer-label">{isLeft && 'L'}{isRight && !isLeft && 'R'}{isSlow && !isLeft && !isRight && 'W'}</span>
-                    <strong>{item}</strong><small>{index}</small>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-        {/* Code debugger */}
-        <div className="algorithm-visual">
-          <div>
-            <span className="eyebrow">Code</span>
-          </div>
-          <StepDebugger
-            code={scenario.debugCode}
-            steps={scenario.steps}
-            currentStep={stepIndex}
-            onStep={setStepIndex}
-          />
-        </div>
-      </div>
-      {/* Why it works */}
-      <CollapsibleBreakdown breakdown={scenario.breakdown} jsConcepts={scenario.jsConcepts || []} />
-    </section>
-  )
-}
-
-/* ── Collapsible breakdown ── */
-function CollapsibleBreakdown({ breakdown, jsConcepts }: { breakdown: string[]; jsConcepts: string[] }) {
-  const [open, setOpen] = useState(false)
-  const [jsOpen, setJsOpen] = useState(false)
-  const mental = breakdown[0]
-  const phases = breakdown.slice(1, -1)
-  const insight = breakdown[breakdown.length - 1]
-
-  return (
-    <div className="scenario-breakdown">
-      <button className="breakdown-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <span className="breakdown-arrow">{open ? '▾' : '▸'}</span>
-        Breakdown
-      </button>
-      {open && (
-        <div className="breakdown-body">
-          {/* Mental model */}
-          <div className="breakdown-mental">
-            <span className="breakdown-section-label">Mental model</span>
-            <CodeText text={mental} />
-          </div>
-
-          {/* Phases */}
-          <div className="breakdown-phases">
-            <span className="breakdown-section-label">How it works</span>
-            <ol className="breakdown-phase-list">
-              {phases.map((phase, i) => (
-                <li key={i}><CodeText text={phase} /></li>
-              ))}
-            </ol>
-          </div>
-
-          {/* Key insight */}
-          <div className="breakdown-insight">
-            <span className="breakdown-section-label">Key insight</span>
-            <CodeText text={insight} />
-          </div>
-
-          {/* JS Concepts reference */}
-          {jsConcepts.length > 0 && (
-            <div className="breakdown-js">
-              <button className="breakdown-js-toggle" onClick={() => setJsOpen(!jsOpen)}>
-                <span className="breakdown-arrow">{jsOpen ? '▾' : '▸'}</span>
-                JavaScript concepts used
-              </button>
-              {jsOpen && (
-                <ul className="breakdown-js-list">
-                  {jsConcepts.map((concept, i) => (
-                    <li key={i}><CodeText text={concept} /></li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ── Inline code renderer ── */
-// Matches: backtick-wrapped text, code patterns like O(...), variable names, numbers, string literals
-/* ── Inline code renderer ── */
-
-function CodeBlock({ text }: { text: string }) {
-  return <CodePanel code={text} showLineNumbers={false} />
-}
-
-function CodeText({ text }: { text: string }) {
-  /* Split on **bold** and `code` patterns */
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
-  const nodes: ReactNode[] = []
-  for (const [pi, part] of parts.entries()) {
-    if (!part) continue
-    if (part.startsWith('**') && part.endsWith('**')) {
-      nodes.push(<strong key={`b${pi}`}>{part.slice(2, -2)}</strong>)
-    } else if (part.startsWith('`') && part.endsWith('`')) {
-      nodes.push(<code key={`c${pi}`}>{part.slice(1, -1)}</code>)
-    } else {
-      nodes.push(<span key={`t${pi}`}>{part}</span>)
-    }
-  }
-  return <>{nodes}</>
-}
-
 /* ── PatternsOverview: cards for each pattern category ── */
 
 const patternEntries: { id: string; label: string; tags: string[]; active: boolean }[] = [
   { id: 'two-pointer', label: 'Two Pointers', tags: ['5 scenarios', 'O(n)'], active: true },
   { id: 'sliding-window', label: 'Sliding Window', tags: ['2 scenarios', 'Fixed + Variable', 'O(n)'], active: true },
   { id: 'hash-map', label: 'Hash Map / Frequency', tags: ['4 scenarios', 'Two sum', 'Anagrams', 'O(n)'], active: true },
-  { id: 'fast-slow', label: 'Fast & Slow Pointers', tags: ['Cycle detection', 'O(n)'], active: false },
-  { id: 'merge-interval', label: 'Merge / Intervals', tags: ['Overlapping intervals', 'O(n log n)'], active: false },
-  { id: 'prefix-sum', label: 'Prefix Sum', tags: ['Running sum', 'Subarray = K', 'O(n)'], active: false },
-  { id: 'binary-search', label: 'Binary Search', tags: ['Sorted array', 'O(log n)'], active: false },
-  { id: 'stack', label: 'Stack', tags: ['Valid parens', 'Monotonic', 'O(n)'], active: false },
-  { id: 'sorting-strategies', label: 'Sorting Strategies', tags: ['Sort + two ptr', 'Sort + greedy', 'O(n log n)'], active: false },
+  { id: 'fast-slow', label: 'Fast & Slow Pointers', tags: ['Cycle detection', 'Middle find', 'O(n)'], active: true },
+  { id: 'merge-interval', label: 'Merge / Intervals', tags: ['Overlapping intervals', 'Sort + merge', 'O(n log n)'], active: true },
+  { id: 'prefix-sum', label: 'Prefix Sum', tags: ['Range queries', 'Equilibrium', 'O(n)'], active: true },
+  { id: 'binary-search', label: 'Binary Search', tags: ['Sorted array', 'Boundary', 'O(log n)'], active: true },
+  { id: 'stack', label: 'Stack', tags: ['Valid parens', 'Monotonic', 'O(n)'], active: true },
+  { id: 'sorting-strategies', label: 'Sorting Strategies', tags: ['Sort + two ptr', 'Sort + sweep', 'O(n log n)'], active: true },
   { id: 'greedy', label: 'Greedy', tags: ['Best choice at each step', 'Activity selection'], active: false },
   { id: 'recursion', label: 'Recursion', tags: ['Self-calling', 'Base case', 'Tree-like'], active: false },
   { id: 'backtracking', label: 'Backtracking', tags: ['Permutations', 'Combinations', 'Advanced'], active: false },
@@ -1012,7 +402,7 @@ function PatternsOverview({ onSelectPattern }: { onSelectPattern: (view: View) =
       </header>
       <section className="patterns-grid-section">
         {patternEntries.map((p) => {
-          const targetView = p.id === 'two-pointer' ? 'pattern-detail' : p.id === 'sliding-window' ? 'sliding-window' : p.id === 'hash-map' ? 'hash-map' : null
+          const targetView = p.id === 'two-pointer' ? 'pattern-detail' : p.id === 'sliding-window' ? 'sliding-window' : p.id === 'hash-map' ? 'hash-map' : p.id === 'binary-search' ? 'binary-search' : p.id === 'fast-slow' ? 'fast-slow' : p.id === 'stack' ? 'stack' : p.id === 'merge-interval' ? 'merge-intervals' : p.id === 'prefix-sum' ? 'prefix-sum' : p.id === 'sorting-strategies' ? 'sorting-strategies' : null
           return p.active && targetView ? (
             <button key={p.id} className="when-to-use-card" onClick={() => onSelectPattern(targetView)} style={{ cursor: 'pointer' }}>
               <span className="when-to-use-label" style={{ fontSize: '1.125rem', fontWeight: 700 }}>{p.label}</span>
@@ -1339,6 +729,464 @@ O(1) lookup later.`} showLineNumbers={false} /></pre>
   )
 }
 
+/* ── BinarySearchPage ──────────────────────────── */
+function BinarySearchPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+  const binarySearchIds: ScenarioId[] = ['binary-search-classic', 'binary-search-boundary']
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Binary Search</h1>
+        <p>Cut the search space <strong>in half</strong> with every step. With one comparison, you eliminate millions of elements — no need to check them one by one.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Binary Search?</h2>
+        <p className="big-o-chart-sub">Binary search is like guessing a number: you ask &ldquo;is it higher or lower than X?&rdquo; and cut the possible range in half each time. 20 guesses cover <strong>one million</strong> numbers.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Linear search — check every element (O(n)):
+for (let i = 0; i < arr.length; i++) {
+  if (arr[i] === target) return i;
+}
+
+// Binary search — cut in half each step (O(log n)):
+let lo = 0, hi = arr.length - 1;
+while (lo <= hi) {
+  const mid = Math.floor((lo + hi) / 2);
+  if (arr[mid] === target) return mid;
+  if (arr[mid] < target) lo = mid + 1;
+  else hi = mid - 1;
+}`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key insight:</strong> the array must be <strong>sorted</strong>. Only then can you know which half to discard after checking mid. Without sorting, binary search is useless.</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two binary search patterns</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Classic: Find any occurrence</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`arr = [1, 3, 5, 7, 9]
+target = 5
+mid = (0+4)/2 = 2 → arr[2]=5 ✓`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Compare mid with target. If equal, return. If smaller, search right. If larger, search left.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Boundary: Find first / last</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`arr = [1, 2, 2, 2, 3]
+target = 2
+Find first 2 → keep searching left`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">On match, save position but continue searching past it — left for first occurrence, right for last.</p>
+          </div>
+        </div>
+      </section>
+      {binarySearchIds.map((id) => <ScenarioSection key={id} scenarioId={id} />)}
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Binary Search?</h2>
+        <ol className="big-o-checklist">
+          <li>The input is <strong>sorted</strong> (or can be sorted without breaking the solution)</li>
+          <li>You need to <strong>find a specific value</strong> — not process every element</li>
+          <li>You can <strong>eliminate half the search space</strong> with a single decision</li>
+          <li>The search space is <strong>ordered</strong> — numbers, dates, alphabetical, etc.</li>
+          <li>You see keywords like &ldquo;sorted array,&rdquo; &ldquo;logarithmic,&rdquo; &ldquo;O(log n)&rdquo;</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ Binary search <strong>requires sorted data</strong>. If the array is unsorted and sorting is too expensive (O(n log n)), consider a hash map instead.</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div>
+          <span className="eyebrow">End of Binary Search</span>
+          <strong>Review or move on?</strong>
+        </div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Hash Map</button>
+          <button className="next-lesson-button" onClick={onNext}>Fast &amp; Slow Pointers →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── FastSlowPage ──────────────────────────────── */
+function FastSlowPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Fast &amp; Slow Pointers</h1>
+        <p>Two pointers moving at <strong>different speeds</strong>. The speed difference is the algorithm — it detects cycles and finds midpoints in a single pass with O(1) space.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Fast &amp; Slow?</h2>
+        <p className="big-o-chart-sub">Also called the <strong>tortoise and hare</strong> algorithm. The slow pointer moves one step at a time; the fast pointer moves two. The speed gap reveals structure: if there is a cycle, fast will eventually catch up to slow.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Without fast & slow — need a visited set (O(n) space):
+const visited = new Set();
+while (current) {
+  if (visited.has(current)) return true; // cycle found
+  visited.add(current);
+  current = current.next;
+}
+
+// With fast & slow — two pointers, O(1) space:
+let slow = head, fast = head;
+while (fast && fast.next) {
+  slow = slow.next;
+  fast = fast.next.next;
+  if (slow === fast) return true; // caught up → cycle!
+}`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key insight:</strong> the speed difference guarantees convergence. On each cycle step, fast gains one position on slow. If there is a cycle, they meet within n steps.</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two classic uses</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Detect cycle</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`3 → 2 → 0 → -4
+     ↑         ↓
+     └─────────┘
+slow: 3→2→0→-4→2→...
+fast: 3→0→2→-4→0→...
+Meet at 2 ✓`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Fast moves two steps, slow moves one. If they meet on a cycle node, the list has a loop.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Find middle</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`1 → 2 → 3 → 4 → 5 → null
+s   s   s    → stops at 3
+f       f        f → stops at 5
+
+When fast reaches end,
+slow is at middle ✓`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Fast moves at 2× speed. When fast reaches the end, slow is exactly halfway. No need to count first.</p>
+          </div>
+        </div>
+      </section>
+      <ScenarioSection scenarioId="linked-list-cycle" />
+      <ScenarioSection scenarioId="find-middle" />
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Fast &amp; Slow Pointers?</h2>
+        <ol className="big-o-checklist">
+          <li>You have a <strong>linked list</strong> (or any node chain with next/prev)</li>
+          <li>You need to <strong>detect cycles or find middle</strong> in one pass</li>
+          <li>You need <strong>O(1) space</strong> — no hash sets or extra arrays</li>
+          <li>The structure is <strong>linear with possible loops</strong></li>
+          <li>You need to <strong>find the start of a cycle</strong> (variant: reset one pointer to head after meeting)</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ Fast &amp; slow only applies to <strong>linked structures with pointers</strong>. For array cycle detection, use different techniques (e.g., index arithmetic or hash maps).</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div>
+          <span className="eyebrow">End of Fast &amp; Slow</span>
+          <strong>Review or move on?</strong>
+        </div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Binary Search</button>
+          <button className="next-lesson-button" onClick={onNext}>Stack →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── StackPage ──────────────────────────────────── */
+function StackPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Stack</h1>
+        <p>A stack remembers <strong>what still needs attention</strong>. Last one in is first one out — like a stack of plates. Perfect for tracking open tasks in reverse order.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is a Stack?</h2>
+        <p className="big-o-chart-sub">A stack follows <strong>LIFO</strong> (Last In, First Out). You push items on top and pop them off in reverse order. It is the go-to pattern when you need to <strong>match or resolve things in reverse order</strong>.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`const stack = [];
+
+stack.push('a');  // ['a']
+stack.push('b');  // ['a', 'b']
+stack.push('c');  // ['a', 'b', 'c']
+
+stack.pop();  // returns 'c'  → ['a', 'b']
+stack.pop();  // returns 'b'  → ['a']`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key insight:</strong> a stack remembers what still needs completion. When you see a closing delimiter, the most recent opener is the one that must match — that is exactly what a stack gives you.</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two ways to use a stack</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Matching (LIFO pairs)</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`'([{}])'
+( → push   stack: ['(']
+[ → push   stack: ['(', '[']
+{ → push   stack: ['(', '[', '{']
+} → pop {  stack: ['(', '['] ✓
+] → pop [  stack: ['(']      ✓
+) → pop (  stack: []          ✓`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Push openers, pop and match closers. Empty stack at the end = valid.</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Monotonic (next greater/smaller)</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`[2, 1, 3, 4]
+2 ⊣ wait   stack: [2]
+1 ⊣ wait   stack: [2, 1]
+3 arrives → pop 1, pop 2
+4 arrives → pop 3`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Maintain a decreasing (or increasing) stack. When a new element breaks the trend, resolve everything it beats. O(n) total.</p>
+          </div>
+        </div>
+      </section>
+      <ScenarioSection scenarioId="valid-parens" />
+      <ScenarioSection scenarioId="next-greater" />
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of a Stack?</h2>
+        <ol className="big-o-checklist">
+          <li>You need to <strong>match open/close pairs</strong> — brackets, tags, quotes</li>
+          <li>You need <strong>next greater / next smaller</strong> efficiently</li>
+          <li>Processing must happen in <strong>reverse order</strong> (LIFO)</li>
+          <li>You need to <strong>track unfinished work</strong> — like undo history or backtracking</li>
+          <li>You see keywords like &ldquo;balanced,&rdquo; &ldquo;parentheses,&rdquo; &ldquo;next greater,&rdquo; &ldquo;monotonic&rdquo;</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ A stack adds O(n) space. If the problem can be solved with a counter (like simple single-type bracket validation), prefer O(1) space over O(n).</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div>
+          <span className="eyebrow">End of Stack</span>
+          <strong>Review or move on?</strong>
+        </div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Fast &amp; Slow</button>
+          <button className="next-lesson-button" onClick={onNext}>Merge / Intervals →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+
+
+/* ── MergeIntervalsPage ────────────────────────── */
+function MergeIntervalsPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Merge / Intervals</h1>
+        <p>When intervals overlap, you can <strong>combine them into one</strong>. Sort by start time first — then one pass merges everything. Without sorting, overlapping intervals could be anywhere.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Merge / Intervals?</h2>
+        <p className="big-o-chart-sub">Intervals are just pairs of numbers: a start and an end. When two intervals share any time range, they overlap — and you can merge them by taking the min start and max end.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Without sorting — check every pair (O(n^2)):
+for (let i = 0; i < intervals.length; i++) {
+  for (let j = i + 1; j < intervals.length; j++) {
+    if (intervals[i] overlaps intervals[j]) merge;
+  }
+}
+
+// With sorting — one linear pass (O(n log n)):
+intervals.sort((a, b) => a[0] - b[0]);
+const merged = [intervals[0]];
+for (const curr of intervals) {
+  if (curr[0] <= last.end) last.end = max(last.end, curr.end);
+  else merged.push(curr);
+}`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key insight:</strong> sorting by start time guarantees that any overlapping intervals are <strong>adjacent</strong>. You only ever need to compare with the last merged interval — never look backward.</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two approaches</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Merge all overlapping</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`[[1,3],[2,6],[8,10]]
+sort: [[1,3],[2,6],[8,10]]
+[1,3] → seed
+[2,6] → overlaps → [1,6]
+[8,10] → no overlap → push
+Result: [[1,6],[8,10]]`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Sort first, then one pass. Overlap check: curr[0] ≤ prev[1]. On overlap, prev[1] = max(prev[1], curr[1]).</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Insert and merge</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Insert [2,5] into [[1,3],[6,9]]
+Phase 1: before — none
+Phase 2: merge [1,3] → [1,5]
+Phase 3: after — [6,9]
+Result: [[1,5],[6,9]]`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Three phases when the list is already sorted: copy before overlap, merge during, copy after. O(n) — no full sort needed.</p>
+          </div>
+        </div>
+      </section>
+      <ScenarioSection scenarioId="merge-overlapping" />
+      <ScenarioSection scenarioId="insert-interval" />
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Merge / Intervals?</h2>
+        <ol className="big-o-checklist">
+          <li>Input is <strong>pairs of numbers</strong> representing ranges (time, coordinates, etc.)</li>
+          <li>You need to <strong>combine overlapping ranges</strong> into a cleaner list</li>
+          <li>You need to <strong>count gaps, overlaps, or non-overlapping regions</strong></li>
+          <li>Sorting makes the problem <strong>linear</strong> — overlap check becomes O(1) per interval</li>
+          <li>Keywords: "merge intervals," "overlapping," "insert range," "meeting rooms"</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ If intervals are <strong>not</strong> sortable (e.g., they have identity that cannot be reordered), consider a different approach like line sweep with a TreeMap.</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div><span className="eyebrow">End of Merge / Intervals</span><strong>Review or move on?</strong></div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Stack</button>
+          <button className="next-lesson-button" onClick={onNext}>Prefix Sum →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── PrefixSumPage ─────────────────────────────── */
+function PrefixSumPage({ onBack, onPrevious, onNext }: { onBack: () => void; onPrevious: () => void; onNext: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Prefix Sum</h1>
+        <p>Precompute running totals <strong>once</strong>, then answer any range query in <strong>O(1)</strong>. Instead of re-summing every time, a single subtraction gives the answer.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What is Prefix Sum?</h2>
+        <p className="big-o-chart-sub">A prefix sum array stores the cumulative total up to each index. Once built, any range sum is just <strong>one subtraction</strong> — no loops, no re-computation.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`nums:    [3, 1, 4, 1, 5, 9]
+prefix: [0, 3, 4, 8, 9, 14, 23]  ← one extra at start
+         ↑ zero makes range math clean
+
+// Range sum query: sum(nums[1..4])
+// = prefix[5] - prefix[1]
+// = 14 - 3 = 11   ✓  O(1)!`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key insight:</strong> prefix[r+1] - prefix[l] gives the sum of nums[l..r] because prefix[i] stores the sum of nums[0..i-1]. The leading zero avoids special-casing ranges that start at index 0.</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two classic uses</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Range sum queries</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Build: O(n) once
+Query: O(1) each
+After 1,000,000 queries:
+  Without prefix: 1M × n steps
+  With prefix: 1M × 1 step`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">When queries outnumber builds, prefix sums save enormous time. Build once, answer forever in O(1).</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Pivot / equilibrium</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`[1, 7, 3, 6, 5, 6]
+total = 28
+At index 3: leftSum = 11
+rightSum = 28 - 11 - 6 = 11 ✓
+Pivot found!`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Track leftSum as you scan. At each index, rightSum = total - leftSum - nums[i]. No need to recompute the right side.</p>
+          </div>
+        </div>
+      </section>
+      <ScenarioSection scenarioId="range-sum" />
+      <ScenarioSection scenarioId="pivot-index" />
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Prefix Sum?</h2>
+        <ol className="big-o-checklist">
+          <li>You need to answer <strong>many range sum queries</strong> on static data</li>
+          <li>Looking for <strong>subarray sums or equilibrium points</strong></li>
+          <li>You can <strong>precompute once, query many times</strong></li>
+          <li>Keywords: "subarray sum," "range sum," "pivot index," "equilibrium"</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ Prefix sums need <strong>static data</strong>. If the array changes between queries, use a Fenwick tree (Binary Indexed Tree) instead — O(log n) updates and queries.</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div><span className="eyebrow">End of Prefix Sum</span><strong>Review or move on?</strong></div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Merge / Intervals</button>
+          <button className="next-lesson-button" onClick={onNext}>Sorting Strategies →</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── SortingStrategiesPage ──────────────────────── */
+function SortingStrategiesPage({ onBack, onPrevious }: { onBack: () => void; onPrevious: () => void }) {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return (
+    <>
+      <header className="algorithm-head">
+        <button className="back-link" onClick={onBack}>← Back to patterns</button>
+        <span className="eyebrow">Algorithm Pattern</span>
+        <h1>Sorting Strategies</h1>
+        <p>Sorting is not just for finding elements — it is a <strong>meta-strategy</strong> that unlocks other patterns. Sort first, then use two-pointers, binary search, or sweeping to finish in one pass.</p>
+      </header>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">What are Sorting Strategies?</h2>
+        <p className="big-o-chart-sub">Sorting rearranges data to make <strong>adjacency</strong> meaningful. Once sorted, duplicates are grouped, ranges line up, and you can use techniques that require ordered data — like two-pointers or binary search.</p>
+        <pre className="big-o-inline-code"><CodePanel code={`// Without sorting — 3Sum takes O(n^3):
+for (i..n) for (j..n) for (k..n) check sum
+
+// Sort + two-pointer — 3Sum takes O(n^2):
+nums.sort();
+for (i..n)  // anchor
+  twoPointer(i+1, end, target=-nums[i])
+
+// Sort + sweep — overlap check in O(n log n):
+intervals.sort(by start);
+for (i=1..n) if overlaps(i, i-1) return false;`} showLineNumbers={false} /></pre>
+        <p className="big-o-chart-note">💡 <strong>The key insight:</strong> the O(n log n) sorting cost buys you a huge simplification. After sorting, problems that required nested loops often collapse to a single linear scan.</p>
+      </section>
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">Two common patterns</h2>
+        <div className="big-o-compare">
+          <div className="big-o-compare-card">
+            <h4>Sort + two-pointer</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`3Sum: [-4,-1,-1,0,1,2]
+Anchor: -4 → find pair sum = 4
+        l=-1, r=2 → -1+2 = 1 ✗
+        ... l and r converge
+Anchor: -1 → find pair sum = 1
+        l=-1, r=2 → -1+2 = 1 ✓
+Triplet: [-1, -1, 2]`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">For each anchor, run two-pointers on the remainder. O(n²) instead of O(n³).</p>
+          </div>
+          <div className="big-o-compare-card">
+            <h4>Sort + sweep</h4>
+            <pre className="big-o-inline-code"><CodePanel code={`Meetings: [[0,30],[5,10],[15,20]]
+Sort by start: same order
+Check adjacent:
+  [0,30] vs [5,10] → conflict!
+Return false`} showLineNumbers={false} /></pre>
+            <p className="big-o-chart-note">Sort by one dimension, then scan adjacent pairs. Any conflict must be adjacent after sorting.</p>
+          </div>
+        </div>
+      </section>
+      <ScenarioSection scenarioId="three-sum" />
+      <ScenarioSection scenarioId="meeting-rooms" />
+      <section className="big-o-chart-section">
+        <h2 className="big-o-chart-title">When should I think of Sorting Strategies?</h2>
+        <ol className="big-o-checklist">
+          <li>Brute force is <strong>O(n²) or O(n³)</strong> — sorting may drop a dimension</li>
+          <li>The problem involves <strong>pairs, triplets, or ranges</strong> where order matters</li>
+          <li>You need to <strong>find, count, or check</strong> — not modify the original data</li>
+          <li>Duplicates need to be <strong>grouped or skipped</strong></li>
+          <li>Keywords: "sort and then," "after sorting," "sorted array," "pair sum"</li>
+        </ol>
+        <p className="big-o-chart-note">⚠️ Sorting costs O(n log n). If a solution exists in O(n) without sorting (like hash map for two-sum), prefer the faster approach. Sorting strategies shine when O(n log n) is better than O(n²).</p>
+      </section>
+      <nav className="lesson-end-nav" aria-label="Pattern navigation">
+        <div><span className="eyebrow">End of Sorting Strategies</span><strong>Review or move on?</strong></div>
+        <div className="lesson-end-actions">
+          <button onClick={onPrevious}>← Prefix Sum</button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
 /* ── TS Learn Index ──────────────────────────────── */
 function TSLearnIndex({ onOpen }: { onOpen: (lesson: TSLesson) => void }) {
   return (
@@ -1371,6 +1219,229 @@ function TSLearnIndex({ onOpen }: { onOpen: (lesson: TSLesson) => void }) {
         ))}
       </ol>
     </>
+  )
+}
+
+/* ── Zod Learn Index ───────────────────────────── */
+function ZodLearnIndex({ onOpen }: { onOpen: (lesson: ZodLesson) => void }) {
+  return (
+    <>
+      <header className="page-head">
+        <span className="eyebrow">Review Zod</span>
+        <h1>Runtime validation,<br />API contracts, and testing.</h1>
+        <p>Zod keeps your types alive at runtime. Learn to validate API responses, form inputs, config files, and test fixtures — with clear, composable schemas. Includes real Playwright and API testing patterns.</p>
+      </header>
+      <section className="path-heading">
+        <div>
+          <span className="eyebrow">Reference path</span>
+          <h2>Zod fundamentals &amp; testing</h2>
+        </div>
+        <span>{zodLessons.length} detailed lessons</span>
+      </section>
+      <ol className="learning-path">
+        {zodLessons.map((lesson) => (
+          <li key={lesson.id}>
+            <span className="path-number">{String(lesson.order).padStart(2, '0')}</span>
+            <div>
+              <span className="lesson-topic">{lesson.block}</span>
+              <strong>{lesson.title}</strong>
+              <p>{lesson.summary}</p>
+            </div>
+            <button onClick={() => onOpen(lesson)}>
+              Review <b>→</b>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </>
+  )
+}
+
+/* ── Zod Lesson Page ────────────────────────────── */
+function ZodLessonPage({
+  lesson,
+  code,
+  output,
+  error,
+  onCode,
+  onRun,
+  onNext,
+  onPrevious,
+  onHome,
+}: {
+  lesson: ZodLesson
+  code: string
+  output: string[]
+  error: string
+  onCode: (code: string) => void
+  onRun: () => void
+  onNext: () => void
+  onPrevious: () => void
+  onHome: () => void
+}) {
+  const hasPrevious = lesson.order > 1
+  const hasNext = lesson.order < zodLessons.length
+
+  useEffect(() => { window.scrollTo(0, 0) }, [lesson.order])
+
+  return (
+    <>
+      <header className="lesson-head">
+        <div>
+          <span className="eyebrow">Zod Lesson {lesson.order} of {zodLessons.length} · {lesson.block}</span>
+          <h1>{lesson.title}</h1>
+          <p>{lesson.summary}</p>
+        </div>
+      </header>
+      <article className="reading">
+        {lesson.sections.map((section) => (
+          <CollapsibleSection key={section.title} title={section.title} defaultOpen>
+            {section.body.map((paragraph) => <p key={paragraph}><CodeText text={paragraph} /></p>)}
+            {section.code && <CodeBlock text={section.code} />}
+          </CollapsibleSection>
+        ))}
+      </article>
+      <Editor title="lesson.zod.ts" code={code} onCode={onCode} onRun={onRun} output={output} error={error} />
+      {lesson.exercises.length > 0 && (
+        <section className="ts-exercises-section">
+          <h2 className="scenario-section-title">Exercises</h2>
+          <div className="ts-exercises-grid">
+            {lesson.exercises.map((exercise, index) => (
+              <ZodExerciseCard key={index} exercise={exercise} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
+      <nav className="lesson-end-nav" aria-label="Lesson navigation">
+        <div>
+          <span className="eyebrow">End of lesson</span>
+          <strong>{hasNext ? 'Ready for the next concept?' : 'You reached the end of this path.'}</strong>
+        </div>
+        <div className="lesson-end-actions">
+          {hasPrevious && <button onClick={onPrevious}>← Back</button>}
+          <button onClick={onHome}>All lessons</button>
+          {hasNext && <button className="next-lesson-button" onClick={onNext}>Next →</button>}
+        </div>
+      </nav>
+    </>
+  )
+}
+
+/* ── Zod Exercise Card ──────────────────────────── */
+function ZodExerciseCard({ exercise, index }: { exercise: ZodExercise; index: number }) {
+  const [revealed, setRevealed] = useState(false)
+  const [selectedOption, setSelectedOption] = useState<number | null>(null)
+
+  return (
+    <div className="ts-exercise-card">
+      <div className="ts-exercise-header">
+        <span className="ts-exercise-badge">{index + 1}</span>
+        <span>{exercise.question}</span>
+      </div>
+
+      {exercise.kind === 'convert-js-ts' && (
+        <>
+          <div className="ts-ex-label">Without Zod</div>
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.jsCode} /></pre>
+          {!revealed ? (
+            <button className="ts-reveal-btn" onClick={() => setRevealed(true)}>Reveal Zod version</button>
+          ) : (
+            <>
+              <div className="ts-ex-label">With Zod</div>
+              <pre className="ts-exercise-code"><CodeBlock text={exercise.tsCode} /></pre>
+            </>
+          )}
+        </>
+      )}
+
+      {exercise.kind === 'fix-type' && (
+        <>
+          <div className="ts-ex-label">Broken schema <span className="ts-error-desc">{exercise.errorDescription}</span></div>
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.brokenCode} /></pre>
+          {!revealed ? (
+            <button className="ts-reveal-btn" onClick={() => setRevealed(true)}>Reveal fix</button>
+          ) : (
+            <>
+              <div className="ts-ex-label" style={{ color: '#4caf88' }}>Fixed</div>
+              <pre className="ts-exercise-code ts-ex-fixed"><CodeBlock text={exercise.fixedCode} /></pre>
+            </>
+          )}
+        </>
+      )}
+
+      {exercise.kind === 'predict-type' && (
+        <>
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.code} /></pre>
+          {!revealed ? (
+            <button className="ts-reveal-btn" onClick={() => setRevealed(true)}>Reveal answer</button>
+          ) : (
+            <div className="ts-ex-answer">{exercise.answer}</div>
+          )}
+        </>
+      )}
+
+      {exercise.kind === 'model-it' && (
+        <>
+          <div className="ts-ex-label">Data shape</div>
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.data} /></pre>
+          {!revealed ? (
+            <button className="ts-reveal-btn" onClick={() => setRevealed(true)}>Reveal schema</button>
+          ) : (
+            <>
+              <div className="ts-ex-label">Zod schema</div>
+              <pre className="ts-exercise-code ts-ex-fixed"><CodeBlock text={exercise.interface} /></pre>
+            </>
+          )}
+        </>
+      )}
+
+      {exercise.kind === 'choose-best' && (
+        <div className="ts-exercise-options">
+          {(exercise.options).map((opt, i) => {
+            let cls = 'ts-option'
+            if (revealed) {
+              if (opt.isCorrect) cls += ' is-correct'
+              else if (i === selectedOption && !opt.isCorrect) cls += ' is-wrong'
+            }
+            return (
+              <button
+                key={i}
+                className={cls}
+                disabled={revealed}
+                onClick={() => { setSelectedOption(i); setRevealed(true) }}
+              >
+                <span className="ts-option-letter">{opt.label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>{opt.code}</span>
+                {revealed && opt.isCorrect && <span className="ts-option-check">✓</span>}
+                {revealed && i === selectedOption && !opt.isCorrect && <span className="ts-option-cross">✗</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {(exercise.kind === 'fill-blank') && (() => {
+        const blanks = exercise.blanks
+        const el = <div className="ts-fill-blank">
+          <pre className="ts-exercise-code"><CodeBlock text={exercise.code} /></pre>
+          <div className="ts-blank-hints">
+            {blanks.map((b, i) => <span key={i} className="ts-blank-chip">{b.label}: {b.answer}</span>)}
+          </div>
+        </div>
+        return (
+          <>
+            {el}
+            <div className="ts-ex-label" style={{ color: '#858585', marginTop: 'var(--space-sm)' }}>
+              {exercise.explanation}
+            </div>
+          </>
+        )
+      })()}
+
+      {revealed && exercise.explanation && exercise.kind !== 'fill-blank' && (
+        <div className="ts-ex-explanation">{exercise.explanation}</div>
+      )}
+    </div>
   )
 }
 
@@ -1496,6 +1567,18 @@ function TSLessonPage({
           <CollapsibleSection key={section.title} title={section.title} defaultOpen>
             {section.body.map((paragraph) => <p key={paragraph}><CodeText text={paragraph} /></p>)}
             {section.code && <CodeBlock text={section.code} />}
+            {section.table && (
+              <table className="lesson-table">
+                <thead>
+                  <tr>{section.table.head.map((h, i) => <th key={i}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {section.table.rows.map((row, ri) => (
+                    <tr key={ri}>{row.map((cell, ci) => <td key={ci}>{cell}</td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </CollapsibleSection>
         ))}
       </article>
@@ -1716,6 +1799,18 @@ function LessonPage({
           <CollapsibleSection key={section.title} title={section.title} defaultOpen>
             {section.body.map((paragraph) => <p key={paragraph}><CodeText text={paragraph} /></p>)}
             {section.code && <CodeBlock text={section.code} />}
+            {section.table && (
+              <table className="lesson-table">
+                <thead>
+                  <tr>{section.table.head.map((h, i) => <th key={i}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {section.table.rows.map((row, ri) => (
+                    <tr key={ri}>{row.map((cell, ci) => <td key={ci}>{cell}</td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </CollapsibleSection>
         ))}
       </article>

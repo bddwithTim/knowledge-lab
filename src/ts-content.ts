@@ -14,7 +14,7 @@ export type TSLesson = {
   title: string
   block: string
   summary: string
-  sections: { title: string; body: string[]; code?: string }[]
+  sections: { title: string; body: string[]; code?: string; table?: { head: string[]; rows: string[][] } }[]
   starterCode: string
   exercises: TSExercise[]
 }
@@ -1045,3 +1045,4 @@ export const tsLessons: TSLesson[] = [
     ],
   },
 ]
+

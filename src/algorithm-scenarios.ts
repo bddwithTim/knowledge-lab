@@ -1,4 +1,4 @@
-export type ScenarioId = 'pair-sum' | 'palindrome' | 'remove-duplicates' | 'container-water' | 'merge-sorted' | 'sliding-window' | 'smallest-subarray' | 'two-sum' | 'first-unique' | 'valid-anagram' | 'most-frequent' | 'big-o-1' | 'big-o-n' | 'big-o-n2' | 'big-o-logn'
+export type ScenarioId = 'pair-sum' | 'palindrome' | 'remove-duplicates' | 'container-water' | 'merge-sorted' | 'sliding-window' | 'smallest-subarray' | 'two-sum' | 'first-unique' | 'valid-anagram' | 'most-frequent' | 'big-o-1' | 'big-o-n' | 'big-o-n2' | 'big-o-logn' | 'binary-search-classic' | 'binary-search-boundary' | 'linked-list-cycle' | 'find-middle' | 'valid-parens' | 'next-greater' | 'merge-overlapping' | 'insert-interval' | 'range-sum' | 'pivot-index' | 'three-sum' | 'meeting-rooms'
 
 export type ScenarioStep = {
   description: string
@@ -22,11 +22,19 @@ export type VisualStep = {
   windowStart?: number
   windowEnd?: number
   windowSum?: number
+  // interval-timeline fields
+  intervals?: [number, number][]
+  current?: number
+  conflict?: boolean
+  // prefix-array fields
+  prefix?: number[]
+  queryStart?: number
+  queryEnd?: number
 }
 
 export type Scenario = {
   id: ScenarioId
-  category: 'big-o' | 'two-pointer' | 'sliding-window' | 'hash-map'
+  category: 'big-o' | 'two-pointer' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-interval' | 'prefix-sum' | 'sorting-strategies'
   title: string
   topic: string
   description: string
@@ -34,7 +42,7 @@ export type Scenario = {
   spaceComplexity: string
   debugCode: string
   steps: ScenarioStep[]
-  visualType: 'number-cells' | 'char-cells' | 'array-cells' | 'bar-chart' | 'merge-arrays' | 'sliding-window'
+  visualType: 'number-cells' | 'char-cells' | 'array-cells' | 'bar-chart' | 'merge-arrays' | 'sliding-window' | 'interval-timeline' | 'prefix-array'
   visualData: VisualStep[]
   whyItWorks: { title: string; body: string[] }
   whenToUseSummary: string
@@ -115,7 +123,7 @@ export const scenarios: Scenario[] = [
     },
     whenToUseSummary: 'Start pointers at both ends, move inward based on whether the current sum is too high or too low.',
     breakdown: [
-      'Two pointers start at opposite ends of a sorted array. Add them up. If the sum is too big, move the right pointer left (need a smaller number). If too small, move the left pointer right (need a bigger number). Because the array is <strong>sorted</strong>, each move eliminates not just one pair, but many — and you never need to backtrack.',
+      'Two pointers start at opposite ends of a sorted array. Add them up. If the sum is too big, move the right pointer left (need a smaller number). If too small, move the left pointer right (need a bigger number). Because the array is **sorted**, each move eliminates not just one pair, but many — and you never need to backtrack.',
       '**Why sorting matters:** When `sum < target`, only a bigger number can help — moving the left pointer gives you exactly that. When `sum > target`, only a smaller number helps — moving the right pointer gives you that. Without sorting, you cannot predict which direction to move.',
       '**Compare to brute force:** Checking every pair with nested loops takes O(n²). For n=100, that is ~5,000 checks. Two pointers does it in O(n) — just 100 steps. The sorted order lets you skip almost all of them.',
       '**Position** — Start `left` at the smallest value (index 0) and `right` at the largest value (last index). Widest possible range.',
@@ -261,7 +269,7 @@ export const scenarios: Scenario[] = [
     },
     whenToUseSummary: 'Loop through a sorted array and push only values that differ from the last one in the result. Simple, readable, O(n).',
     breakdown: [
-      '<strong>Fast explores. Slow builds the result.</strong> The `read` pointer scans for values it hasn\'t seen before. The `write` pointer marks where the next unique value goes. Together they divide the array into two zones: unique values on the left, unprocessed values on the right.',
+      '**Fast explores. Slow builds the result.** The `read` pointer scans for values it hasn\'t seen before. The `write` pointer marks where the next unique value goes. Together they divide the array into two zones: unique values on the left, unprocessed values on the right.',
       '**Initialize** — The first element is always unique. Start `write` at index 1, reserving position 0 for the first unique value.',
       '**Scan** — `read` moves from left to right starting at index 1 (we already accepted index 0). Because the array is sorted, duplicates are always next to each other.',
       '**Detect** — Compare `nums[read]` with `nums[read - 1]` (the previous element). If they differ, we found a new unique value.',
@@ -369,7 +377,7 @@ export const scenarios: Scenario[] = [
     },
     whenToUseSummary: 'Start at both ends, calculate area, and always move the shorter line inward — the width can only decrease.',
     breakdown: [
-      'Two walls trap water between them. The water level cannot exceed the <strong>shorter wall</strong> — it would spill over. The area is height × width. Start at the widest possible container (both ends), then always move the shorter wall inward. Why? Because the shorter wall is the bottleneck.',
+      'Two walls trap water between them. The water level cannot exceed the **shorter wall** — it would spill over. The area is height × width. Start at the widest possible container (both ends), then always move the shorter wall inward. Why? Because the shorter wall is the bottleneck.',
       '**Why move the shorter side?** The container\'s height is capped by the shorter wall. If you move the taller wall, the width shrinks and the height cannot improve (still limited by the same short wall). Moving the shorter wall is the ONLY move with potential upside — you might find a taller wall.',
       '**Position** — Start `left` at the first wall and `right` at the last. This is the widest possible container.',
       '**Measure** — Compute height (`min` of the two walls) and width (`right - left`). Area = `h × w`.',
@@ -826,7 +834,7 @@ function binarySearch(arr, target) {
     },
     whenToUseSummary: 'Expand right until condition met, shrink left to find minimum. Both pointers move forward — each element processed at most twice.',
     breakdown: [
-      'This is the <strong>variable-size</strong> sliding window. Unlike the fixed-size version, the window grows and shrinks dynamically. Expand until you meet the target sum, then shrink to see if a smaller window also works.',
+      'This is the **variable-size** sliding window. Unlike the fixed-size version, the window grows and shrinks dynamically. Expand until you meet the target sum, then shrink to see if a smaller window also works.',
       '**Expand** — The `right` pointer moves forward, adding elements to `sum`. Keep expanding until `sum ≥ target`.',
       '**Shrink** — Once valid, record the window length (`right - left + 1`). Then move `left` forward, subtracting from `sum`. Keep shrinking while `sum ≥ target` — you might find a smaller valid window.',
       '**Repeat** — Continue expanding and shrinking. Each element enters the window once (when `right` passes it) and leaves once (when `left` passes it). That&rsquo;s at most 2n operations → O(n).',
@@ -845,7 +853,7 @@ function binarySearch(arr, target) {
     category: 'hash-map',
     title: 'Two Sum (unordered)',
     topic: 'Complement lookup',
-    description: 'Find two numbers in `[2, 7, 11, 15]` that add up to `9`. Without a hash map, you\'d check every pair (O(n²)). With one, look up the complement in O(1) — total O(n).',
+    description: 'Find two numbers in [2, 7, 11, 15] that add up to 9. Think of it like a memory game — as you scan each number, ask: "Have I seen 9 minus this number before?" A hash map remembers what you have seen, so each lookup is instant.',
     timeComplexity: 'O(n)',
     spaceComplexity: 'O(n)',
     debugCode: `function twoSum(nums, target) {
@@ -1106,6 +1114,920 @@ function binarySearch(arr, target) {
     ],
     jsConcepts: [
       'Tracking max on the fly — instead of a second loop, update every time a count changes. Works because counts only increase.',
+    ],
+  },
+
+  /* ═══════════════════════════════════════════════════
+     BINARY SEARCH
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Binary Search Classic ───────────────────────── */
+  {
+    id: 'binary-search-classic',
+    category: 'binary-search',
+    title: 'Classic binary search',
+    topic: 'Divide & conquer',
+    description: 'Find `7` in `[1, 3, 5, 7, 9, 11, 13]`. Each step cuts the search space in half — from 7 elements to 3 to 1.',
+    timeComplexity: 'O(log n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function binarySearch(arr, target) {
+  let lo = 0;
+  let hi = arr.length - 1;
+
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (arr[mid] === target) return mid;
+    if (arr[mid] < target) lo = mid + 1;
+    else hi = mid - 1;
+  }
+  return -1;
+}`,
+    steps: [
+      { currentLine: 2, variables: { lo: 0, hi: '~', mid: '~' }, description: 'Start: `lo = 0` (first index)' },
+      { currentLine: 3, variables: { lo: 0, hi: 6, mid: '~' }, description: '`hi = arr.length - 1 = 6` (last index). Search space: indices 0–6.' },
+      { currentLine: 5, variables: { lo: 0, hi: 6, mid: '~' }, description: 'Enter loop — `lo (0) <= hi (6)` is true' },
+      { currentLine: 6, variables: { lo: 0, hi: 6, mid: 3 }, description: '`mid = floor((0 + 6) / 2) = 3`. Check `arr[3] = 7`.' },
+      { currentLine: 7, variables: { lo: 0, hi: 6, mid: 3 }, description: '`arr[3] = 7 === target = 7`. Found! Return 3.' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [1, 3, 5, 7, 9, 11, 13], leftIndex: 0, rightIndex: 6 },
+      { items: [1, 3, 5, 7, 9, 11, 13], leftIndex: 0, rightIndex: 6 },
+      { items: [1, 3, 5, 7, 9, 11, 13], leftIndex: 0, rightIndex: 6 },
+      { items: [1, 3, 5, 7, 9, 11, 13], leftIndex: 0, rightIndex: 6 },
+      { items: [1, 3, 5, 7, 9, 11, 13], leftIndex: 0, rightIndex: 6, found: true },
+    ],
+    whyItWorks: {
+      title: 'Every comparison eliminates half the remaining elements.',
+      body: [
+        'If target is bigger than mid, everything to the left is also too small — discard them all at once.',
+        'If target is smaller than mid, everything to the right is also too big — discard them all at once.',
+        'After k steps, only n / 2ᵏ elements remain. When k = log₂ n, only 1 remains.',
+      ],
+    },
+    whenToUseSummary: 'Set lo and hi. Compute mid. If mid matches target, done. Otherwise eliminate the half that cannot contain the target.',
+    breakdown: [
+      'Binary search works because the array is **sorted**. When you check `arr[mid]`, you instantly know which half of the array the target must be in — because all values to the left are smaller and all values to the right are larger.',
+      '**The middle check** — Compute `mid = floor((lo + hi) / 2)` and compare `arr[mid]` with the target. Three possibilities: equal (found it!), less (target must be in the right half), greater (target must be in the left half).',
+      '**Why guessing the middle?** — If you guessed any other position, you risk eliminating fewer elements. The middle position guarantees you eliminate *at least* half of the remaining elements every time.',
+      '**Why `lo <= hi`?** — When `lo === hi`, there is still one un-checked element. Using `lo < hi` would skip it. This is a common off-by-one bug in binary search.',
+      '**Why `mid + 1` and `mid - 1`?** — You have already checked `arr[mid]`. If you set `lo = mid` or `hi = mid` without the +1/-1, you could get stuck in an infinite loop.',
+      '**Logarithmic growth** — For n = 1,000,000, binary search needs only ~20 steps. Linear search would need up to 1,000,000. That is the power of dividing by 2 each time.',
+    ],
+    jsConcepts: [
+      '`Math.floor` — rounds down. Since `(lo + hi) / 2` may be a decimal (e.g., 5/2 = 2.5), `floor` gives the integer index.',
+      'Off-by-one errors — the most common binary search bug. Always test edge cases: empty array, one element, target at edge.',
+    ],
+  },
+
+  /* ── Binary Search Boundary ──────────────────────── */
+  {
+    id: 'binary-search-boundary',
+    category: 'binary-search',
+    title: 'Find first occurrence (boundary)',
+    topic: 'Lower / upper bound',
+    description: 'Find the FIRST 2 in [1, 2, 2, 2, 3, 4, 5]. When you spot a 2, do not stop — keep searching left. There might be an earlier 2 hiding. The first match is not necessarily the first occurrence.',
+    timeComplexity: 'O(log n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function findFirst(arr, target) {
+  let lo = 0;
+  let hi = arr.length - 1;
+  let result = -1;
+
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (arr[mid] === target) {
+      result = mid;
+      hi = mid - 1;
+    } else if (arr[mid] < target) {
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return result;
+}`,
+    steps: [
+      { currentLine: 2, variables: { lo: 0, hi: '~', mid: '~', result: -1 }, description: 'Start `lo` at 0.' },
+      { currentLine: 3, variables: { lo: 0, hi: 6, mid: '~', result: -1 }, description: '`hi` at last index (6).' },
+      { currentLine: 4, variables: { lo: 0, hi: 6, mid: '~', result: -1 }, description: '`result = -1` — nothing found yet.' },
+      { currentLine: 6, variables: { lo: 0, hi: 6, mid: '~', result: -1 }, description: 'Enter loop — `lo (0) <= hi (6)` is true' },
+      { currentLine: 7, variables: { lo: 0, hi: 6, mid: 3, result: -1 }, description: '`mid = 3`, `arr[3] = 2`. Match! Record `result = 3`.' },
+      { currentLine: 9, variables: { lo: 0, hi: 6, mid: 3, result: 3 }, description: '`hi = mid - 1 = 2`. Search LEFT half (0–2) — maybe there is an earlier 2.' },
+      { currentLine: 6, variables: { lo: 0, hi: 2, mid: 3, result: 3 }, description: 'Loop — `lo (0) <= hi (2)` is true' },
+      { currentLine: 7, variables: { lo: 0, hi: 2, mid: 1, result: 3 }, description: '`mid = 1`, `arr[1] = 2`. Match! Record `result = 1`.' },
+      { currentLine: 9, variables: { lo: 0, hi: 2, mid: 1, result: 1 }, description: '`hi = mid - 1 = 0`. Still looking left.' },
+      { currentLine: 6, variables: { lo: 0, hi: 0, mid: 1, result: 1 }, description: 'Loop — `lo (0) <= hi (0)` is true' },
+      { currentLine: 7, variables: { lo: 0, hi: 0, mid: 0, result: 1 }, description: '`mid = 0`, `arr[0] = 1`. Smaller than 2.' },
+      { currentLine: 11, variables: { lo: 0, hi: 0, mid: 0, result: 1 }, description: '`arr[0] < target`: `lo = mid + 1 = 1`.' },
+      { currentLine: 6, variables: { lo: 1, hi: 0, mid: 0, result: 1 }, description: '`lo (1) > hi (0)`. Loop exits.' },
+      { currentLine: 16, variables: { lo: 1, hi: 0, mid: 0, result: 1 }, description: 'Return `result = 1` — the first occurrence.' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 6 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 6 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 6 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 6 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 2 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 2 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 2 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 2, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0, found: true },
+    ],
+    whyItWorks: {
+      title: 'Record the match, then keep searching.',
+      body: [
+        'When you find a match, save the position but continue searching left (or right) to find the boundary.',
+        'The search space still halves each step — you are just persisting the best answer seen so far.',
+      ],
+    },
+    whenToUseSummary: 'Same as binary search, but instead of returning immediately on match, save the position and continue searching in one direction.',
+    breakdown: [
+      'Finding a boundary is binary search with one extra rule: **do not stop on the first match**. Save the position (`result = mid`) and keep searching in the direction where an earlier/later match could be.',
+      '**Why continue?** — If you are looking for the first occurrence, finding a `2` at index 3 does not mean it is the first one. There could be another `2` at index 1 or 2. You must keep checking left.',
+      '**The pattern** — Initialize `result = -1`. On match, update `result` and narrow the search space past the match (`hi = mid - 1` for first, `lo = mid + 1` for last). Return `result` after the loop.',
+      '**Why `result = -1`?** — If the target is never found, `-1` signals "not found." Without the sentinel, you would not know the difference between "found at index 0" and "not found."',
+      '**Counting occurrences** — Find first and find last are the building blocks for counting how many times a value appears: `lastIndex - firstIndex + 1`. Both use the same boundary-search pattern.',
+    ],
+    jsConcepts: [
+      'Sentinel values — `result = -1` acts as a "not found" signal. It separates the zero case from the not-found case.',
+      'Binary search variants — classic (return on match), boundary (save and continue), and range (first + last). All are O(log n).',
+    ],
+  },
+
+  /* ═══════════════════════════════════════════════════
+     FAST & SLOW POINTERS
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Linked List Cycle ───────────────────────────── */
+  {
+    id: 'linked-list-cycle',
+    category: 'fast-slow',
+    title: 'Detect cycle in linked list',
+    topic: 'Floyd\'s algorithm',
+    description: 'A slow pointer moves one step at a time. A fast pointer moves two. If they ever meet, there is a cycle — like two runners on a circular track.',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function hasCycle(head) {
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {
+    slow = slow.next;
+    fast = fast.next.next;
+    if (slow === fast) return true;
+  }
+  return false;
+}`,
+    steps: [
+      { currentLine: 2, variables: { slow: '3', fast: '~' }, description: 'Initialize slow at head (value 3).' },
+      { currentLine: 3, variables: { slow: '3', fast: '3' }, description: 'Initialize fast at head too. Both start together.' },
+      { currentLine: 5, variables: { slow: '3', fast: '3' }, description: 'Enter loop — fast and fast.next both exist.' },
+      { currentLine: 6, variables: { slow: '3', fast: '3' }, description: 'slow moves: 3 → 2. fast moves: 3 → 2 → 0. Both pointers advance.' },
+      { currentLine: 8, variables: { slow: '2', fast: '0' }, description: 'Compare: slow (2) !== fast (0). No meeting — continue looping.' },
+      { currentLine: 5, variables: { slow: '2', fast: '0' }, description: 'fast and fast.next still exist — loop again.' },
+      { currentLine: 6, variables: { slow: '2', fast: '0' }, description: 'slow: 2 → 0. fast: 0 → -4 → 2. Fast laps around the cycle.' },
+      { currentLine: 8, variables: { slow: '0', fast: '2' }, description: 'Compare: slow (0) !== fast (2). Not yet — keep going.' },
+      { currentLine: 5, variables: { slow: '0', fast: '2' }, description: 'Loop continues — fast and fast.next are alive.' },
+      { currentLine: 6, variables: { slow: '0', fast: '2' }, description: 'slow: 0 → -4. fast: 2 → 0 → -4. They converge on the same node!' },
+      { currentLine: 8, variables: { slow: '-4', fast: '-4' }, description: 'slow === fast at node -4 — cycle detected! Return true.' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [3, 2, 0, -4], leftIndex: 0, rightIndex: -1 },
+      { items: [3, 2, 0, -4], leftIndex: 0, rightIndex: 0 },
+      { items: [3, 2, 0, -4], leftIndex: 0, rightIndex: 0 },
+      { items: [3, 2, 0, -4], leftIndex: 0, rightIndex: 0 },
+      { items: [3, 2, 0, -4], leftIndex: 1, rightIndex: 2 },
+      { items: [3, 2, 0, -4], leftIndex: 1, rightIndex: 2 },
+      { items: [3, 2, 0, -4], leftIndex: 1, rightIndex: 2 },
+      { items: [3, 2, 0, -4], leftIndex: 2, rightIndex: 1 },
+      { items: [3, 2, 0, -4], leftIndex: 2, rightIndex: 1 },
+      { items: [3, 2, 0, -4], leftIndex: 2, rightIndex: 1 },
+      { items: [3, 2, 0, -4], leftIndex: 3, rightIndex: 3, found: true },
+    ],
+    whyItWorks: {
+      title: 'Speed difference guarantees a meeting on any cycle.',
+      body: [
+        'If there is a cycle, the fast pointer will eventually lap the slow pointer — like a faster runner on a circular track.',
+        'On each step of the cycle, fast gains one position on slow. With n nodes in the cycle, they meet within n steps.',
+        'If there is no cycle, fast reaches null first — no loop, no meeting.',
+      ],
+    },
+    whenToUseSummary: 'Two pointers moving at different speeds. If they meet, there is a cycle. If fast reaches the end, there is no cycle.',
+    breakdown: [
+      'Floyd\'s cycle detection (the "tortoise and hare" algorithm) uses two pointers moving at **different speeds**. The slow pointer moves one step per iteration; the fast pointer moves two.',
+      '**Why different speeds?** — If there is a cycle, the distance between slow and fast decreases by one each step. They are guaranteed to meet within the length of the cycle.',
+      '**Why two steps?** — One step would keep them at the same distance forever (they would never catch up). Two steps guarantees the distance shrinks by 1 each time. Three would work too but risks skipping over null checks.',
+      '**The guard** — `while (fast && fast.next)` checks that both fast and the next node exist. Since fast moves two steps at a time, both must be non-null to avoid a crash. If either is null, the list ends — no cycle.',
+      '**No extra memory** — A hash-set approach needs O(n) space to remember visited nodes. Floyd\'s algorithm uses only two pointers — O(1) space.',
+    ],
+    jsConcepts: [
+      '`&&` — short-circuit evaluation. If `fast` is null, `fast.next` is never accessed (avoids a crash).',
+      '`=` — assignment (not `==`). This is where beginners often confuse `=` and `===`. The code uses `===` for comparison, `=` for setting slow/fast.',
+    ],
+  },
+
+  /* ── Find Middle ─────────────────────────────────── */
+  {
+    id: 'find-middle',
+    category: 'fast-slow',
+    title: 'Find middle of linked list',
+    topic: 'Fast & slow speeds',
+    description: 'Fast moves twice as fast as slow. When fast reaches the end, slow is exactly in the middle. No need to count the length first.',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function findMiddle(head) {
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {
+    slow = slow.next;
+    fast = fast.next.next;
+  }
+  return slow;
+}`,
+    steps: [
+      { currentLine: 2, variables: { slow: '1', fast: '~' }, description: 'Initialize slow at head (value 1). Array: [1, 2, 3, 4, 5].' },
+      { currentLine: 3, variables: { slow: '1', fast: '1' }, description: 'Initialize fast at head too.' },
+      { currentLine: 5, variables: { slow: '1', fast: '1' }, description: 'Enter loop — fast and fast.next both exist.' },
+      { currentLine: 6, variables: { slow: '1', fast: '1' }, description: 'slow moves: 1 → 2. fast moves: 1 → 3 (skips one).' },
+      { currentLine: 5, variables: { slow: '2', fast: '3' }, description: 'fast (3) and fast.next (4) exist — continue loop.' },
+      { currentLine: 6, variables: { slow: '2', fast: '3' }, description: 'slow: 2 → 3. fast: 3 → 5. Fast is near the end.' },
+      { currentLine: 5, variables: { slow: '3', fast: '5' }, description: 'fast.next is null (5 is the last node). Loop exits.' },
+      { currentLine: 9, variables: { slow: '3', fast: '5' }, description: 'Return slow (value 3) — the middle node.' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [1, 2, 3, 4, 5], leftIndex: 0, rightIndex: -1 },
+      { items: [1, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 3, 4, 5], leftIndex: 0, rightIndex: 0 },
+      { items: [1, 2, 3, 4, 5], leftIndex: 1, rightIndex: 2 },
+      { items: [1, 2, 3, 4, 5], leftIndex: 1, rightIndex: 2 },
+      { items: [1, 2, 3, 4, 5], leftIndex: 2, rightIndex: 4 },
+      { items: [1, 2, 3, 4, 5], leftIndex: 2, rightIndex: 4, found: true },
+    ],
+    whyItWorks: {
+      title: '2× speed = ½ distance. When fast finishes, slow is halfway.',
+      body: [
+        'For every step slow takes, fast takes two. By the time fast reaches the end, slow has covered exactly half the distance.',
+        'For odd-length lists, slow lands on the exact middle. For even-length lists, slow lands on the second middle node.',
+      ],
+    },
+    whenToUseSummary: 'Two pointers at different speeds. When the fast one reaches the end, the slow one is in the middle.',
+    breakdown: [
+      'Instead of two passes (count length, then traverse to middle), use **one pass** with two pointers. The fast pointer moves at double speed, so it finishes when slow is exactly in the middle.',
+      '**Why it works** — When fast moves 2 steps and slow moves 1, slow covers half the distance of fast in the same time. When fast hits the end, slow is at the midpoint. No counting needed.',
+      '**Odd vs even length** — For `[1, 2, 3, 4, 5]` (odd), slow lands at 3 (the center). For `[1, 2, 3, 4]` (even), slow lands at 3 (the second of the two middle nodes). Both are the standard definitions.',
+      '**Comparison to counting** — The counting approach needs one pass to count, then a second pass to reach the middle. Fast & slow does it in one pass, halving the work.',
+    ],
+    jsConcepts: [
+      '`.next.next` — chaining property access. In a linked list, each node has a `.next` reference. Two dots moves two steps.',
+      'Single pass algorithms — doing two things at once (moving fast and slow) to avoid a second traversal. Common optimization pattern.',
+    ],
+  },
+
+  /* ═══════════════════════════════════════════════════
+     STACK
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Valid Parentheses ───────────────────────────── */
+  {
+    id: 'valid-parens',
+    category: 'stack',
+    title: 'Validate parentheses',
+    topic: 'LIFO matching',
+    description: 'Every opening bracket must be closed by the same type and in the correct order. A stack remembers what needs to be closed — last opened, first closed.',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function isValid(s) {
+  const stack = [];
+  const pairs = { '(': ')', '[': ']', '{': '}' };
+
+  for (const ch of s) {
+    if (pairs[ch]) {
+      stack.push(ch);
+    } else {
+      const last = stack.pop();
+      if (pairs[last] !== ch) return false;
+    }
+  }
+  return stack.length === 0;
+}`,
+    steps: [
+      { currentLine: 2, variables: { stack: '[]', ch: '~', last: '~' }, description: 'Initialize empty stack and the pairs map.' },
+      { currentLine: 5, variables: { stack: '[]', ch: "'('", last: '~' }, description: 'Read open paren. It is an opening bracket — push it.' },
+      { currentLine: 7, variables: { stack: "['(']", ch: "'('", last: '~' }, description: 'Push open paren onto stack.' },
+      { currentLine: 5, variables: { stack: "['(']", ch: "')'", last: '~' }, description: 'Read close paren. Not in pairs map — it is a closing bracket.' },
+      { currentLine: 9, variables: { stack: "['(']", ch: "')'", last: "'('" }, description: 'Pop: last = open paren.' },
+      { currentLine: 10, variables: { stack: '[]', ch: "')'", last: "'('" }, description: 'pairs[last] matches ch. Good — continue.' },
+      { currentLine: 5, variables: { stack: '[]', ch: "'['", last: "'('" }, description: 'Read open bracket. Opening bracket — push it.' },
+      { currentLine: 7, variables: { stack: "['[']", ch: "'['", last: "'('" }, description: 'Push open bracket onto stack.' },
+      { currentLine: 5, variables: { stack: "['[']", ch: "'{'", last: "'('" }, description: 'Read open brace — push it.' },
+      { currentLine: 7, variables: { stack: "['[', '{']", ch: "'{'", last: "'('" }, description: 'Push open brace onto stack.' },
+      { currentLine: 5, variables: { stack: "['[', '{']", ch: "'}'", last: "'('" }, description: 'Read close brace — pop and check.' },
+      { currentLine: 9, variables: { stack: "['[', '{']", ch: "'}'", last: "'{'" }, description: 'Pop: last = open brace.' },
+      { currentLine: 10, variables: { stack: "['[']", ch: "'}'", last: "'{'" }, description: 'pairs[brace] matches ch. Good — continue.' },
+      { currentLine: 5, variables: { stack: "['[']", ch: "']'", last: "'{'" }, description: 'Read close bracket — pop and check.' },
+      { currentLine: 9, variables: { stack: "['[']", ch: "']'", last: "'['" }, description: 'Pop: last = open bracket.' },
+      { currentLine: 10, variables: { stack: '[]', ch: "']'", last: "'['" }, description: 'pairs[bracket] matches ch. Good — all matched!' },
+      { currentLine: 13, variables: { stack: '[]', ch: "']'", last: "'['" }, description: 'Stack is empty — all openers had matching closers. Return true.' },
+    ],
+    visualType: 'char-cells',
+    visualData: [
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: -1, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 0, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 0, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 1, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 1, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 1, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 2, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 2, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 3, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 3, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 4, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 4, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 4, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 5, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 5, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: 5, rightIndex: -1 },
+      { items: ['(', ')', '[', '{', '}', ']'], leftIndex: -1, rightIndex: -1, found: true },
+    ],
+    whyItWorks: {
+      title: 'Last opened must be first closed — a stack enforces this naturally.',
+      body: [
+        'When you see an opening bracket, you push it. When you see a closing bracket, you pop the most recent opener — it must match.',
+        'A closing bracket can only match the most recent unmatched opener. Anything else would mean brackets are nested incorrectly.',
+        'After processing every character, an empty stack means every opener was matched. A non-empty stack means dangling openers.',
+      ],
+    },
+    whenToUseSummary: 'Push openers, pop and check against closers. An empty stack at the end means valid. A mismatched pop means invalid.',
+    breakdown: [
+      'A stack remembers what still needs to be closed. When you see `(`, `[`, or `{`, push it. When you see `)`, `]`, or `}`, the **most recent unmatched opener** must match — pop it and check.',
+      '**LIFO (Last In, First Out)** — The last opener you pushed is the first one that must close. `([])` is valid: `(` then `[`, so `]` must close before `)`. A stack enforces this ordering naturally.',
+      '**The pairs map** — `{ \'(\': \')\' }` lets you check in two directions: "is this an opener?" and "what must close this opener?" Without it, you would need two separate checks.',
+      '**Common failure modes** — (1) Extra closer: pop from empty stack. (2) Mismatch: closing bracket does not match the popped opener. (3) Leftover: stack is not empty after processing — unclosed openers remain.',
+    ],
+    jsConcepts: [
+      '`.push()` / `.pop()` — array methods that add/remove from the end. Together they make an array act like a stack (LIFO).',
+      '`for...of` — iterates over each character of a string. Cleaner than a C-style for loop when you need each element.',
+    ],
+  },
+
+  /* ── Next Greater Element ────────────────────────── */
+  {
+    id: 'next-greater',
+    category: 'stack',
+    title: 'Next greater element',
+    topic: 'Monotonic stack',
+    description: 'For each number, find the next bigger number to its right. Imagine people waiting in line by height — shorter people wait. When a taller person arrives, everyone shorter gets resolved at once. One pass, O(n).',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function nextGreater(nums) {
+  const result = new Array(nums.length).fill(-1);
+  const stack = [];
+
+  for (let i = 0; i < nums.length; i++) {
+    while (stack.length && nums[stack.at(-1)] < nums[i]) {
+      const idx = stack.pop();
+      result[idx] = nums[i];
+    }
+    stack.push(i);
+  }
+  return result;
+}`,
+    steps: [
+      { currentLine: 2, variables: { i: '~', stack: '[]', idx: '~' }, description: 'All results start as -1. Stack is empty. Input: `[2, 1, 3, 4]`.' },
+      { currentLine: 5, variables: { i: 0, stack: '[]', idx: '~' }, description: 'i = 0, nums[0] = 2. Stack is empty — no comparison. Push index 0.' },
+      { currentLine: 9, variables: { i: 0, stack: '[0]', idx: '~' }, description: 'Push index 0 onto stack. Stack waits for a greater neighbor.' },
+      { currentLine: 5, variables: { i: 1, stack: '[0]', idx: '~' }, description: 'i = 1, nums[1] = 1. Check stack top: nums[0]=2. 2 > 1 — no pop.' },
+      { currentLine: 9, variables: { i: 1, stack: '[0]', idx: '~' }, description: 'Push 1. Stack: [0, 1] — both waiting, stack stays decreasing (2 > 1).' },
+      { currentLine: 5, variables: { i: 2, stack: '[0, 1]', idx: '~' }, description: 'i = 2, nums[2] = 3. 3 is greater than nums[1]=1 — pop!' },
+      { currentLine: 7, variables: { i: 2, stack: '[0, 1]', idx: 1 }, description: 'Pop 1. result[1] = 3 — 1\'s next greater is 3.' },
+      { currentLine: 6, variables: { i: 2, stack: '[0]', idx: 1 }, description: '3 is also greater than nums[0]=2 — pop again!' },
+      { currentLine: 7, variables: { i: 2, stack: '[0]', idx: 0 }, description: 'Pop 0. result[0] = 3 — 2\'s next greater is 3.' },
+      { currentLine: 9, variables: { i: 2, stack: '[]', idx: 0 }, description: 'Stack empty. Push 2. Stack: [2].' },
+      { currentLine: 5, variables: { i: 3, stack: '[2]', idx: 0 }, description: 'i = 3, nums[3] = 4. 4 > nums[2]=3 — pop!' },
+      { currentLine: 7, variables: { i: 3, stack: '[2]', idx: 2 }, description: 'Pop 2. result[2] = 4 — 3\'s next greater is 4.' },
+      { currentLine: 9, variables: { i: 3, stack: '[]', idx: 2 }, description: 'Push 3. Stack: [3]. Loop ends. Return [-1, 3, 4, -1].' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [2, 1, 3, 4], leftIndex: -1, rightIndex: -1 },
+      { items: [2, 1, 3, 4], leftIndex: 0, rightIndex: -1 },
+      { items: [2, 1, 3, 4], leftIndex: 0, rightIndex: -1 },
+      { items: [2, 1, 3, 4], leftIndex: 1, rightIndex: -1 },
+      { items: [2, 1, 3, 4], leftIndex: 1, rightIndex: -1 },
+      { items: [2, 1, 3, 4], leftIndex: 2, rightIndex: 1 },
+      { items: [2, 1, 3, 4], leftIndex: 2, rightIndex: 1 },
+      { items: [2, 1, 3, 4], leftIndex: 2, rightIndex: 0 },
+      { items: [2, 1, 3, 4], leftIndex: 2, rightIndex: 0 },
+      { items: [2, 1, 3, 4], leftIndex: 2, rightIndex: -1 },
+      { items: [2, 1, 3, 4], leftIndex: 3, rightIndex: -1 },
+      { items: [2, 1, 3, 4], leftIndex: 3, rightIndex: 2 },
+      { items: [2, 1, 3, 4], leftIndex: 3, rightIndex: -1, found: true },
+    ],
+    whyItWorks: {
+      title: 'A decreasing stack finds the first greater element the moment it appears.',
+      body: [
+        'The stack stores indices in decreasing order of values. A new number that is larger than the top means it is the "next greater" for everything on the stack that it beats.',
+        'Each element is pushed once and popped at most once — O(n) total.',
+      ],
+    },
+    whenToUseSummary: 'Maintain a stack of unresolved elements in decreasing value order. When a larger element arrives, resolve everything it beats.',
+    breakdown: [
+      'A **monotonic decreasing stack** keeps indices of elements that are still waiting for a greater neighbor. As long as new values are smaller, they join the wait. When a larger value arrives, it resolves everyone waiting that is smaller.',
+      '**Why "monotonic"?** — The values at the stack indices are always decreasing (e.g., `[4, 3, 1]`). This property is maintained by popping everything smaller than the current value before pushing.',
+      '**Why O(n)?** — At first glance, the nested while loop looks like O(n²). But each element is pushed once and popped at most once. Total pushes + pops = 2n, which is O(n).',
+      '**Comparison to brute force** — Brute force checks every element to the right for each element (O(n²)). The monotonic stack defers the check: elements wait until their greater neighbor appears.',
+      '**Variants** — "Next smaller" uses an increasing stack. "Previous greater" iterates from right to left. The core pattern is the same: maintain an invariant on the stack and resolve on violation.',
+    ],
+    jsConcepts: [
+      '`.at(-1)` — gets the last element. Cleaner than `stack[stack.length - 1]`. Supported in all modern browsers since 2022.',
+      '`.fill(-1)` — initializes every element of a new Array to -1. A concise way to set defaults.',
+    ],
+  },
+
+  /* ═══════════════════════════════════════════════════
+     MERGE INTERVALS
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Merge Overlapping Intervals ─────────────────── */
+  {
+    id: 'merge-overlapping',
+    category: 'merge-interval',
+    title: 'Merge overlapping intervals',
+    topic: 'Sort + merge',
+    description: 'You have four meetings: [1,3], [2,6], [8,10], [15,18]. Some overlap — like [1,3] and [2,6] share hours 2-3. Your job: combine any overlapping meetings into bigger blocks until no two meetings touch. Sort by start time first, then merge in one pass.',
+    timeComplexity: 'O(n log n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function merge(intervals) {
+  intervals.sort((a, b) => a[0] - b[0]);
+  const merged = [intervals[0]];
+
+  for (let i = 1; i < intervals.length; i++) {
+    const prev = merged[merged.length - 1];
+    const curr = intervals[i];
+    if (curr[0] <= prev[1]) {
+      prev[1] = Math.max(prev[1], curr[1]);
+    } else {
+      merged.push(curr);
+    }
+  }
+  return merged;
+}`,
+    steps: [
+      { currentLine: 2, variables: { prevStart: '~', prevEnd: '~', currStart: '~', currEnd: '~' }, description: 'Step 1: Sort the meetings by start time. Now they are in order: `[1,3]`, `[2,6]`, `[8,10]`, `[15,18]`.' },
+      { currentLine: 3, variables: { prevStart: '~', prevEnd: '~', currStart: '~', currEnd: '~' }, description: 'Start with the first meeting `[1,3]` in your result list. This is the seed — everything else compares to it.' },
+      { currentLine: 5, variables: { prevStart: 1, prevEnd: 3, currStart: '~', currEnd: '~' }, description: 'Now look at the next meeting: `[2,6]`. It starts at 2.' },
+      { currentLine: 7, variables: { prevStart: 1, prevEnd: 3, currStart: 2, currEnd: 6 }, description: 'Does 2 overlap with `[1,3]`? Well, 2 comes BEFORE 3 ends — so yes, they overlap! The meetings share time from 2 to 3.' },
+      { currentLine: 8, variables: { prevStart: 1, prevEnd: 3, currStart: 2, currEnd: 6 }, description: 'Since they overlap, combine them. Keep the earliest start (1) and the latest end (6). New merged meeting: `[1,6]`.' },
+      { currentLine: 9, variables: { prevStart: 1, prevEnd: 6, currStart: 2, currEnd: 6 }, description: 'Result is now `[[1,6]]` — one big meeting covering hour 1 through 6.' },
+      { currentLine: 5, variables: { prevStart: 1, prevEnd: 6, currStart: '~', currEnd: '~' }, description: 'Next meeting: `[8,10]`. It starts at 8.' },
+      { currentLine: 7, variables: { prevStart: 1, prevEnd: 6, currStart: 8, currEnd: 10 }, description: 'Does 8 overlap with `[1,6]`? No — 8 comes AFTER 6 ends. These meetings are completely separate.' },
+      { currentLine: 8, variables: { prevStart: 1, prevEnd: 6, currStart: 8, currEnd: 10 }, description: 'No overlap, so keep `[8,10]` as its own meeting. Add it to the result.' },
+      { currentLine: 11, variables: { prevStart: 8, prevEnd: 10, currStart: 8, currEnd: 10 }, description: 'Result is now `[[1,6], [8,10]]`. Two clean, non-overlapping meetings.' },
+      { currentLine: 5, variables: { prevStart: 8, prevEnd: 10, currStart: '~', currEnd: '~' }, description: 'Last meeting: `[15,18]`. It starts at 15.' },
+      { currentLine: 7, variables: { prevStart: 8, prevEnd: 10, currStart: 15, currEnd: 18 }, description: 'Does 15 overlap with `[8,10]`? No — 15 is way after 10. No overlap.' },
+      { currentLine: 8, variables: { prevStart: 8, prevEnd: 10, currStart: 15, currEnd: 18 }, description: 'Add it as its own meeting. No merging needed.' },
+      { currentLine: 11, variables: { prevStart: 15, prevEnd: 18, currStart: 15, currEnd: 18 }, description: 'Final result: `[[1,6], [8,10], [15,18]]`. Three non-overlapping meetings.' },
+      { currentLine: 14, variables: { prevStart: 15, prevEnd: 18, currStart: 15, currEnd: 18 }, description: 'Done! All overlapping meetings have been merged into clean, separate blocks.' },
+    ],
+    visualType: 'interval-timeline',
+    visualData: [
+      { items: [], intervals: [[1,3],[2,6],[8,10],[15,18]], current: -1 },
+      { items: [], intervals: [[1,3],[2,6],[8,10],[15,18]], current: 0 },
+      { items: [], intervals: [[1,3],[2,6],[8,10],[15,18]], current: 0 },
+      { items: [], intervals: [[1,3],[2,6],[8,10],[15,18]], current: 1 },
+      { items: [], intervals: [[1,6],[2,6],[8,10],[15,18]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,6],[2,6],[8,10],[15,18]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,6],[2,6],[8,10],[15,18]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,6],[2,6],[8,10],[15,18]], current: 2 },
+      { items: [], intervals: [[1,6],[2,6],[8,10],[15,18]], current: 2 },
+      { items: [], intervals: [[1,6],[2,6],[8,10],[15,18]], current: 2, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,6],[8,10],[2,6],[15,18]], current: 2 },
+      { items: [], intervals: [[1,6],[8,10],[2,6],[15,18]], current: 3 },
+      { items: [], intervals: [[1,6],[8,10],[15,18],[2,6]], current: 3 },
+      { items: [], intervals: [[1,6],[8,10],[15,18],[2,6]], current: 3, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,6],[8,10],[15,18],[2,6]], current: 3, found: true },
+    ],
+    whyItWorks: {
+      title: 'Sort first. Then only compare neighbors — no looking backward.',
+      body: [
+        'Sorting by start time means overlapping notes MUST be next to each other. If note A ends before note B starts, no note after B can overlap with A either.',
+        'The overlap check is dead simple: does the next note start before the current one ends? If yes, merge. If no, keep them separate.',
+        'Merging just means: keep the earlier start, keep the later end. That is it.',
+      ],
+    },
+    whenToUseSummary: 'Sort meetings by start time. Start with the first one. For each next meeting: if it starts before the last one ends, combine them (keep earliest start, latest end). If not, add it as a new meeting.',
+    breakdown: [
+      'Imagine sticky notes on a calendar. Some notes overlap — your job is to combine any overlapping notes into bigger notes until no two notes touch each other. One simple rule: sort by start time first, then check each note against the last one.',
+      '**Sort by start time.** Line them up from earliest to latest. Once sorted, you never need to look backward — any overlap is right next to you.',
+      '**Start with the first note.** Put `[1,3]` in your result. It is your anchor. Every new note compares to whatever is currently last in your result.',
+      '**Compare with the last note.** Does the new note start before the last note ends? If yes → merge them. If no → add it separately. That is the ONLY check you need.',
+      '**When two notes overlap** — Keep the earlier start and the later end. `[1,3]` + `[2,6]` becomes `[1,6]`. The overlapping part (hours 2-3) disappears into the bigger note.',
+      '**Why sorting by START (not end)?** — Imagine `[[1,10], [2,3]]`. Sorting by start puts the big one first, so the small one gets absorbed correctly. Sorting by end might place the small one first and miss the merge.',
+      '**One pass, done.** Each note is touched once. No nested loops, no checking every pair. O(n log n) for sorting + O(n) for merging = way better than checking every pair (O(n²)).',
+    ],
+    jsConcepts: [
+      '`.sort((a,b)=>a[0]-b[0])` — sort by the first element of each pair. Returns negative (a before b), zero (equal), or positive (b before a).',
+      '`merged[merged.length - 1]` — accessing the last element. Equivalent to `.at(-1)` but more widely supported.',
+    ],
+  },
+
+  /* ── Insert Interval ─────────────────────────────── */
+  {
+    id: 'insert-interval',
+    category: 'merge-interval',
+    title: 'Insert and merge interval',
+    topic: 'Three-phase merge',
+    description: 'Your calendar has meetings [1,3] and [6,9]. Now add a new meeting [2,5]. It overlaps with [1,3] — so merge them into [1,5]. Result: [[1,5],[6,9]].',
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(n)',
+    debugCode: `function insert(intervals, newInterval) {
+  const result = [];
+  let i = 0;
+
+  // Phase 1: add all intervals before newInterval
+  while (i < intervals.length && intervals[i][1] < newInterval[0]) {
+    result.push(intervals[i]);
+    i++;
+  }
+
+  // Phase 2: merge overlapping intervals
+  while (i < intervals.length && intervals[i][0] <= newInterval[1]) {
+    newInterval[0] = Math.min(newInterval[0], intervals[i][0]);
+    newInterval[1] = Math.max(newInterval[1], intervals[i][1]);
+    i++;
+  }
+  result.push(newInterval);
+
+  // Phase 3: add remaining intervals
+  while (i < intervals.length) {
+    result.push(intervals[i]);
+    i++;
+  }
+  return result;
+}`,
+    steps: [
+      { currentLine: 2, variables: { start: 2, end: 5, i: "~" }, description: "You have two existing meetings: [1,3] and [6,9]. You want to add a new meeting [2,5]. Start with an empty result list." },
+      { currentLine: 3, variables: { start: 2, end: 5, i: 0 }, description: "Phase 1 — Skip meetings that end before your new one starts. Check [1,3]: does it end (3) before your new meeting starts (2)?" },
+      { currentLine: 6, variables: { start: 2, end: 5, i: 0 }, description: "3 is NOT less than 2 — meeting [1,3] ends AFTER your new meeting starts. So it might overlap. Move to Phase 2." },
+      { currentLine: 11, variables: { start: 2, end: 5, i: 0 }, description: "Phase 2 — Merge any meeting that overlaps. Does [1,3] start (1) before your new meeting ends (5)? Yes — they overlap!" },
+      { currentLine: 12, variables: { start: 2, end: 5, i: 0 }, description: "Expand your new meeting left: the earliest start between 2 and 1 is 1. Your meeting grows to start at 1." },
+      { currentLine: 13, variables: { start: 1, end: 5, i: 0 }, description: "Expand right: the latest end between 5 and 3 is 5. Your meeting becomes [1,5] — it swallowed [1,3]!" },
+      { currentLine: 11, variables: { start: 1, end: 5, i: 1 }, description: "Check the next meeting [6,9]. Does it start (6) before your new meeting ends (5)? No — 6 is after 5. No overlap here." },
+      { currentLine: 16, variables: { start: 1, end: 5, i: 1 }, description: "Phase 2 done. Add your merged meeting [1,5] to the result. Result: [[1,5]]." },
+      { currentLine: 19, variables: { start: 1, end: 5, i: 1 }, description: "Phase 3 — Copy everything after. [6,9] starts after your meeting — it cannot overlap. Add it as-is." },
+      { currentLine: 20, variables: { start: 1, end: 5, i: 1 }, description: "Add [6,9]. Final result: [[1,5], [6,9]]. Your new meeting slid in and merged with the one it overlapped." },
+      { currentLine: 22, variables: { start: 1, end: 5, i: 2 }, description: "Done! Three phases: (1) skip what is before, (2) merge what overlaps, (3) copy what is after." },
+    ],
+    visualType: 'interval-timeline',
+    visualData: [
+      { items: [], intervals: [[1,3],[6,9]], current: -1 },
+      { items: [], intervals: [[1,3],[6,9]], current: -1 },
+      { items: [], intervals: [[1,3],[6,9]], current: 0 },
+      { items: [], intervals: [[1,3],[6,9]], current: 0, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,3],[6,9]], current: 0, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,5],[6,9]], current: 0, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,5],[6,9]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,5],[6,9]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,5],[6,9]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,5],[6,9]], current: 1, leftIndex: 0, rightIndex: 0 },
+      { items: [], intervals: [[1,5],[6,9]], current: 1, found: true },
+    ],
+    whyItWorks: {
+      title: 'Three simple phases: skip, merge, copy.',
+      body: [
+        'Phase 1: Copy meetings that end before your new one starts. They are in the past — no conflict.',
+        'Phase 2: Merge any meeting that overlaps with your new one. Stretch your new meeting to cover everything it bumps into.',
+        'Phase 3: Copy everything after. Since the list is sorted, no future meeting can overlap with your (now possibly expanded) meeting.',
+      ],
+    },
+    whenToUseSummary: 'You have a sorted schedule and one new meeting to add. Phase 1: skip meetings before. Phase 2: merge anything that overlaps — stretch your meeting to cover them. Phase 3: copy meetings after. One pass, O(n).',
+    breakdown: [
+      'Think of your calendar. You have meetings scheduled in order. Now someone asks: "Can we meet from 2 to 5?" You do not need to rewrite the whole calendar — just find where the new meeting fits, merge if it bumps into anything, and leave the rest alone.',
+      '**Phase 1 — Before the new meeting.** Walk through existing meetings. Any meeting that ends BEFORE your new one starts is safe — it cannot overlap. Copy it to your result and keep going.',
+      '**Phase 2 — During the new meeting.** Now you reach meetings that MIGHT overlap. The rule: a meeting overlaps if it starts before your new meeting ends. If it overlaps, stretch your new meeting to cover it — push the start earlier and the end later — then check the next one. Keep expanding until you find a meeting that starts AFTER your expanded end.',
+      '**Phase 3 — After the new meeting.** Everything after Phase 2 starts safely after your meeting ends. No overlap possible (because the list is sorted). Copy the rest as-is.',
+      '**Why three phases?** — You cannot just merge everything in one loop because the middle phase might expand to cover MULTIPLE existing meetings. The three phases separate "definitely before," "definitely overlapping," and "definitely after" — each with a simple, clean rule.',
+      '**Why O(n)?** — You walk through the list exactly once. Each existing meeting is touched once. No sorting needed because the input already comes sorted.',
+    ],
+    jsConcepts: [
+      '`Math.min / Math.max` — pick the smaller/larger of two numbers. Critical for expanding interval boundaries during merging.',
+      'Three-phase algorithms — a common pattern when inserting into sorted data: before, during (merge), after.',
+    ],
+  },
+
+  /* ═══════════════════════════════════════════════════
+     PREFIX SUM
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Range Sum Query ─────────────────────────────── */
+  {
+    id: 'range-sum',
+    category: 'prefix-sum',
+    title: 'Range sum queries',
+    topic: 'Precomputation',
+    description: 'Given `[3, 1, 4, 1, 5, 9]`, answer sum queries like `sum(1,4)` in O(1). Precompute prefix sums — then any range sum is `prefix[r+1] - prefix[l]`.',
+    description: 'Imagine a number strip: [3, 1, 4, 1, 5, 9]. Someone asks: "What is the sum from position 1 to 4?" Instead of adding 1+4+1+5 every single time, precompute a running total once. Then any range sum becomes just one subtraction — instant, no matter how many times you are asked.',
+    spaceComplexity: 'O(n)',
+    debugCode: `function buildPrefix(nums) {
+  const prefix = [0];
+  for (let i = 0; i < nums.length; i++) {
+    prefix.push(prefix[prefix.length - 1] + nums[i]);
+  }
+  return prefix;
+}
+
+function rangeSum(prefix, l, r) {
+  return prefix[r + 1] - prefix[l];
+}`,
+    steps: [
+      { currentLine: 2, variables: { i: '~', running: 0 }, description: 'Initialize prefix array with `[0]`. The zero at the start makes range math clean.' },
+      { currentLine: 3, variables: { i: 0, running: 0 }, description: 'i=0: nums[0]=3. Add to running sum: 0+3 = 3.' },
+      { currentLine: 4, variables: { i: 0, running: 3 }, description: 'Push 3. Prefix = `[0, 3]`.' },
+      { currentLine: 3, variables: { i: 1, running: 3 }, description: 'i=1: nums[1]=1. Running sum: 3+1 = 4.' },
+      { currentLine: 4, variables: { i: 1, running: 4 }, description: 'Push 4. Prefix = `[0, 3, 4]`.' },
+      { currentLine: 3, variables: { i: 2, running: 4 }, description: 'i=2: nums[2]=4. Running sum: 4+4 = 8.' },
+      { currentLine: 4, variables: { i: 2, running: 8 }, description: 'Push 8. Prefix = `[0, 3, 4, 8]`.' },
+      { currentLine: 3, variables: { i: 3, running: 8 }, description: 'i=3: nums[3]=1. Running sum: 8+1 = 9.' },
+      { currentLine: 4, variables: { i: 3, running: 9 }, description: 'Push 9. Prefix = `[0, 3, 4, 8, 9]`.' },
+      { currentLine: 3, variables: { i: 4, running: 9 }, description: 'i=4: nums[4]=5. Running sum: 9+5 = 14.' },
+      { currentLine: 4, variables: { i: 4, running: 14 }, description: 'Push 14. Prefix = `[0, 3, 4, 8, 9, 14]`.' },
+      { currentLine: 3, variables: { i: 5, running: 14 }, description: 'i=5: nums[5]=9. Running sum: 14+9 = 23.' },
+      { currentLine: 4, variables: { i: 5, running: 23 }, description: 'Push 23. Prefix = `[0, 3, 4, 8, 9, 14, 23]`. Build done.' },
+      { currentLine: 6, variables: { i: 5, running: 23 }, description: 'Query sum(1,4): `prefix[5] - prefix[1] = 14 - 3 = 11`. O(1)!' },
+      { currentLine: 10, variables: { i: 5, running: 23 }, description: 'Check: nums[1]+nums[2]+nums[3]+nums[4] = 1+4+1+5 = 11. ✓' },
+    ],
+    visualType: 'prefix-array',
+    visualData: [
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0], leftIndex: -1 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0], leftIndex: 0 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3], leftIndex: 0 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3], leftIndex: 1 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4], leftIndex: 1 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4], leftIndex: 2 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8], leftIndex: 2 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8], leftIndex: 3 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8, 9], leftIndex: 3 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8, 9], leftIndex: 4 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8, 9, 14], leftIndex: 4 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8, 9, 14], leftIndex: 5 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8, 9, 14, 23], leftIndex: 5 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8, 9, 14, 23], leftIndex: 5, queryStart: 1, queryEnd: 4 },
+      { items: [3, 1, 4, 1, 5, 9], prefix: [0, 3, 4, 8, 9, 14, 23], leftIndex: 5, queryStart: 1, queryEnd: 4, found: true },
+    ],
+    whyItWorks: {
+      title: 'Precompute running sums once — any range sum becomes a single subtraction.',
+      body: [
+        'The prefix array stores the cumulative sum up to each index. prefix[i] = sum of nums[0..i-1].',
+        'To get sum(l, r), compute prefix[r+1] - prefix[l]. This subtracts everything before l from everything up to r, leaving only the range.',
+        'Without prefix sums, each query would take O(n). With them, any number of queries runs in O(1) each.',
+      ],
+    },
+    whenToUseSummary: 'Precompute an array where each entry is the sum of all elements up to that index. Range sum is a single subtraction: prefix[r+1] - prefix[l].',
+    breakdown: [
+      'A prefix sum array turns any range sum query into **one subtraction**. Build takes O(n) once, then every query is O(1) — no matter how many queries you make.',
+      '**The zero sentinel** — Starting with `prefix[0] = 0` is a deliberate trick. It means `sum(0, r) = prefix[r+1] - prefix[0] = prefix[r+1]`, which works without a special case for ranges starting at index 0.',
+      '**Why prefix[r+1]?** — `prefix[i]` stores the sum of `nums[0..i-1]`. So `prefix[r+1]` is the sum up to r (inclusive), and `prefix[l]` is the sum up to l-1. The difference is `nums[l..r]`.',
+      '**The formula** — `prefix[r+1] - prefix[l]` = (sum up to r) - (sum up to l-1) = sum from l to r. Both values are O(1) lookups in the prefix array.',
+      '**Beyond sums** — The same pattern works for products, XORs, and any operation with an inverse. Prefix XOR, prefix product (with care for zeros), etc.',
+    ],
+    jsConcepts: [
+      'Precomputation — a trade-off: spend O(n) upfront to make future operations O(1). Common in algorithms where queries outnumber builds.',
+      'Sentinel zero — prefix[0] = 0 avoids an if-statement for range queries that start at index 0. Elegant and bug-reducing.',
+    ],
+  },
+
+  /* ── Pivot Index ─────────────────────────────────── */
+  {
+    id: 'pivot-index',
+    category: 'prefix-sum',
+    title: 'Find pivot index',
+    topic: 'Equilibrium point',
+    description: 'Find the index where the sum of all numbers strictly to the left equals the sum of all numbers strictly to the right. In `[1, 7, 3, 6, 5, 6]`, the pivot is index 3 (left=11, right=11).',
+    description: 'Imagine a seesaw. Find the balance point where the weight on the left equals the weight on the right. In [1, 7, 3, 6, 5, 6], index 3 is the pivot — left side (1+7+3=11) equals right side (5+6=11). The element at the pivot itself does not count on either side.',
+    spaceComplexity: 'O(1)',
+    debugCode: `function pivotIndex(nums) {
+  const total = nums.reduce((a, b) => a + b, 0);
+  let leftSum = 0;
+
+  for (let i = 0; i < nums.length; i++) {
+    if (leftSum === total - leftSum - nums[i]) return i;
+    leftSum += nums[i];
+  }
+  return -1;
+}`,
+    steps: [
+      { currentLine: 2, variables: { i: '~', leftSum: '~', total: '~' }, description: 'Compute total sum: 1+7+3+6+5+6 = 28.' },
+      { currentLine: 3, variables: { i: '~', leftSum: 0, total: 28 }, description: 'Initialize `leftSum = 0`. At any index i, right sum = total - leftSum - nums[i].' },
+      { currentLine: 5, variables: { i: 0, leftSum: 0, total: 28 }, description: 'i=0: nums[0]=1. right sum = 28 - 0 - 1 = 27. 0 !== 27 — not a pivot.' },
+      { currentLine: 6, variables: { i: 0, leftSum: 1, total: 28 }, description: 'Add nums[0]=1 to leftSum. leftSum is now 1.' },
+      { currentLine: 5, variables: { i: 1, leftSum: 1, total: 28 }, description: 'i=1: nums[1]=7. right sum = 28 - 1 - 7 = 20. 1 !== 20 — not a pivot.' },
+      { currentLine: 6, variables: { i: 1, leftSum: 8, total: 28 }, description: 'Add nums[1]=7 to leftSum. leftSum is now 8.' },
+      { currentLine: 5, variables: { i: 2, leftSum: 8, total: 28 }, description: 'i=2: nums[2]=3. right sum = 28 - 8 - 3 = 17. 8 !== 17 — not a pivot.' },
+      { currentLine: 6, variables: { i: 2, leftSum: 11, total: 28 }, description: 'Add nums[2]=3 to leftSum. leftSum is now 11.' },
+      { currentLine: 5, variables: { i: 3, leftSum: 11, total: 28 }, description: 'i=3: nums[3]=6. right sum = 28 - 11 - 6 = 11. 11 === 11 — pivot found!' },
+      { currentLine: 5, variables: { i: 3, leftSum: 11, total: 28 }, description: 'Return index 3. Left of index 3: [1,7,3] = 11. Right: [5,6] = 11. ✓' },
+    ],
+    visualType: 'prefix-array',
+    visualData: [
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: -1 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: -1 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: 0 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: 0 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: 1 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: 1 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: 2 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: 2 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: 3 },
+      { items: [1, 7, 3, 6, 5, 6], prefix: [], leftIndex: 3, found: true },
+    ],
+    whyItWorks: {
+      title: 'One formula avoids recomputing the right sum from scratch.',
+      body: [
+        'Right sum at index i = total - leftSum - nums[i]. No need to loop through the right side each time.',
+        'As i moves right, leftSum grows by nums[i]. The right sum can be computed in O(1) at each step — total O(n).',
+      ],
+    },
+    whenToUseSummary: 'Compute total once. Track leftSum as you iterate. At each index, rightSum = total - leftSum - nums[i]. If equal, return i.',
+    breakdown: [
+      'The naive approach recomputes the right sum for every index — O(n²). The pivot-index pattern avoids this with a **single formula**: `rightSum = total - leftSum - nums[i]`.',
+      '**Why it works** — At any index i, the total array is split into three parts: left (sum to the left), nums[i] (the element itself), and right (sum to the right). Since total = leftSum + nums[i] + rightSum, solving for rightSum gives the formula.',
+      '**Why O(n)?** — Total is computed once (O(n)). Then a single pass checks each index with O(1) arithmetic per step — also O(n). Total: O(n) time, O(1) extra space.',
+      '**The pivot is NOT counted** — The element at the pivot index itself is excluded from both left and right sums. That is why we subtract `nums[i]` in the formula.',
+      '**No pivot edge case** — If no index satisfies the condition, return -1. This happens when no equilibrium point exists (e.g., `[1, 2, 3]`).',
+    ],
+    jsConcepts: [
+      '`.reduce((a,b) => a+b, 0)` — accumulates the sum of an array. The second argument (0) is the initial value. Without it, reduce would skip the first element.',
+      'O(1) space — we only track total and leftSum, regardless of array size. No extra arrays or hash maps needed.',
+    ],
+  },
+
+  /* ═══════════════════════════════════════════════════
+     SORTING STRATEGIES
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Three Sum ───────────────────────────────────── */
+  {
+    id: 'three-sum',
+    category: 'sorting-strategies',
+    title: 'Three sum to zero',
+    topic: 'Sort + two-pointer',
+    description: 'Find three numbers that add to zero, like [-1, 0, 1] or [-1, -1, 2]. Sort the numbers first, then turn it into a two-sum: pick one number as the anchor, find the other two with two fingers from the ends.',
+    timeComplexity: 'O(n²)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function threeSum(nums) {
+  nums.sort((a, b) => a - b);
+  const result = [];
+
+  for (let i = 0; i < nums.length - 2; i++) {
+    if (i > 0 && nums[i] === nums[i - 1]) continue;
+    let l = i + 1, r = nums.length - 1;
+
+    while (l < r) {
+      const sum = nums[i] + nums[l] + nums[r];
+      if (sum === 0) {
+        result.push([nums[i], nums[l], nums[r]]);
+        while (l < r && nums[l] === nums[l + 1]) l++;
+        while (l < r && nums[r] === nums[r - 1]) r--;
+        l++; r--;
+      } else if (sum < 0) {
+        l++;
+      } else {
+        r--;
+      }
+    }
+  }
+  return result;
+}`,
+    steps: [
+      { currentLine: 2, variables: { i: '~', l: '~', r: '~', sum: '~' }, description: 'Sort array: `[-4, -1, -1, 0, 1, 2]`. Sorting lets us use two-pointers and skip duplicates.' },
+      { currentLine: 5, variables: { i: 0, l: '~', r: '~', sum: '~' }, description: 'Outer loop: i=0, nums[0]=-4. Not a duplicate — continue.' },
+      { currentLine: 7, variables: { i: 0, l: 1, r: 5, sum: '~' }, description: 'Set two-pointer range: l=1 (nums[1]=-1), r=5 (nums[5]=2).' },
+      { currentLine: 10, variables: { i: 0, l: 1, r: 5, sum: -3 }, description: 'sum = -4 + (-1) + 2 = -3. Too small — need bigger numbers.' },
+      { currentLine: 17, variables: { i: 0, l: 2, r: 5, sum: -3 }, description: 'Move l right: l=2 (nums[2]=-1).' },
+      { currentLine: 10, variables: { i: 0, l: 2, r: 5, sum: -3 }, description: 'sum = -4 + (-1) + 2 = -3. Still too small — move l again.' },
+      { currentLine: 17, variables: { i: 0, l: 3, r: 5, sum: -3 }, description: 'Move l right: l=3 (nums[3]=0).' },
+      { currentLine: 10, variables: { i: 0, l: 3, r: 5, sum: -2 }, description: 'sum = -4 + 0 + 2 = -2. Too small — move l.' },
+      { currentLine: 17, variables: { i: 0, l: 4, r: 5, sum: -2 }, description: 'Move l right: l=4 (nums[4]=1).' },
+      { currentLine: 10, variables: { i: 0, l: 4, r: 5, sum: -1 }, description: 'sum = -4 + 1 + 2 = -1. l meets r — exit while. No match with -4.' },
+      { currentLine: 5, variables: { i: 1, l: 4, r: 5, sum: -1 }, description: 'Outer loop: i=1, nums[1]=-1. Not a duplicate of nums[0]=-4.' },
+      { currentLine: 7, variables: { i: 1, l: 2, r: 5, sum: -1 }, description: 'Set two-pointer range: l=2 (nums[2]=-1), r=5 (nums[5]=2).' },
+      { currentLine: 10, variables: { i: 1, l: 2, r: 5, sum: 0 }, description: 'sum = -1 + (-1) + 2 = 0. Match found! Triplet: [-1, -1, 2].' },
+      { currentLine: 11, variables: { i: 1, l: 2, r: 5, sum: 0 }, description: 'Push triplet to result. Skip duplicate values at l and r.' },
+      { currentLine: 14, variables: { i: 1, l: 4, r: 4, sum: 0 }, description: 'Skip duplicates and move pointers. l=4, r=4 — while loop ends.' },
+      { currentLine: 5, variables: { i: 2, l: 4, r: 4, sum: 0 }, description: 'i=2, nums[2]=-1 === nums[1]=-1 — skip duplicate anchor.' },
+      { currentLine: 5, variables: { i: 3, l: 4, r: 4, sum: 0 }, description: 'i=3, nums[3]=0. Not a duplicate.' },
+      { currentLine: 7, variables: { i: 3, l: 4, r: 5, sum: 0 }, description: 'Set two-pointer range: l=4 (nums[4]=1), r=5 (nums[5]=2).' },
+      { currentLine: 10, variables: { i: 3, l: 4, r: 5, sum: 3 }, description: 'sum = 0 + 1 + 2 = 3. Too big — need smaller numbers.' },
+      { currentLine: 19, variables: { i: 3, l: 4, r: 4, sum: 3 }, description: 'Move r left: r=4. l meets r — exit while. Loop ends.' },
+      { currentLine: 21, variables: { i: 3, l: 4, r: 4, sum: 3 }, description: 'Return result: `[[-1, -1, 2]]`.' },
+    ],
+    visualType: 'number-cells',
+    visualData: [
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 0, rightIndex: -1 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 0, rightIndex: -1 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 1, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 1, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 3, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 3, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 1, rightIndex: -1 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 4 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 2, rightIndex: -1 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 3, rightIndex: -1 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 5 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 4 },
+      { items: [-4, -1, -1, 0, 1, 2], leftIndex: 4, rightIndex: 4, found: true },
+    ],
+    whyItWorks: {
+      title: 'Sorting reduces 3Sum to 2Sum — which two-pointers solves in O(n).',
+      body: [
+        'For each anchor element i, the remaining problem is "find two numbers that sum to -nums[i]" on a sorted subarray.',
+        'Sorting plus duplicate-skipping guarantees unique triplets without needing a Set.',
+        'The overall complexity is O(n²): O(n log n) for sorting + O(n²) for the nested two-pointer scans.',
+      ],
+    },
+    whenToUseSummary: 'Sort the array. For each element as anchor, use two-pointers to find pairs that sum to the complement. Skip duplicates at every level.',
+    breakdown: [
+      '3Sum is a classic example of **sorting as a strategy**. Without sorting, you would need three nested loops (O(n³)). Sorting plus two-pointers drops it to O(n²).',
+      '**How it works** — Sort the array first. For each element at index i (the anchor), set two pointers on the remaining subarray (i+1 to end). The target is `-nums[i]` — find two numbers that sum to it.',
+      '**Duplicate handling** — Skip duplicate anchors (`nums[i] === nums[i-1]`). After finding a match, skip duplicate values at both l and r to avoid duplicate triplets in the result.',
+      '**Why sort?** — Sorting does two things: (1) enables the two-pointer technique on the subarray, (2) makes duplicates adjacent so they are easy to skip.',
+      '**Comparison to hash map approach** — A hash-map 3Sum is O(n²) but needs O(n) space and duplicate handling is messier. The sort + two-pointer approach is O(1) extra space and handles duplicates elegantly.',
+    ],
+    jsConcepts: [
+      'Duplicate skipping — `if (i > 0 && nums[i] === nums[i-1]) continue` skips repeated anchor values. Prevents duplicate triplets.',
+      'Nested two-pointer — outer loop picks an anchor, inner while-loop runs two-pointers on the remainder. O(n²) total because the inner loop runs O(n) times per anchor.',
+    ],
+  },
+
+  /* ── Meeting Rooms ───────────────────────────────── */
+  {
+    id: 'meeting-rooms',
+    category: 'sorting-strategies',
+    title: 'Meeting rooms (overlap check)',
+    topic: 'Sort + sweep',
+    description: 'You have three meetings: [0,30], [5,10], [15,20]. Can one person attend all of them? Sort them by start time and check each pair — if any meeting starts before the last one ends, there is a conflict.',
+    timeComplexity: 'O(n log n)',
+    spaceComplexity: 'O(1)',
+    debugCode: `function canAttend(intervals) {
+  intervals.sort((a, b) => a[0] - b[0]);
+
+  for (let i = 1; i < intervals.length; i++) {
+    if (intervals[i][0] < intervals[i - 1][1]) {
+      return false;
+    }
+  }
+  return true;
+}`,
+    steps: [
+      { currentLine: 2, variables: { prevStart: '~', prevEnd: '~', currStart: '~' }, description: 'Sort meetings by start time: `[[0,30],[5,10],[15,20]]`.' },
+      { currentLine: 4, variables: { prevStart: '~', prevEnd: '~', currStart: '~' }, description: 'Loop: i=1. Compare meeting 1 with meeting 0.' },
+      { currentLine: 5, variables: { prevStart: 0, prevEnd: 30, currStart: 5 }, description: '`intervals[1][0]=5 < intervals[0][1]=30`. Meeting starts before previous ends — conflict!' },
+      { currentLine: 6, variables: { prevStart: 0, prevEnd: 30, currStart: 5 }, description: 'Return false — cannot attend all meetings. [0,30] and [5,10] overlap.' },
+    ],
+    visualType: 'interval-timeline',
+    visualData: [
+      { items: [], intervals: [[0,30],[5,10],[15,20]], current: -1 },
+      { items: [], intervals: [[0,30],[5,10],[15,20]], current: 1 },
+      { items: [], intervals: [[0,30],[5,10],[15,20]], current: 1, leftIndex: 0, rightIndex: 0, conflict: true },
+      { items: [], intervals: [[0,30],[5,10],[15,20]], current: 1, leftIndex: 0, rightIndex: 0, conflict: true, found: true },
+    ],
+    whyItWorks: {
+      title: 'Sorting makes the check linear — only adjacent meetings can conflict.',
+      body: [
+        'After sorting by start time, the only possible conflict is between a meeting and the next one. If all adjacent pairs are non-overlapping, no non-adjacent pair can overlap either.',
+        'Without sorting, you would need to check every pair — O(n²). Sorting reduces it to O(n log n) total.',
+      ],
+    },
+    whenToUseSummary: 'Sort by start time. Check each adjacent pair — if any meeting starts before the previous one ends, there is a conflict.',
+    breakdown: [
+      'Meeting Rooms demonstrates the **sort + sweep** pattern. The geometric intuition: if you sort intervals by their start times, you can walk through them in order and only check consecutive pairs.',
+      '**Why only adjacent?** — Imagine three meetings A, B, C sorted by start time. If A and B do not overlap, and B and C do not overlap, then A and C cannot overlap either (A ends before B starts, and B ends before C starts, so A definitely ends before C starts).',
+      '**The overlap condition** — `intervals[i][0] < intervals[i-1][1]` — a conflict exists if the current meeting starts before the previous one ends. This works because of the sort — you know i-1 started first.',
+      '**What about equal times?** — If one meeting ends at exactly the same time another starts (e.g., [2,4] and [4,6]), that is NOT considered overlapping — you can attend both. The condition uses `<`, not `<=`.',
+      '**Extension to meeting rooms II** — The same sort pattern combined with a min-heap (priority queue) solves "minimum number of meeting rooms needed." Another great interview follow-up.',
+    ],
+    jsConcepts: [
+      'Edge equality — `intervals[i][0] < intervals[i-1][1]` uses strict `<`. Meetings that end and start at the same time do not conflict.',
+      'Sort by first element — `a[0] - b[0]` sorts in ascending order. To sort by end time instead, use `a[1] - b[1]`.',
     ],
   },
 ]
