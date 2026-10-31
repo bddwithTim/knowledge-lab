@@ -1,4 +1,33 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, type ReactNode } from 'react'
+
+// Syntax highlighting helpers (shared with App.tsx)
+const CODE_KW = new Set([
+  'let', 'const', 'var', 'function', 'return', 'if', 'else', 'for', 'while',
+  'true', 'false', 'null', 'undefined', 'typeof', 'Math', 'console', 'log',
+])
+const SK = '#569cd6', SS = '#ce9178', SC = '#6a9955', SN = '#b5cea8', SF = '#dcdcaa'
+
+function hlLine(line: string) {
+  const cm = line.indexOf('//')
+  if (cm >= 0) return <>{hlTokens(line.slice(0, cm))}<span style={{ color: SC }}>{line.slice(cm)}</span></>
+  return hlTokens(line)
+}
+
+function hlTokens(text: string): ReactNode {
+  const re = /('[^']*'|"[^"]*")|(\b[A-Za-z_]\w*\b)|(\d+(\.\d+)?)|([^A-Za-z0-9_'"]+)/g
+  const nodes: ReactNode[] = []
+  let m: RegExpExecArray | null
+  let i = 0
+  while ((m = re.exec(text)) !== null) {
+    const full = m[0], str = m[1], word = m[2], num = m[3]
+    if (str) nodes.push(<span key={i++} style={{ color: SS }}>{full}</span>)
+    else if (word && CODE_KW.has(word)) nodes.push(<span key={i++} style={{ color: SK }}>{full}</span>)
+    else if (word) nodes.push(<span key={i++} style={{ color: /^\s*\(/.test(text.slice(m.index + full.length)) ? SF : 'inherit' }}>{full}</span>)
+    else if (num) nodes.push(<span key={i++} style={{ color: SN }}>{full}</span>)
+    else nodes.push(<span key={i++}>{full}</span>)
+  }
+  return <>{nodes}</>
+}
 
 export type StepDebuggerProps = {
   code: string
@@ -83,15 +112,15 @@ export function StepDebugger({ code, steps, currentStep, onStep }: StepDebuggerP
         ))}
       </div>
       <pre ref={codeRef} className="step-debugger-code" style={{
-        background: 'var(--bg-input)',
-        border: '1px solid var(--border-subtle)',
+        background: '#1e1e1e',
+        border: '1px solid #2d2d2d',
         borderRadius: 'var(--radius-sm)',
         padding: 'var(--space-md)',
         overflow: 'auto',
         fontFamily: 'var(--font-mono)',
         fontSize: '12px',
         lineHeight: '1.7',
-        color: 'var(--text-secondary)',
+        color: '#d4d4d4',
         maxHeight: '320px',
         whiteSpace: 'pre',
         tabSize: 2,
@@ -125,9 +154,9 @@ export function StepDebugger({ code, steps, currentStep, onStep }: StepDebuggerP
               <span style={{ display: 'inline-block', width: 'calc(1em + var(--space-sm))' }} />
             )}
             <span style={{
-              color: i === step.currentLine ? 'var(--text-primary)' : 'var(--text-muted)',
+              color: i === step.currentLine ? 'var(--text-primary)' : 'var(--text-code)',
             }}>
-              {line}
+              {hlLine(line)}
             </span>
           </div>
         ))}

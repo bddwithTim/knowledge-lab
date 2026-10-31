@@ -142,6 +142,24 @@ export function App() {
     setView('challenge')
   }
 
+  function goToPractice() {
+    setView('practice')
+  }
+
+  function goNextChallenge() {
+    const idx = availableChallenges.indexOf(activeChallenge)
+    if (idx >= 0 && idx < availableChallenges.length - 1) {
+      openChallenge(availableChallenges[idx + 1])
+    }
+  }
+
+  function goPrevChallenge() {
+    const idx = availableChallenges.indexOf(activeChallenge)
+    if (idx > 0) {
+      openChallenge(availableChallenges[idx - 1])
+    }
+  }
+
   const runLessonCode = useCallback(() => {
     const next = executeExample(code)
     setOutput(next.output)
@@ -310,6 +328,9 @@ export function App() {
             onCode={setCode}
             onRun={testSolution}
             onHint={() => setShowHint(!showHint)}
+            onBack={goToPractice}
+            onNext={availableChallenges.indexOf(activeChallenge) < availableChallenges.length - 1 ? goNextChallenge : null}
+            onPrevious={availableChallenges.indexOf(activeChallenge) > 0 ? goPrevChallenge : null}
           />
         )}
       </section>
@@ -461,20 +482,21 @@ function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
         <span>Time <strong>{scenario.timeComplexity}</strong></span>
         <span>Space <strong>{scenario.spaceComplexity}</strong></span>
       </div>
-      <div className="algorithm-study-panels">
-        {/* Left: Visualization */}
-        <div className="algorithm-visual algorithm-study-col">
-          <div>
-            <span className="eyebrow">Visualization</span>
-          </div>
+      <div className="scenario-viz-stack">
+        {/* Visualization */}
+        <div className="algorithm-visual">
           {scenario.visualType === 'bar-chart' ? (
             <div className="bar-chart">
+              {/* Water area overlay between L and R */}
               {step.leftIndex >= 0 && step.rightIndex >= 0 && step.leftIndex < step.rightIndex && (
-                <div className="bar-water-area" style={{
-                  left: `calc(${(step.leftIndex / (step.items.length - 1)) * 100}% + 16px)`,
-                  width: `calc(${((step.rightIndex - step.leftIndex) / (step.items.length - 1)) * 100}% - 28px)`,
-                  height: `${(Math.min(Number(step.items[step.leftIndex]), Number(step.items[step.rightIndex])) / 8) * 160}px`,
-                }} />
+                <div
+                  className="bar-water-area"
+                  style={{
+                    left: `${(step.leftIndex / (step.items.length - 1)) * 100}%`,
+                    width: `${((step.rightIndex - step.leftIndex) / (step.items.length - 1)) * 100}%`,
+                    height: `${(Math.min(Number(step.items[step.leftIndex]), Number(step.items[step.rightIndex])) / 8) * 160}px`,
+                  }}
+                />
               )}
               {step.items.map((item, index) => {
                 const height = Number(item)
@@ -556,8 +578,8 @@ function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
             </div>
           )}
         </div>
-        {/* Right: Code */}
-        <div className="algorithm-visual algorithm-study-col">
+        {/* Code debugger */}
+        <div className="algorithm-visual">
           <div>
             <span className="eyebrow">Code</span>
           </div>
@@ -570,12 +592,139 @@ function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
         </div>
       </div>
       {/* Why it works */}
-      <div className="scenario-why">
-        <h3>{scenario.whyItWorks.title}</h3>
-        {scenario.whyItWorks.body.map((line, i) => <p key={i}>{line}</p>)}
-      </div>
+      <CollapsibleBreakdown breakdown={scenario.breakdown} jsConcepts={scenario.jsConcepts || []} />
     </section>
   )
+}
+
+/* ── Collapsible breakdown ── */
+function CollapsibleBreakdown({ breakdown, jsConcepts }: { breakdown: string[]; jsConcepts: string[] }) {
+  const [open, setOpen] = useState(false)
+  const [jsOpen, setJsOpen] = useState(false)
+  const mental = breakdown[0]
+  const phases = breakdown.slice(1, -1)
+  const insight = breakdown[breakdown.length - 1]
+
+  return (
+    <div className="scenario-breakdown">
+      <button className="breakdown-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span className="breakdown-arrow">{open ? '▾' : '▸'}</span>
+        Breakdown
+      </button>
+      {open && (
+        <div className="breakdown-body">
+          {/* Mental model */}
+          <div className="breakdown-mental">
+            <span className="breakdown-section-label">Mental model</span>
+            <CodeText text={mental} />
+          </div>
+
+          {/* Phases */}
+          <div className="breakdown-phases">
+            <span className="breakdown-section-label">How it works</span>
+            <ol className="breakdown-phase-list">
+              {phases.map((phase, i) => (
+                <li key={i}><CodeText text={phase} /></li>
+              ))}
+            </ol>
+          </div>
+
+          {/* Key insight */}
+          <div className="breakdown-insight">
+            <span className="breakdown-section-label">Key insight</span>
+            <CodeText text={insight} />
+          </div>
+
+          {/* JS Concepts reference */}
+          {jsConcepts.length > 0 && (
+            <div className="breakdown-js">
+              <button className="breakdown-js-toggle" onClick={() => setJsOpen(!jsOpen)}>
+                <span className="breakdown-arrow">{jsOpen ? '▾' : '▸'}</span>
+                JavaScript concepts used
+              </button>
+              {jsOpen && (
+                <ul className="breakdown-js-list">
+                  {jsConcepts.map((concept, i) => (
+                    <li key={i}><CodeText text={concept} /></li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Inline code renderer ── */
+// Matches: backtick-wrapped text, code patterns like O(...), variable names, numbers, string literals
+/* ── Inline code renderer ── */
+const CODE_WORDS = new Set([
+  'let', 'const', 'var', 'function', 'return', 'if', 'else', 'for', 'while',
+  'true', 'false', 'null', 'undefined', 'typeof', 'Math', 'console', 'log',
+  'arr', 'left', 'right', 'slow', 'fast', 'i', 'j', 'k', 'mid', 'lo', 'hi',
+  'n', 'm', 'sum', 'total', 'max', 'min', 'maxSum', 'windowSum',
+  'windowStart', 'windowEnd', 'target', 'result', 'height', 'area', 'ops',
+  'found', 'push', 'pop', 'map', 'filter', 'reduce', 'slice', 'splice',
+])
+
+// VSCode Dark Modern token colors
+const SK = '#569cd6'  // keywords
+const SS = '#ce9178'  // strings
+const SC = '#6a9955'  // comments
+const SN = '#b5cea8'  // numbers
+const SF = '#dcdcaa'  // function calls
+
+function highlightLine(line: string): ReactNode {
+  const cm = line.indexOf('//')
+  if (cm >= 0) return <>{highlightTokens(line.slice(0, cm))}<span style={{ color: SC }}>{line.slice(cm)}</span></>
+  return highlightTokens(line)
+}
+
+function highlightTokens(text: string): ReactNode {
+  const re = /('[^']*'|"[^"]*")|(\b[A-Za-z_]\w*\b)|(\d+(\.\d+)?)|([^A-Za-z0-9_'"]+)/g
+  const nodes: ReactNode[] = []
+  let m: RegExpExecArray | null
+  let i = 0
+  while ((m = re.exec(text)) !== null) {
+    const full = m[0], str = m[1], word = m[2], num = m[3]
+    if (str) {
+      nodes.push(<span key={i++} style={{ color: SS }}>{full}</span>)
+    } else if (word && CODE_WORDS.has(word)) {
+      nodes.push(<span key={i++} style={{ color: SK }}>{full}</span>)
+    } else if (word) {
+      const after = text.slice(m.index + full.length)
+      nodes.push(<span key={i++} style={{ color: /^\s*\(/.test(after) ? SF : 'inherit' }}>{full}</span>)
+    } else if (num) {
+      nodes.push(<span key={i++} style={{ color: SN }}>{full}</span>)
+    } else {
+      nodes.push(<span key={i++}>{full}</span>)
+    }
+  }
+  return <>{nodes}</>
+}
+
+function CodeBlock({ text }: { text: string }) {
+  const lines = text.split('\n')
+  return <>{lines.map((line, i) => (
+    <div key={i} style={{ lineHeight: '1.7' }}>
+      {highlightLine(line)}
+    </div>
+  ))}</>
+}
+
+function CodeText({ text }: { text: string }) {
+  const parts = text.split(/(`[^`]+`)/g)
+  const nodes: ReactNode[] = []
+  for (const [pi, part] of parts.entries()) {
+    if (part.startsWith('`') && part.endsWith('`')) {
+      nodes.push(<code key={`bt${pi}`}>{part.slice(1, -1)}</code>)
+    } else {
+      nodes.push(<span key={`t${pi}`}>{part}</span>)
+    }
+  }
+  return <>{nodes}</>
 }
 
 /* ── PatternsOverview: cards for each pattern category ── */
@@ -741,6 +890,11 @@ function LessonPage({
   const hasNext = lesson.order < lessons.length
   const nextTitle = hasNext ? lessons[lesson.order].title : ''
 
+  // Scroll to top when lesson changes
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [lesson.order])
+
   function startResize(event: ReactMouseEvent<HTMLDivElement>) {
     event.preventDefault()
     draggingRef.current = true
@@ -825,9 +979,9 @@ function LessonPage({
             {lesson.sections.map((section) => (
               <CollapsibleSection key={section.title} title={section.title} defaultOpen>
                 {section.body.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
+                  <p key={paragraph}><CodeText text={paragraph} /></p>
                 ))}
-                {section.code && <pre className="code-sample">{section.code}</pre>}
+                {section.code && <pre className="code-sample"><CodeBlock text={section.code} /></pre>}
               </CollapsibleSection>
             ))}
             <nav className="lesson-end-nav" aria-label="Lesson navigation">
@@ -878,7 +1032,7 @@ function LessonPage({
   )
 }
 
-function ChallengePage({ challenge, code, results, showHint, onCode, onRun, onHint }: { challenge: Challenge; code: string; results: Result[]; showHint: boolean; onCode: (code: string) => void; onRun: () => void; onHint: () => void }) {
+function ChallengePage({ challenge, code, results, showHint, onCode, onRun, onHint, onBack, onNext, onPrevious }: { challenge: Challenge; code: string; results: Result[]; showHint: boolean; onCode: (code: string) => void; onRun: () => void; onHint: () => void; onBack: () => void; onNext: (() => void) | null; onPrevious: (() => void) | null }) {
   const passed = results.filter((item) => item.passed).length
   const allPassed = results.length > 0 && passed === results.length
   const hasFailures = results.some((item) => !item.passed)
@@ -903,6 +1057,7 @@ function ChallengePage({ challenge, code, results, showHint, onCode, onRun, onHi
   return (
     <>
       <header className="challenge-head">
+        <button className="back-link" onClick={onBack}>← Practice</button>
         <div>
           <span className="eyebrow">JavaScript · {challenge.topic}</span>
           <h1>{challenge.title}</h1>
@@ -937,7 +1092,11 @@ function ChallengePage({ challenge, code, results, showHint, onCode, onRun, onHi
                   <div>
                     <strong>{item.label}</strong>
                     {!item.passed && (
-                      <small>{item.error || `Expected ${display(challenge.cases.find((test) => test.label === item.label)?.expected)}, received ${display(item.actual)}`}</small>
+                      <small>
+                        Called: `{challenge.functionName}({challenge.cases.find((c) => c.label === item.label)?.args.map((a) => JSON.stringify(a)).join(', ')})`
+                        <br />
+                        {item.error || `Expected ${display(challenge.cases.find((test) => test.label === item.label)?.expected)}, received ${display(item.actual)}`}
+                      </small>
                     )}
                   </div>
                 </li>
@@ -945,6 +1104,12 @@ function ChallengePage({ challenge, code, results, showHint, onCode, onRun, onHi
             </ul>
           )}
         </section>
+        {(onPrevious || onNext) && (
+          <nav className="challenge-nav">
+            <button onClick={onPrevious ?? undefined} disabled={!onPrevious}>← Previous</button>
+            <button className="step-next" onClick={onNext ?? undefined} disabled={!onNext}>Next →</button>
+          </nav>
+        )}
       </div>
     </>
   )

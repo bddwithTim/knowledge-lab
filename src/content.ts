@@ -34,7 +34,7 @@ export const lessons: Lesson[] = [
       {
         title: 'What is a value?',
         body: [
-          'Every piece of data in JavaScript is a value. A value can be a number like 42, text like "hello", a boolean like true, or a more complex structure like an array or object. Values exist in memory; your program reads and transforms them.',
+          'Every piece of data in JavaScript is a `value`. A value can be a number like `42`, text like `"hello"`, a boolean like `true`, or a more complex structure like an `array` or `object`. Values exist in memory; your program reads and transforms them.',
           'When you write code, you rarely want to repeat the same literal everywhere. Instead, you give a value a name so you can refer to it later. That named reference is what people mean when they say "variable," even though technically the variable is the name and the value is what it points to.',
         ],
         code: '42\n"hello"\ntrue\n[1, 2, 3]\n{ name: "Mina" }',
@@ -42,45 +42,45 @@ export const lessons: Lesson[] = [
       {
         title: 'Declaring a variable',
         body: [
-          'A declaration introduces a name into the current scope. In modern JavaScript you declare variables with let or const, followed by the name, optionally followed by = and an initial value.',
-          'Declaration and assignment are related but not the same thing. const name = "Mina" both declares the name and assigns a value in one step. let score; declares the name without assigning — score starts as undefined until you assign later.',
-          'You cannot use a name before it is declared in its scope. Doing so throws a ReferenceError. This is stricter and safer than older JavaScript behavior with var.',
+          'A declaration introduces a name into the current scope. In modern JavaScript you declare variables with `let` or `const`, followed by the name, optionally followed by `=` and an initial value.',
+          'Declaration and assignment are related but not the same thing. `const name = "Mina"` both declares the name and assigns a value in one step. `let score;` declares the name without assigning — `score` starts as `undefined` until you assign later.',
+          'You cannot use a name before it is declared in its scope. Doing so throws a `ReferenceError`. This is stricter and safer than older JavaScript behavior with `var`.',
         ],
         code: 'const playerName = "Mina";\nlet score;\nscore = 10;',
       },
       {
         title: 'const: bind once, read many times',
         body: [
-          'const is short for "constant binding." It means the variable name cannot be reassigned to a different value after the initial assignment. If you try, JavaScript throws a TypeError.',
-          'This does not mean the value itself is frozen. const only protects the binding — the link between the name and whatever it currently refers to. If that value is an array or object, you can still change its contents.',
-          'Use const as your default. When a reader sees const, they know the name will always refer to the same value for the rest of that scope. That makes code easier to reason about and reduces accidental reassignment bugs.',
+          '`const` is short for "constant binding." It means the variable name cannot be reassigned to a different value after the initial assignment. If you try, JavaScript throws a `TypeError`.',
+          'This does not mean the value itself is frozen. `const` only protects the binding — the link between the name and whatever it currently refers to. If that value is an array or object, you can still change its contents.',
+          'Use `const` as your default. When a reader sees `const`, they know the name will always refer to the same value for the rest of that scope. That makes code easier to reason about and reduces accidental reassignment bugs.',
         ],
         code: 'const colors = ["red", "blue"];\ncolors.push("green"); // allowed — mutating the array\n// colors = [];         // TypeError — rebinding is not allowed\n\nconst player = { name: "Mina", score: 0 };\nplayer.score = 5; // allowed — mutating the object',
       },
       {
         title: 'let: when the binding itself must change',
         body: [
-          'let allows reassignment. The name can point to a new value later in the same scope. Use let when the variable itself is meant to change — a counter, an accumulator, a loop variable, or a value that gets updated step by step.',
-          'let does not mean "this value might change someday." If you never reassign, use const instead. Reserve let for cases where reassignment is part of the logic, not a vague future possibility.',
-          'Both let and const are block-scoped and subject to the temporal dead zone (see below). They replaced var as the standard way to declare variables in modern code.',
+          '`let` allows reassignment. The name can point to a new value later in the same scope. Use `let` when the variable itself is meant to change — a counter, an accumulator, a loop variable, or a value that gets updated step by step.',
+          '`let` does not mean "this value might change someday." If you never reassign, use `const` instead. Reserve `let` for cases where reassignment is part of the logic, not a vague future possibility.',
+          'Both `let` and `const` are block-scoped and subject to the temporal dead zone (see below). They replaced `var` as the standard way to declare variables in modern code.',
         ],
         code: 'let total = 0;\nfor (const price of [4, 7, 3]) {\n  total = total + price; // reassignment is the point\n}\nconsole.log(total); // 14',
       },
       {
         title: 'let vs const vs var',
         body: [
-          'const and let share block scope and do not hoist in a usable way. var is function-scoped (or global-scoped) and is hoisted with an initial value of undefined, which can cause subtle bugs.',
-          'Do not use var in new code. It exists only for backward compatibility with very old scripts. When you see var in tutorials or legacy code, mentally translate it to let or const based on whether reassignment happens.',
-          'Quick rule: default to const. Switch to let only when you reassign. Never use var unless you are maintaining old code and have a specific reason.',
+          '`const` and `let` share block scope and do not hoist in a usable way. `var` is function-scoped (or global-scoped) and is hoisted with an initial value of `undefined`, which can cause subtle bugs.',
+          'Do not use `var` in new code. It exists only for backward compatibility with very old scripts. When you see `var` in tutorials or legacy code, mentally translate it to `let` or `const` based on whether reassignment happens.',
+          'Quick rule: default to `const`. Switch to `let` only when you reassign. Never use `var` unless you are maintaining old code and have a specific reason.',
         ],
         code: '// Prefer:\nconst name = "Ari";\nlet attempts = 0;\n\n// Avoid in modern code:\n// var oldStyle = "legacy";',
       },
       {
         title: 'Block scope',
         body: [
-          'Block scope means a variable declared inside a pair of braces { } — such as an if block, a loop body, or a standalone block — is visible only inside those braces and any blocks nested within them.',
-          'This prevents temporary names from leaking into the rest of your program. A variable created inside an if statement should not accidentally shadow or collide with names outside it.',
-          'Each block creates its own scope. You can declare a const with the same name in two separate blocks without conflict, because each block is independent.',
+          'Block scope means a variable declared inside a pair of braces `{ }` — such as an `if` block, a loop body, or a standalone block — is visible only inside those braces and any blocks nested within them.',
+          'This prevents temporary names from leaking into the rest of your program. A variable created inside an `if` statement should not accidentally shadow or collide with names outside it.',
+          'Each block creates its own scope. You can declare a `const` with the same name in two separate blocks without conflict, because each block is independent.',
         ],
         code: 'const outer = "I live outside";\n\nif (true) {\n  const inner = "I live inside the if block";\n  console.log(outer); // fine — outer is visible here\n  console.log(inner); // fine\n}\n\nconsole.log(outer); // fine\n// console.log(inner); // ReferenceError — inner does not exist here',
       },
@@ -88,7 +88,7 @@ export const lessons: Lesson[] = [
         title: 'Lexical scope',
         body: [
           'JavaScript uses lexical scope (also called static scope). That means a function can access variables from the scope where the function was written, not where it was called.',
-          'When an inner function references a variable from an outer scope, that outer variable is called a closure. The inner function "closes over" the outer binding. This is one of the most important ideas in JavaScript.',
+          'When an inner function references a variable from an outer scope, that outer variable is called a `closure`. The inner function "closes over" the outer binding. This is one of the most important ideas in JavaScript.',
           'Lexical scope works outward: inner scopes can read outer scopes, but outer scopes cannot read variables declared only in an inner scope. Search for a name starts in the current scope and walks outward until it finds a match or runs out of scopes.',
         ],
         code: 'function makeGreeter(greeting) {\n  // greeting is in the outer scope\n  return function greet(name) {\n    // greet can read greeting because of lexical scope\n    return `${greeting}, ${name}!`;\n  };\n}\n\nconst sayHello = makeGreeter("Hello");\nconsole.log(sayHello("Mina")); // "Hello, Mina!"',
@@ -96,8 +96,8 @@ export const lessons: Lesson[] = [
       {
         title: 'The temporal dead zone (TDZ)',
         body: [
-          'Variables declared with let or const exist in their scope from the start of the block, but they cannot be accessed until the declaration line runs. The period between entering the scope and reaching the declaration is called the temporal dead zone.',
-          'Accessing a let or const variable in the TDZ throws a ReferenceError, even though a var declaration in the same place would have returned undefined. This catches mistakes early instead of silently giving you undefined.',
+          'Variables declared with `let` or `const` exist in their scope from the start of the block, but they cannot be accessed until the declaration line runs. The period between entering the scope and reaching the declaration is called the temporal dead zone.',
+          'Accessing a `let` or `const` variable in the TDZ throws a `ReferenceError`, even though a `var` declaration in the same place would have returned `undefined`. This catches mistakes early instead of silently giving you `undefined`.',
           'This is why you should declare variables at the top of the block where they are used, before any code that reads them. It keeps behavior predictable and avoids TDZ errors.',
         ],
         code: '{\n  // console.log(score); // ReferenceError — TDZ\n  let score = 10;\n  console.log(score); // 10\n}',
@@ -105,34 +105,34 @@ export const lessons: Lesson[] = [
       {
         title: 'When to use const',
         body: [
-          'Use const for function parameters, loop variables that are not reassigned (for...of gives you a new const each iteration), imported bindings, configuration objects, DOM references, and any value that stays the same for the life of the scope.',
-          'Use const even when the object or array contents will change, as long as you are not replacing the whole object or array. const player = { score: 0 } followed by player.score = 5 is idiomatic.',
-          'If you need a truly immutable data structure, const alone is not enough. Use Object.freeze for shallow immutability, or copy data with spread syntax before changing it.',
+          'Use `const` for function parameters, loop variables that are not reassigned (`for...of` gives you a new `const` each iteration), imported bindings, configuration objects, DOM references, and any value that stays the same for the life of the scope.',
+          'Use `const` even when the object or array contents will change, as long as you are not replacing the whole object or array. `const player = { score: 0 }` followed by `player.score = 5` is idiomatic.',
+          'If you need a truly immutable data structure, `const` alone is not enough. Use `Object.freeze` for shallow immutability, or copy data with spread syntax before changing it.',
         ],
       },
       {
         title: 'When to use let',
         body: [
-          'Use let for accumulators (let total = 0), counters (let i = 0 in a traditional for loop), flags that flip (let found = false), and any variable that is intentionally reassigned in place.',
-          'Use let when you need to declare a variable now but assign it later inside conditional branches, where only one branch runs but all branches need the same name afterward.',
-          'Do not use let "just in case." Unnecessary let signals to readers that reassignment happens when it does not, which adds mental overhead.',
+          'Use `let` for accumulators (`let total = 0`), counters (`let i = 0` in a traditional `for` loop), flags that flip (`let found = false`), and any variable that is intentionally reassigned in place.',
+          'Use `let` when you need to declare a variable now but assign it later inside conditional branches, where only one branch runs but all branches need the same name afterward.',
+          'Do not use `let` "just in case." Unnecessary `let` signals to readers that reassignment happens when it does not, which adds mental overhead.',
         ],
         code: 'let message;\nif (score >= 10) {\n  message = "Great job!";\n} else {\n  message = "Keep going.";\n}\nconsole.log(message);',
       },
       {
         title: 'When not to use let or const',
         body: [
-          'Do not redeclare the same name in the same scope. const x = 1; const x = 2; is a SyntaxError. let has the same restriction within a block.',
-          'Do not rely on undeclared variables (assigning to a name without let, const, or var). In strict mode, which modules use by default, that throws a ReferenceError. Always declare explicitly.',
+          'Do not redeclare the same name in the same scope. `const x = 1; const x = 2;` is a `SyntaxError`. `let` has the same restriction within a block.',
+          'Do not rely on undeclared variables (assigning to a name without `let`, `const`, or `var`). In strict mode, which modules use by default, that throws a `ReferenceError`. Always declare explicitly.',
           'Avoid creating variables you never read. If a value is used once inline, a named variable may not help readability. Good names clarify intent; pointless names add noise.',
         ],
       },
       {
         title: 'Naming variables well',
         body: [
-          'Choose names that describe what the value represents: playerName, totalPrice, isActive. Avoid single letters except in very short loops or math formulas where the convention is clear.',
-          'Use camelCase for variable names in JavaScript. Constants that are truly fixed configuration values are sometimes written in SCREAMING_SNAKE_CASE, but ordinary const variables still use camelCase.',
-          'A name should answer "what is this?" not "how did I compute it?" Prefer activeUsers over filteredArrayResult when the meaning is a list of active users.',
+          'Choose names that describe what the value represents: `playerName`, `totalPrice`, `isActive`. Avoid single letters except in very short loops or math formulas where the convention is clear.',
+          'Use `camelCase` for variable names in JavaScript. Constants that are truly fixed configuration values are sometimes written in `SCREAMING_SNAKE_CASE`, but ordinary `const` variables still use `camelCase`.',
+          'A name should answer "what is this?" not "how did I compute it?" Prefer `activeUsers` over `filteredArrayResult` when the meaning is a list of active users.',
         ],
       },
     ],
@@ -148,7 +148,7 @@ export const lessons: Lesson[] = [
       {
         title: 'What is a function?',
         body: [
-          'A function is a named block of code that performs a specific task. You define it once and call it whenever you need that behavior. Functions are values in JavaScript — you can store them in variables, pass them as arguments, and return them from other functions.',
+          'A function is a named block of code that performs a specific task. You define it once and call it whenever you need that behavior. Functions are values in JavaScript — you can store them in variables, pass them as arguments, and `return` them from other functions.',
           'Functions reduce duplication. Instead of writing the same calculation in three places, write it once in a function and call it three times. When the logic changes, you update one place.',
           'Every function has a name (or is anonymous), a parameter list, and a body. The body contains the statements that run when the function is called.',
         ],
@@ -158,43 +158,43 @@ export const lessons: Lesson[] = [
         title: 'Parameters and arguments',
         body: [
           'Parameters are the named placeholders in a function definition. When you call the function, you supply arguments — the actual values that fill those placeholders.',
-          'The number of arguments does not have to match the number of parameters. Extra arguments are ignored (but still accessible via rest syntax in advanced code). Missing arguments become undefined inside the function.',
-          'Name parameters after the meaning of the data, not its type: price, name, items — not num, str, arr. Clear parameter names make call sites self-documenting.',
+          'The number of arguments does not have to match the number of parameters. Extra arguments are ignored (but still accessible via rest syntax in advanced code). Missing arguments become `undefined` inside the function.',
+          'Name parameters after the meaning of the data, not its type: `price`, `name`, `items` — not `num`, `str`, `arr`. Clear parameter names make call sites self-documenting.',
         ],
         code: 'function greet(name) {\n  return `Hello, ${name}!`;\n}\n\ngreet("Mina");  // name becomes "Mina"\ngreet("Kai");   // name becomes "Kai"',
       },
       {
         title: 'return sends a value back',
         body: [
-          'The return keyword ends function execution and sends a value back to the caller. The caller can store that value, pass it to another function, or use it in an expression.',
-          'A function without return (or with return; and no value) implicitly returns undefined. That is valid, but most functions you write in exercises should return something concrete.',
-          'Only one return value is sent per call. If you need to return multiple pieces of data, return an object or array that groups them.',
+          'The `return` keyword ends function execution and sends a value back to the caller. The caller can store that value, pass it to another function, or use it in an expression.',
+          'A function without `return` (or with `return;` and no value) implicitly returns `undefined`. That is valid, but most functions you write in exercises should `return` something concrete.',
+          'Only one `return` value is sent per call. If you need to `return` multiple pieces of data, `return` an object or array that groups them.',
         ],
         code: 'function add(a, b) {\n  return a + b;\n}\n\nconst sum = add(3, 4); // sum is 7\nconst doubled = add(3, 4) * 2; // 14',
       },
       {
         title: 'return is not console.log',
         body: [
-          'console.log prints a value to the console for debugging. It does not send a value back to the code that called the function. A function that only logs and never returns produces undefined as its result.',
-          'This distinction matters in tests, calculations, and UI code. If double(4) logs 8 but returns undefined, then double(4) + 1 is NaN, not 9.',
-          'Use console.log while exploring and debugging. Use return when the function is supposed to produce a value that other code depends on.',
+          '`console.log` prints a value to the console for debugging. It does not send a value back to the code that called the function. A function that only logs and never `return`s produces `undefined` as its result.',
+          'This distinction matters in tests, calculations, and UI code. If `double(4)` logs `8` but `return`s `undefined`, then `double(4) + 1` is `NaN`, not `9`.',
+          'Use `console.log` while exploring and debugging. Use `return` when the function is supposed to produce a value that other code depends on.',
         ],
         code: 'function badDouble(n) {\n  console.log(n * 2); // displays 8, returns undefined\n}\n\nfunction goodDouble(n) {\n  return n * 2; // returns 8 to the caller\n}\n\nconsole.log(goodDouble(4) + 1); // 9',
       },
       {
         title: 'Early return',
         body: [
-          'You can return as soon as a condition is met, before reaching the end of the function. This is called an early return and often makes functions easier to read than deeply nested if blocks.',
-          'Handle invalid inputs, edge cases, or simple branches first with early returns. The main logic at the bottom then reads as the "normal path" without extra indentation.',
-          'Code after a return statement in the same branch does not execute. The function has already exited.',
+          'You can `return` as soon as a condition is met, before reaching the end of the function. This is called an early `return` and often makes functions easier to read than deeply nested `if` blocks.',
+          'Handle invalid inputs, edge cases, or simple branches first with early `return`s. The main logic at the bottom then reads as the "normal path" without extra indentation.',
+          'Code after a `return` statement in the same branch does not execute. The function has already exited.',
         ],
         code: 'function absoluteValue(number) {\n  if (number < 0) {\n    return -number;\n  }\n  return number;\n}',
       },
       {
         title: 'Function declarations vs arrow functions',
         body: [
-          'A function declaration (function name() { }) is hoisted — you can call it before its line in the source file. An arrow function assigned to const is not hoisted; you must define it before calling it.',
-          'Arrow functions have a concise syntax, especially for one-line expressions: const double = (n) => n * 2. Use block braces and an explicit return when the body has multiple statements.',
+          'A function declaration (`function name() { }`) is hoisted — you can call it before its line in the source file. An arrow function assigned to `const` is not hoisted; you must define it before calling it.',
+          'Arrow functions have a concise syntax, especially for one-line expressions: `const double = (n) => n * 2`. Use block braces and an explicit `return` when the body has multiple statements.',
           'For the exercises in this lab, either style works. Pick one and stay consistent within a file. Arrow functions are common in modern React and array method callbacks.',
         ],
         code: 'function multiply(a, b) {\n  return a * b;\n}\n\nconst divide = (a, b) => a / b;\n\nconst formatName = (first, last) => {\n  const full = `${first} ${last}`;\n  return full.trim();\n};',
@@ -202,7 +202,7 @@ export const lessons: Lesson[] = [
       {
         title: 'Pure functions and side effects',
         body: [
-          'A pure function always returns the same output for the same input and does not modify external state or perform I/O. add(2, 3) is pure; Math.random() is not.',
+          'A pure function always `return`s the same output for the same input and does not modify external state or perform I/O. `add(2, 3)` is pure; `Math.random()` is not.',
           'Pure functions are easy to test because you only need to check inputs and outputs. Most Codewars-style exercises expect pure functions.',
           'Side effects — logging, mutating global variables, changing DOM elements — are sometimes necessary in real apps, but keep them out of small calculation functions when possible.',
         ],
@@ -210,7 +210,7 @@ export const lessons: Lesson[] = [
       {
         title: 'One job per function',
         body: [
-          'A well-named function does one thing. formatCurrency, isEven, and calculateTotal are clear. doStuff or handleData are vague and usually hide multiple responsibilities.',
+          'A well-named function does one thing. `formatCurrency`, `isEven`, and `calculateTotal` are clear. `doStuff` or `handleData` are vague and usually hide multiple responsibilities.',
           'If a function needs "and" in its description ("validates and saves and sends email"), consider splitting it. Smaller functions are easier to name, test, and reuse.',
           'Avoid hidden dependencies on variables outside the function when the value could be a parameter. Explicit inputs make behavior predictable and portable.',
         ],
@@ -228,70 +228,70 @@ export const lessons: Lesson[] = [
       {
         title: 'Booleans: true and false',
         body: [
-          'A boolean has exactly two values: true or false. Booleans represent yes/no decisions — is the user logged in, is the score high enough, does the list contain this item.',
-          'Comparisons produce booleans. score >= 10 is true or false. name === "Mina" is true or false. These expressions can be stored in variables or used directly in conditionals.',
+          'A boolean has exactly two values: `true` or `false`. Booleans represent yes/no decisions — is the user logged in, is the score high enough, does the list contain this item.',
+          'Comparisons produce booleans. `score >= 10` is `true` or `false`. `name === "Mina"` is `true` or `false`. These expressions can be stored in variables or used directly in conditionals.',
         ],
         code: 'const hasPassed = score >= 10;\nconst isOwner = userId === ownerId;\nconsole.log(hasPassed); // true or false',
       },
       {
         title: 'Comparison operators',
         body: [
-          '=== checks strict equality: same value and same type. !== checks strict inequality. Always prefer these in modern JavaScript.',
-          '== and != perform type coercion before comparing, which leads to surprises like 0 == false being true and "" == false being true. Avoid them unless you have a very specific reason.',
-          'Relational operators (<, >, <=, >=) compare numbers and strings (strings compare lexicographically by Unicode code point, which can surprise you with mixed case — normalize first when needed).',
+          '`===` checks strict equality: same value and same type. `!==` checks strict inequality. Always prefer these in modern JavaScript.',
+          '`==` and `!=` perform type coercion before comparing, which leads to surprises like `0 == false` being `true` and `"" == false` being `true`. Avoid them unless you have a very specific reason.',
+          'Relational operators (`<`, `>`, `<=`, `>=`) compare numbers and strings (strings compare lexicographically by Unicode code point, which can surprise you with mixed case — normalize first when needed).',
         ],
         code: '5 === 5;    // true\n5 === "5";  // false — different types\n5 == "5";   // true — coercion (avoid)\n\n"a" < "b";  // true\n"10" < "2"; // true — string comparison, not numeric',
       },
       {
         title: 'if, else if, and else',
         body: [
-          'if (condition) runs its block only when condition is true. else if adds another test when the previous conditions were false. else runs when none of the above matched.',
-          'Only one branch executes. Once a condition is true, the remaining else if and else branches are skipped entirely.',
-          'Order matters. Put the most specific checks first and general fallbacks last. Checking score >= 90 before score >= 50 ensures high scores get the right label.',
+          '`if (condition)` runs its block only when condition is `true`. `else if` adds another test when the previous conditions were `false`. `else` runs when none of the above matched.',
+          'Only one branch executes. Once a condition is `true`, the remaining `else if` and `else` branches are skipped entirely.',
+          'Order matters. Put the most specific checks first and general fallbacks last. Checking `score >= 90` before `score >= 50` ensures high scores get the right label.',
         ],
         code: 'function grade(score) {\n  if (score >= 90) {\n    return "A";\n  } else if (score >= 80) {\n    return "B";\n  } else if (score >= 70) {\n    return "C";\n  } else {\n    return "F";\n  }\n}',
       },
       {
         title: 'Truthy and falsy values',
         body: [
-          'JavaScript treats values in boolean context as truthy or falsy. Falsy values are: false, 0, -0, 0n, "", null, undefined, and NaN. Everything else is truthy — including [], {}, and "0".',
-          'You can write if (name) to check whether name is a non-empty string, or if (items.length) to check for a non-empty array. This is idiomatic for optional values.',
-          'Truthy/falsy checks are shortcuts, not replacements for precise comparisons. They fail when 0 or "" are valid meaningful values.',
+          'JavaScript treats values in boolean context as truthy or falsy. Falsy values are: `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, and `NaN`. Everything else is truthy — including `[]`, `{}`, and `"0"`.',
+          'You can write `if (name)` to check whether `name` is a non-empty string, or `if (items.length)` to check for a non-empty array. This is idiomatic for optional values.',
+          'Truthy/falsy checks are shortcuts, not replacements for precise comparisons. They fail when `0` or `""` are valid meaningful values.',
         ],
         code: 'if (name) {\n  console.log(`Hello, ${name}`);\n}\n\nif (count) { // beware: count of 0 is falsy\n  console.log(count);\n}',
       },
       {
         title: 'When not to rely on truthiness',
         body: [
-          'Do not use if (score) when a score of 0 is valid and should be handled explicitly. Use if (score !== null) or if (score !== undefined) when you need to distinguish "missing" from "zero."',
-          'Do not use == null as a blanket check unless you understand it matches both null and undefined. Prefer explicit === null or === undefined when the distinction matters.',
-          'For booleans that are already true or false, write if (isActive) rather than if (isActive === true). The extra comparison adds noise without clarity.',
+          'Do not use `if (score)` when a score of `0` is valid and should be handled explicitly. Use `if (score !== null)` or `if (score !== undefined)` when you need to distinguish "missing" from "zero."',
+          'Do not use `== null` as a blanket check unless you understand it matches both `null` and `undefined`. Prefer explicit `=== null` or `=== undefined` when the distinction matters.',
+          'For booleans that are already `true` or `false`, write `if (isActive)` rather than `if (isActive === true)`. The extra comparison adds noise without clarity.',
         ],
       },
       {
         title: 'Logical operators: &&, ||, and !',
         body: [
-          '&& (and) returns the first falsy value, or the last value if all are truthy. || (or) returns the first truthy value, or the last value if all are falsy. ! (not) inverts a boolean.',
-          '&& and || are often used for short-circuit evaluation: condition && doSomething() runs doSomething only if condition is true.',
-          'The nullish coalescing operator ?? returns the right side only when the left is null or undefined — not when it is 0 or "". Use ?? for default values when 0 and "" are valid.',
+          '`&&` (and) returns the first falsy value, or the last value if all are truthy. `||` (or) returns the first truthy value, or the last value if all are falsy. `!` (not) inverts a boolean.',
+          '`&&` and `||` are often used for short-circuit evaluation: `condition && doSomething()` runs `doSomething` only if `condition` is `true`.',
+          'The nullish coalescing operator `??` returns the right side only when the left is `null` or `undefined` — not when it is `0` or `""`. Use `??` for default values when `0` and `""` are valid.',
         ],
         code: 'const displayName = nickname || "Guest";\nconst safeCount = count ?? 0; // 0 is kept if count is 0\n\nif (user && user.active) {\n  sendEmail(user);\n}',
       },
       {
         title: 'Readable conditions',
         body: [
-          'Long conditions are hard to parse inline. Extract them into well-named boolean variables: const isEligible = age >= 18 && hasAccount; if (isEligible) { ... }.',
-          'Avoid negated conditions when a positive name is clearer. Prefer if (isEmpty) over if (!hasItems) when you can name the positive case naturally.',
-          'Ternary operator (condition ? a : b) works for simple either/or values. Avoid chaining nested ternaries — use if/else for multi-branch logic.',
+          'Long conditions are hard to parse inline. Extract them into well-named boolean variables: `const isEligible = age >= 18 && hasAccount; if (isEligible) { ... }`.',
+          'Avoid negated conditions when a positive name is clearer. Prefer `if (isEmpty)` over `if (!hasItems)` when you can name the positive case naturally.',
+          'Ternary operator (`condition ? a : b`) works for simple either/or values. Avoid chaining nested ternaries — use `if/else` for multi-branch logic.',
         ],
         code: 'const isEven = number % 2 === 0;\nconst label = isEven ? "even" : "odd";',
       },
       {
         title: 'switch as an alternative',
         body: [
-          'switch compares one expression against multiple case values. It is useful when you test the same variable against many exact matches, especially strings or numbers.',
-          'Every case should usually end with break (or return) to prevent fall-through into the next case. Omitting break causes the next case to run unintentionally.',
-          'For simple two-way or range-based logic, if/else is often clearer. Use switch when you have many discrete equal-to cases.',
+          '`switch` compares one expression against multiple `case` values. It is useful when you test the same variable against many exact matches, especially strings or numbers.',
+          'Every `case` should usually end with `break` (or `return`) to prevent fall-through into the next `case`. Omitting `break` causes the next `case` to run unintentionally.',
+          'For simple two-way or range-based logic, `if/else` is often clearer. Use `switch` when you have many discrete equal-to cases.',
         ],
         code: 'function dayType(day) {\n  switch (day) {\n    case "Saturday":\n    case "Sunday":\n      return "weekend";\n    default:\n      return "weekday";\n  }\n}',
       },
@@ -344,9 +344,9 @@ export const lessons: Lesson[] = [
       {
         title: 'Common string methods',
         body: [
-          'includes(substring) checks whether the text contains a piece. startsWith and endsWith check prefixes and suffixes. All return booleans.',
-          'toLowerCase and toUpperCase return new strings with changed casing. Use them to compare user input case-insensitively: a.toLowerCase() === b.toLowerCase().',
-          'trim removes whitespace from both ends. trimStart and trimEnd target one side. replace finds a match and returns a new string with that match substituted (only the first match unless you use a global regex).',
+          '`includes(substring)` checks whether the text contains a piece. `startsWith` and `endsWith` check prefixes and suffixes. All `return` booleans.',
+          '`toLowerCase` and `toUpperCase` return new strings with changed casing. Use them to compare user input case-insensitively: `a.toLowerCase() === b.toLowerCase()`.',
+          '`trim` removes whitespace from both ends. `trimStart` and `trimEnd` target one side. `replace` finds a match and returns a new string with that match substituted (only the first match unless you use a global regex).',
         ],
         code: 'const email = "  USER@MAIL.COM  ";\nconst normalized = email.trim().toLowerCase();\n\n"hello".includes("ell"); // true\n"file.txt".endsWith(".txt"); // true',
       },
@@ -380,26 +380,26 @@ export const lessons: Lesson[] = [
       {
         title: 'Why split and join exist',
         body: [
-          'Many text tasks involve treating a string as a list of pieces: words in a sentence, fields in a CSV row, or characters for reversal. split turns a string into an array; join turns an array back into a string.',
-          'Together they form a pipeline: split to break apart, transform with map or filter, join to reassemble. This pattern appears constantly in string exercises.',
+          'Many text tasks involve treating a string as a list of pieces: words in a sentence, fields in a CSV row, or characters for reversal. `split` turns a string into an array; `join` turns an array back into a string.',
+          'Together they form a pipeline: `split` to break apart, transform with `map` or `filter`, `join` to reassemble. This pattern appears constantly in string exercises.',
         ],
         code: 'const sentence = "learn by doing";\nconst words = sentence.split(" ");\n// ["learn", "by", "doing"]',
       },
       {
         title: 'split(separator)',
         body: [
-          'split divides a string wherever the separator appears. split(" ") splits on spaces. split(",") splits on commas. split("") splits into individual characters.',
-          'Consecutive separators can produce empty strings: "a,,b".split(",") gives ["a", "", "b"]. Leading or trailing separators can produce empty first or last elements.',
-          'When input is messy (multiple spaces, mixed punctuation), trim first or use a regular expression separator for more control. For controlled exercise input, a simple separator is usually enough.',
+          '`split` divides a string wherever the separator appears. `split(" ")` splits on spaces. `split(",")` splits on commas. `split("")` splits into individual characters.',
+          'Consecutive separators can produce empty strings: `"a,,b".split(",")` gives `["a", "", "b"]`. Leading or trailing separators can produce empty first or last elements.',
+          'When input is messy (multiple spaces, mixed punctuation), `trim` first or use a regular expression separator for more control. For controlled exercise input, a simple separator is usually enough.',
         ],
         code: '"a-b-c".split("-");     // ["a", "b", "c"]\n"hello".split("");      // ["h","e","l","l","o"]\n"one  two".split(" ");  // ["one", "", "two"]',
       },
       {
         title: 'join(separator)',
         body: [
-          'join combines array elements into one string, placing the separator between items — not before the first or after the last.',
-          'join("") concatenates with no separator. join(" ") builds a sentence from words. join("-") builds kebab-case from parts.',
-          'join only works on arrays. If you have a string already, you do not need join. If you have an array of pieces, join is the standard way to build the final string.',
+          '`join` combines array elements into one string, placing the separator between items — not before the first or after the last.',
+          '`join("")` concatenates with no separator. `join(" ")` builds a sentence from words. `join("-")` builds kebab-case from parts.',
+          '`join` only works on arrays. If you have a string already, you do not need `join`. If you have an array of pieces, `join` is the standard way to build the final string.',
         ],
         code: '["Learn", "by", "doing"].join(" "); // "Learn by doing"\n["a", "b", "c"].join("");           // "abc"',
       },
@@ -407,7 +407,7 @@ export const lessons: Lesson[] = [
         title: 'The split → transform → join pattern',
         body: [
           'A typical word-processing function splits input, maps each piece (capitalize, reverse, filter), then joins the result.',
-          'Each step has one job. Splitting is parsing, map/filter is transformation, joining is formatting. Keeping them separate makes bugs easier to locate.',
+          'Each step has one job. Splitting is parsing, `map`/`filter` is transformation, joining is formatting. Keeping them separate makes bugs easier to locate.',
           'Store intermediate arrays in named variables when chains get long. Readable steps beat clever one-liners while you are learning.',
         ],
         code: 'const loud = "learn by doing"\n  .split(" ")\n  .map((word) => word.toUpperCase())\n  .join(" ");\n// "LEARN BY DOING"',
@@ -415,7 +415,7 @@ export const lessons: Lesson[] = [
       {
         title: 'When not to split',
         body: [
-          'If includes, startsWith, endsWith, replace, or trim express the intent directly, use them. Splitting into an array just to check membership adds unnecessary steps.',
+          'If `includes`, `startsWith`, `endsWith`, `replace`, or `trim` express the intent directly, use them. Splitting into an array just to check membership adds unnecessary steps.',
           'Do not split a string into characters unless the task truly needs per-character work. For simple checks, string methods on the whole text are faster to write and read.',
           'Natural language is messy. Real-world tokenization handles contractions, punctuation, and unicode. Exercise inputs are simplified — match your function to the stated input format.',
         ],
@@ -423,9 +423,9 @@ export const lessons: Lesson[] = [
       {
         title: 'Character-level operations',
         body: [
-          'split("") gives an array of characters for reversal, counting, or per-letter transforms. After processing, join("") rebuilds the string.',
-          'Alternatively, [...text] spreads a string into a character array with better unicode handling for some edge cases.',
-          'For counting or checking duplicates, a Set built from characters (often lowercased) is a common pattern in 6 kyu and 7 kyu exercises.',
+          '`split("")` gives an array of characters for reversal, counting, or per-letter transforms. After processing, `join("")` rebuilds the string.',
+          'Alternatively, `[...text]` spreads a string into a character array with better unicode handling for some edge cases.',
+          'For counting or checking duplicates, a `Set` built from characters (often lowercased) is a common pattern in 6 kyu and 7 kyu exercises.',
         ],
         code: 'function reverse(text) {\n  return text.split("").reverse().join("");\n}\n\nreverse("hello"); // "olleh"',
       },
@@ -442,26 +442,26 @@ export const lessons: Lesson[] = [
       {
         title: 'What is an array?',
         body: [
-          'An array is an ordered list of values. Order matters: ["gold", "silver", "bronze"] is different from ["bronze", "silver", "gold"].',
+          'An array is an ordered list of values. Order matters: `["gold", "silver", "bronze"]` is different from `["bronze", "silver", "gold"]`.',
           'Arrays can hold mixed types, though in practice you usually keep items of the same shape (all numbers, all strings, or all similar objects).',
-          'Arrays are zero-indexed. The first item is at index 0. The last item is at index length - 1.',
+          'Arrays are zero-indexed. The first item is at index `0`. The last item is at index `length - 1`.',
         ],
         code: 'const colors = ["red", "blue", "green"];\nconst mixed = [1, "two", true, null];',
       },
       {
         title: 'Creating and reading arrays',
         body: [
-          'Use array literals: const items = [1, 2, 3]. Use items[0] to read the first element. items.length tells you how many elements exist.',
-          'Accessing an out-of-range index returns undefined — no error is thrown. Always check length or use optional chaining when data may be missing.',
-          'Arrays are objects under the hood. typeof [] is "object". Use Array.isArray(value) when you need to confirm something is an array.',
+          'Use array literals: `const items = [1, 2, 3]`. Use `items[0]` to read the first element. `items.length` tells you how many elements exist.',
+          'Accessing an out-of-range index returns `undefined` — no error is thrown. Always check `length` or use optional chaining when data may be missing.',
+          'Arrays are objects under the hood. `typeof []` is `"object"`. Use `Array.isArray(value)` when you need to confirm something is an array.',
         ],
         code: 'const scores = [10, 20, 30];\nconsole.log(scores[0]);              // 10\nconsole.log(scores[scores.length - 1]); // 30\nconsole.log(scores[99]);             // undefined',
       },
       {
         title: 'Mutating vs non-mutating methods',
         body: [
-          'Mutating methods change the original array: push, pop, shift, unshift, splice, sort, reverse, fill. Callers holding a reference see the change.',
-          'Non-mutating methods return a new value without changing the original: slice, map, filter, concat, toSorted, toReversed (newer non-mutating variants of sort/reverse).',
+          'Mutating methods change the original array: `push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `fill`. Callers holding a reference see the change.',
+          'Non-mutating methods return a new value without changing the original: `slice`, `map`, `filter`, `concat`, `toSorted`, `toReversed` (newer non-mutating variants of `sort`/`reverse`).',
           'In exercises that say "return a new array," use non-mutating methods. Mutating the input parameter often violates the spec and breaks tests.',
         ],
         code: 'const original = [3, 1, 2];\nconst copy = original.slice(); // shallow copy\nconst sorted = [...original].sort(); // sort mutates — copy first',
@@ -469,18 +469,18 @@ export const lessons: Lesson[] = [
       {
         title: 'Adding and removing items',
         body: [
-          'push adds to the end; pop removes from the end. shift removes from the front; unshift adds to the front. All four mutate.',
-          'splice(start, deleteCount, ...items) removes and/or inserts at an index. It mutates and returns removed elements.',
-          'concat merges arrays without mutating: a.concat(b). Spread syntax [...a, ...b] is the modern equivalent.',
+          '`push` adds to the end; `pop` removes from the end. `shift` removes from the front; `unshift` adds to the front. All four mutate.',
+          '`splice(start, deleteCount, ...items)` removes and/or inserts at an index. It mutates and returns removed elements.',
+          '`concat` merges arrays without mutating: `a.concat(b)`. Spread syntax `[...a, ...b]` is the modern equivalent.',
         ],
         code: 'const queue = ["a", "b"];\nqueue.push("c");   // ["a", "b", "c"]\nqueue.shift();     // removes "a"',
       },
       {
         title: 'Searching arrays',
         body: [
-          'includes(value) returns true if the array contains that value (using ===). indexOf returns the first index or -1. find returns the first matching element; findIndex returns its index.',
-          'some tests whether any item passes a condition; every tests whether all do. These take callback functions and are useful before you need filter or map.',
-          'For objects in arrays, includes checks reference equality, not deep equality. Use find with a property check instead: users.find(u => u.id === targetId).',
+          '`includes(value)` returns `true` if the array contains that value (using `===`). `indexOf` returns the first index or `-1`. `find` returns the first matching element; `findIndex` returns its index.',
+          '`some` tests whether any item passes a condition; `every` tests whether all do. These take callback functions and are useful before you need `filter` or `map`.',
+          'For objects in arrays, `includes` checks reference equality, not deep equality. Use `find` with a property check instead: `users.find(u => u.id === targetId)`.',
         ],
         code: 'const nums = [3, 8, 1];\nnums.includes(8);        // true\nnums.indexOf(1);       // 2\nnums.find((n) => n > 5); // 8',
       },
@@ -488,16 +488,16 @@ export const lessons: Lesson[] = [
         title: 'Arrays vs objects',
         body: [
           'Use an array when you have an ordered collection of similar items: a list of scores, tags, or product names.',
-          'Use an object when each value has a distinct named meaning: a user with name, email, and age. Objects are keyed by property names, not numeric position.',
-          'Do not use an array as a map with arbitrary string keys like arr["name"]. An object or Map expresses that intent clearly.',
+          'Use an object when each value has a distinct named meaning: a user with `name`, `email`, and `age`. Objects are keyed by property names, not numeric position.',
+          'Do not use an array as a map with arbitrary string keys like `arr["name"]`. An object or `Map` expresses that intent clearly.',
         ],
       },
       {
         title: 'Spread and destructuring basics',
         body: [
-          'Spread syntax ...array copies elements: const copy = [...original]. Use it to clone before mutating or to merge arrays.',
-          'Destructuring pulls items out: const [first, second] = colors. Rest collects remaining items: const [head, ...tail] = items.',
-          'These features appear often alongside map and filter. They keep code concise without hiding what is happening.',
+          'Spread syntax `...array` copies elements: `const copy = [...original]`. Use it to clone before mutating or to merge arrays.',
+          'Destructuring pulls items out: `const [first, second] = colors`. Rest collects remaining items: `const [head, ...tail] = items`.',
+          'These features appear often alongside `map` and `filter`. They keep code concise without hiding what is happening.',
         ],
         code: 'const [first, ...rest] = [10, 20, 30];\nconsole.log(first); // 10\nconsole.log(rest);  // [20, 30]',
       },
@@ -514,53 +514,53 @@ export const lessons: Lesson[] = [
       {
         title: 'What map does',
         body: [
-          'Array.map(callback) calls your callback once for each element, in order, from index 0 to length - 1. It collects each return value into a new array and returns that array.',
-          'The output array always has the same length as the input. One input element produces exactly one output element — even if the output is undefined because you forgot to return.',
-          'map does not change the original array. It is a non-mutating transformation.',
+          '`Array.map(callback)` calls your callback once for each element, in order, from index `0` to `length - 1`. It collects each `return` value into a new array and returns that array.',
+          'The output array always has the same length as the input. One input element produces exactly one output element — even if the output is `undefined` because you forgot to `return`.',
+          '`map` does not change the original array. It is a non-mutating transformation.',
         ],
         code: 'const numbers = [1, 2, 3];\nconst doubled = numbers.map((n) => n * 2);\n// doubled: [2, 4, 6]\n// numbers unchanged: [1, 2, 3]',
       },
       {
         title: 'The callback signature',
         body: [
-          'The callback receives (element, index, array). Most of the time you only need element. Use index when position matters — numbering items, alternating patterns, or skipping edges.',
+          'The callback receives `(element, index, array)`. Most of the time you only need `element`. Use `index` when position matters — numbering items, alternating patterns, or skipping edges.',
           'The third parameter (the full array) is rarely needed but available if your transformation depends on neighboring context via manual index math.',
-          'Name the element parameter after what it represents: price, user, word — not x or e unless the scope is trivially small.',
+          'Name the element parameter after what it represents: `price`, `user`, `word` — not `x` or `e` unless the scope is trivially small.',
         ],
         code: 'const labels = ["a", "b", "c"].map((letter, index) => `${index}: ${letter}`);',
       },
       {
         title: 'Arrow functions and return',
         body: [
-          'Concise arrow syntax (n) => n * 2 implicitly returns the expression. Block syntax needs an explicit return statement.',
-          'Forgetting return in a block-bodied callback gives undefined for every element. This is a common beginner bug.',
-          'Multi-step transformations belong in a block body with clear intermediate const variables.',
+          'Concise arrow syntax `(n) => n * 2` implicitly `return`s the expression. Block syntax needs an explicit `return` statement.',
+          'Forgetting `return` in a block-bodied callback gives `undefined` for every element. This is a common beginner bug.',
+          'Multi-step transformations belong in a block body with clear intermediate `const` variables.',
         ],
         code: 'const simple = [1, 2].map((n) => n * 2);\n\nconst detailed = [1, 2].map((n) => {\n  const squared = n * n;\n  return squared + 1;\n});',
       },
       {
         title: 'When map is the right tool',
         body: [
-          'Use map when every input item should become exactly one output item: format names, apply tax to prices, extract a property from each object, convert strings to numbers.',
+          'Use `map` when every input item should become exactly one output item: format names, apply tax to prices, extract a property from each object, convert strings to numbers.',
           'The output type can differ from the input type: numbers to strings, objects to booleans, strings to lengths.',
-          'map expresses "transform each" clearly. A manual for loop with push works but hides the intent.',
+          '`map` expresses "transform each" clearly. A manual `for` loop with `push` works but hides the intent.',
         ],
         code: 'const prices = [10, 20];\nconst withTax = prices.map((p) => p * 1.12);\n\nconst users = [{ name: "Ari" }, { name: "Bea" }];\nconst names = users.map((u) => u.name);',
       },
       {
         title: 'When map is the wrong tool',
         body: [
-          'Do not use map for side effects only — logging, mutating external state, or pushing into another array without using the return value. Use forEach or for...of for side effects.',
-          'Do not use map to filter. If some items should be removed, use filter first, then map if needed.',
-          'Do not use map when you need a single aggregated value (sum, max, count). Use reduce or a simple loop.',
+          'Do not use `map` for side effects only — logging, mutating external state, or pushing into another array without using the `return` value. Use `forEach` or `for...of` for side effects.',
+          'Do not use `map` to filter. If some items should be removed, use `filter` first, then `map` if needed.',
+          'Do not use `map` when you need a single aggregated value (`sum`, `max`, `count`). Use `reduce` or a simple loop.',
         ],
       },
       {
         title: 'map with objects',
         body: [
-          'To update objects immutably, return a new object from map: users.map(u => ({ ...u, active: true })). Spread copies enumerable own properties into a new object.',
-          'map always returns an array. If you need one object keyed by id, use reduce or a loop — not map alone.',
-          'Pluck patterns (extract one field) are a perfect map use case: records.map(r => r.email).',
+          'To update objects immutably, `return` a new object from `map`: `users.map(u => ({ ...u, active: true }))`. Spread copies enumerable own properties into a new object.',
+          '`map` always returns an array. If you need one object keyed by `id`, use `reduce` or a loop — not `map` alone.',
+          'Pluck patterns (extract one field) are a perfect `map` use case: `records.map(r => r.email)`.',
         ],
         code: 'const updated = users.map((user) => ({\n  ...user,\n  score: user.score + 10,\n}));',
       },
@@ -577,9 +577,9 @@ export const lessons: Lesson[] = [
       {
         title: 'What filter does',
         body: [
-          'Array.filter(callback) tests each element with your callback. If the callback returns true, the element is included in the new array. If false, it is skipped.',
-          'The callback is called a predicate — a function that answers yes or no for each item. filter returns a new array; the original is unchanged.',
-          'The result length can be anything from 0 to the original length. Unlike map, filter can shorten the array.',
+          '`Array.filter(callback)` tests each element with your callback. If the callback returns `true`, the element is included in the new array. If `false`, it is skipped.',
+          'The callback is called a predicate — a function that answers yes or no for each item. `filter` returns a new array; the original is unchanged.',
+          'The result length can be anything from `0` to the original length. Unlike `map`, `filter` can shorten the array.',
         ],
         code: 'const numbers = [3, 8, 1, 6];\nconst evens = numbers.filter((n) => n % 2 === 0);\n// [8, 6]',
       },
@@ -587,43 +587,43 @@ export const lessons: Lesson[] = [
         title: 'Writing clear predicates',
         body: [
           'A good predicate reads like a question about one item: Is it even? Is the user active? Does the word include the query?',
-          'Keep the callback short. For complex rules, extract a named function: const isEligible = (user) => user.age >= 18 && user.verified; items.filter(isEligible).',
-          'Always return a boolean. Returning a truthy object or number works accidentally but is misleading — use explicit === comparisons.',
+          'Keep the callback short. For complex rules, extract a named function: `const isEligible = (user) => user.age >= 18 && user.verified; items.filter(isEligible)`.',
+          'Always `return` a boolean. Returning a truthy object or number works accidentally but is misleading — use explicit `===` comparisons.',
         ],
         code: 'const adults = users.filter((user) => user.age >= 18);\nconst longWords = words.filter((word) => word.length > 5);',
       },
       {
         title: 'filter vs find',
         body: [
-          'find returns the first matching element (or undefined). filter returns all matches as an array.',
-          'Use find when you expect at most one result and want the item itself. Use filter when you need every match.',
-          'findIndex returns the index of the first match; filter gives you all matching items.',
+          '`find` returns the first matching element (or `undefined`). `filter` returns all matches as an array.',
+          'Use `find` when you expect at most one result and want the item itself. Use `filter` when you need every match.',
+          '`findIndex` returns the index of the first match; `filter` gives you all matching items.',
         ],
         code: 'const firstEven = numbers.find((n) => n % 2 === 0); // 8\nconst allEvens = numbers.filter((n) => n % 2 === 0); // [8, 6]',
       },
       {
         title: 'Common pitfalls',
         body: [
-          'Case-sensitive string matching: filter(w => w.includes(query)) misses matches when casing differs. Normalize with toLowerCase on both sides.',
-          'Checking for property truthiness when 0 or "" are valid: filter(u => u.score) removes users with a score of 0. Be explicit: u.score !== undefined.',
-          'Mutating items inside filter is possible but confusing. filter selects; map transforms. Keep those roles separate.',
+          'Case-sensitive string matching: `filter(w => w.includes(query))` misses matches when casing differs. Normalize with `toLowerCase` on both sides.',
+          'Checking for property truthiness when `0` or `""` are valid: `filter(u => u.score)` removes users with a score of `0`. Be explicit: `u.score !== undefined`.',
+          'Mutating items inside `filter` is possible but confusing. `filter` selects; `map` transforms. Keep those roles separate.',
         ],
       },
       {
         title: 'filter then map',
         body: [
-          'A very common pipeline: filter to keep the records you want, then map to extract or reshape them. Order matters — filter first when later steps should not see removed items.',
-          'Example: active user names = users.filter(u => u.active).map(u => u.name). Each step reads left to right.',
-          'Long chains are fine, but a named intermediate variable improves readability when debugging: const active = users.filter(...); const names = active.map(...).',
+          'A very common pipeline: `filter` to keep the records you want, then `map` to extract or reshape them. Order matters — `filter` first when later steps should not see removed items.',
+          'Example: `active user names = users.filter(u => u.active).map(u => u.name)`. Each step reads left to right.',
+          'Long chains are fine, but a named intermediate variable improves readability when debugging: `const active = users.filter(...); const names = active.map(...)`.',
         ],
         code: 'const activeNames = users\n  .filter((user) => user.active)\n  .map((user) => user.name);',
       },
       {
         title: 'filter vs other selection tools',
         body: [
-          'includes checks one value in a flat array. filter applies arbitrary logic per element.',
-          'slice selects by index range without a condition. filter selects by predicate.',
-          'reduce can filter and transform in one pass, but filter + map is clearer until you are comfortable with reduce.',
+          '`includes` checks one value in a flat array. `filter` applies arbitrary logic per element.',
+          '`slice` selects by index range without a condition. `filter` selects by predicate.',
+          '`reduce` can filter and transform in one pass, but `filter` + `map` is clearer until you are comfortable with `reduce`.',
         ],
       },
     ],
@@ -639,8 +639,8 @@ export const lessons: Lesson[] = [
       {
         title: 'What is an object?',
         body: [
-          'An object stores key-value pairs (properties). Each key is a string (or Symbol) naming a slot; each value can be any JavaScript type.',
-          'Objects model entities: a player has name, score, and active status. The keys give meaning that array indexes cannot express.',
+          'An object stores key-value pairs (properties). Each key is a string (or `Symbol`) naming a slot; each value can be any JavaScript type.',
+          'Objects model entities: a player has `name`, `score`, and `active` status. The keys give meaning that array indexes cannot express.',
           'Objects are unordered collections of properties — though modern engines preserve insertion order for string keys, do not rely on order as semantic data unless you are using an array.',
         ],
         code: 'const player = {\n  name: "Mina",\n  score: 12,\n  active: true,\n};',
@@ -648,9 +648,9 @@ export const lessons: Lesson[] = [
       {
         title: 'Creating and reading properties',
         body: [
-          'Object literals use { key: value } syntax. Keys without quotes must be valid identifiers. Quoted keys allow spaces and special characters: { "full name": "Mina Santos" }.',
-          'Dot notation reads a known property: player.name. Bracket notation reads a dynamic property: player[key] where key is a variable holding the property name.',
-          'Accessing a missing property returns undefined — no error. Distinguish "missing" from "present but undefined" only when you use hasOwn or similar checks.',
+          'Object literals use `{ key: value }` syntax. Keys without quotes must be valid identifiers. Quoted keys allow spaces and special characters: `{ "full name": "Mina Santos" }`.',
+          'Dot notation reads a known property: `player.name`. Bracket notation reads a dynamic property: `player[key]` where `key` is a variable holding the property name.',
+          'Accessing a missing property returns `undefined` — no error. Distinguish "missing" from "present but `undefined`" only when you use `hasOwn` or similar checks.',
         ],
         code: 'console.log(player.name);   // "Mina"\nconst field = "score";\nconsole.log(player[field]); // 12',
       },
@@ -658,25 +658,25 @@ export const lessons: Lesson[] = [
         title: 'Dot vs bracket notation',
         body: [
           'Use dot when the property name is fixed and known at write time. Use brackets when the name is computed, stored in a variable, or not a valid identifier.',
-          'player.key looks for a property literally named "key". player[key] uses the value of variable key — often "score" or "name".',
-          'Bracket notation also accepts expressions: obj["score" + suffix] or obj[someVariable].',
+          '`player.key` looks for a property literally named `"key"`. `player[key]` uses the value of variable `key` — often `"score"` or `"name"`.',
+          'Bracket notation also accepts expressions: `obj["score" + suffix]` or `obj[someVariable]`.',
         ],
         code: 'const key = "score";\nplayer.score;  // 12\nplayer[key];   // 12\nplayer.key;    // undefined — wrong property',
       },
       {
         title: 'Adding, updating, and deleting',
         body: [
-          'Assign to add or update: player.level = 5 or player["level"] = 5. delete player.bonus removes a property (returns true if deleted or if it did not exist).',
+          'Assign to add or update: `player.level = 5` or `player["level"] = 5`. `delete player.bonus` removes a property (returns `true` if deleted or if it did not exist).',
           'Updating nested data requires knowing whether you are replacing a whole nested object or mutating inside it. Spread helps with immutable updates at the top level.',
-          'Object.assign(target, source) copies properties onto target (mutating target). Spread { ...source } creates a new object — preferred for immutable patterns.',
+          '`Object.assign(target, source)` copies properties onto target (mutating target). Spread `{ ...source }` creates a new object — preferred for immutable patterns.',
         ],
         code: 'const updated = { ...player, score: player.score + 1 };',
       },
       {
         title: 'Reference vs copy',
         body: [
-          'Objects are assigned by reference. const b = a means both names point to the same object. Changing b.score also changes a.score.',
-          'Shallow copy with spread or Object.assign creates a new top-level object, but nested objects are still shared. Deep cloning requires structuredClone (modern) or libraries for complex trees.',
+          'Objects are assigned by reference. `const b = a` means both names point to the same object. Changing `b.score` also changes `a.score`.',
+          'Shallow copy with spread or `Object.assign` creates a new top-level object, but nested objects are still shared. Deep cloning requires `structuredClone` (modern) or libraries for complex trees.',
           'Functions that "return a modified object" in exercises usually expect a new object, not mutation of the argument.',
         ],
         code: 'const a = { score: 1 };\nconst b = a;\nb.score = 99;\nconsole.log(a.score); // 99 — same object\n\nconst c = { ...a, score: 0 }; // new object',
@@ -684,9 +684,9 @@ export const lessons: Lesson[] = [
       {
         title: 'Useful object utilities',
         body: [
-          'Object.keys(obj) returns an array of own property names. Object.values(obj) returns values. Object.entries(obj) returns [key, value] pairs.',
-          'Object.hasOwn(obj, key) checks whether the object has its own property (not inherited). Prefer this over obj.hasOwnProperty in modern code.',
-          'for...in loops over enumerable properties including inherited ones — usually avoid for plain data objects; prefer Object.keys.',
+          '`Object.keys(obj)` returns an array of own property names. `Object.values(obj)` returns values. `Object.entries(obj)` returns `[key, value]` pairs.',
+          '`Object.hasOwn(obj, key)` checks whether the object has its own property (not inherited). Prefer this over `obj.hasOwnProperty` in modern code.',
+          '`for...in` loops over enumerable properties including inherited ones — usually avoid for plain data objects; prefer `Object.keys`.',
         ],
         code: 'Object.keys(player);           // ["name", "score", "active"]\nObject.hasOwn(player, "name"); // true',
       },
@@ -695,7 +695,7 @@ export const lessons: Lesson[] = [
         body: [
           'Objects fit fixed-shape records with named fields. Arrays fit ordered lists. Maps fit dynamic key-value lookups with non-string keys or frequent add/remove of keys.',
           'Do not represent a list of items as an object with numeric string keys unless you have a specific reason. Use an array.',
-          'JSON.stringify and JSON.parse work naturally with plain objects and arrays — another reason objects are the default for structured data in APIs.',
+          '`JSON.stringify` and `JSON.parse` work naturally with plain objects and arrays — another reason objects are the default for structured data in APIs.',
         ],
       },
     ],
@@ -713,34 +713,34 @@ export const lessons: Lesson[] = [
         body: [
           'Real data is often a list of similar records: API results, shopping cart items, quiz scores, or user profiles. Each array element is an object with the same general properties.',
           'TypeScript (later in your journey) can describe this shape explicitly. In plain JavaScript, consistent property names across items are a convention you maintain.',
-          'Empty arrays are valid. Always decide what your function returns for [] before writing the happy path.',
+          'Empty arrays are valid. Always decide what your function returns for `[]` before writing the happy path.',
         ],
         code: 'const users = [\n  { name: "Ari", active: true, score: 10 },\n  { name: "Bea", active: false, score: 7 },\n  { name: "Cal", active: true, score: 15 },\n];',
       },
       {
         title: 'Reading properties in callbacks',
         body: [
-          'Inside map or filter, each element is one object. Access fields with dot or bracket notation: user.name, user.active, record[key].',
-          'The callback parameter should be named after what it represents: user, product, score — not item or x unless the list is generic.',
-          'Optional chaining user?.email safely reads email when user might be nullish. For arrays of objects, the elements are usually defined; optional chaining helps more with nested lookups.',
+          'Inside `map` or `filter`, each element is one object. Access fields with dot or bracket notation: `user.name`, `user.active`, `record[key]`.',
+          'The callback parameter should be named after what it represents: `user`, `product`, `score` — not `item` or `x` unless the list is generic.',
+          'Optional chaining `user?.email` safely reads `email` when `user` might be nullish. For arrays of objects, the elements are usually defined; optional chaining helps more with nested lookups.',
         ],
         code: 'const names = users.map((user) => user.name);\nconst actives = users.filter((user) => user.active);',
       },
       {
         title: 'filter → map pipeline',
         body: [
-          'Select a subset with filter, then reshape with map. Example: names of active users = users.filter(u => u.active).map(u => u.name).',
+          'Select a subset with `filter`, then reshape with `map`. Example: `names of active users = users.filter(u => u.active).map(u => u.name)`.',
           'Reversing the order rarely makes sense — mapping first would transform items you might intend to discard.',
-          'You can chain further steps (sort, slice) when the task requires ordering or limiting results.',
+          'You can chain further steps (`sort`, `slice`) when the task requires ordering or limiting results.',
         ],
         code: 'const activeNames = users\n  .filter((user) => user.active)\n  .map((user) => user.name);\n// ["Ari", "Cal"]',
       },
       {
         title: 'Aggregating collections',
         body: [
-          'reduce accumulates a single result: sum of scores, count of active users, or an object keyed by id. It is the general tool when filter and map alone are not enough.',
-          'A simple loop with let total = 0 is equally valid and sometimes clearer for sums and counts while you are learning.',
-          'Building a lookup object from an array: start with {}, then for each record, result[record.id] = record.',
+          '`reduce` accumulates a single result: sum of scores, count of active users, or an object keyed by `id`. It is the general tool when `filter` and `map` alone are not enough.',
+          'A simple loop with `let total = 0` is equally valid and sometimes clearer for sums and counts while you are learning.',
+          'Building a lookup object from an array: start with `{}`, then for each record, `result[record.id] = record`.',
         ],
         code: 'const totalScore = users.reduce((sum, user) => sum + user.score, 0);',
       },
@@ -748,14 +748,14 @@ export const lessons: Lesson[] = [
         title: 'Handling missing or partial data',
         body: [
           'Not every object in a list guarantees every property. API responses omit fields, forms leave blanks, and tests include edge cases.',
-          'Use fallback values when reading: user.nickname || user.name || "Guest". Use nullish coalescing when 0 or "" are valid: user.score ?? 0.',
-          'filter can remove invalid records before map: users.filter(u => u.name).map(u => u.name).',
+          'Use fallback values when reading: `user.nickname || user.name || "Guest"`. Use nullish coalescing when `0` or `""` are valid: `user.score ?? 0`.',
+          '`filter` can remove invalid records before `map`: `users.filter(u => u.name).map(u => u.name)`.',
         ],
       },
       {
         title: 'Immutability in transformations',
         body: [
-          'When returning updated records, map to new objects: users.map(u => ({ ...u, score: u.score + 1 })). The source array and its objects stay unchanged.',
+          'When returning updated records, `map` to new objects: `users.map(u => ({ ...u, score: u.score + 1 }))`. The source array and its objects stay unchanged.',
           'Mutating objects inside an input array affects the caller\'s data. Unless the task says to mutate in place, treat inputs as read-only.',
           'Spread copies one level deep. Nested objects inside a record still share references after spread — update nested fields with an inner spread if needed.',
         ],
