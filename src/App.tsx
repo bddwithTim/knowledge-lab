@@ -1246,5 +1246,3 @@ function ChallengePage({ challenge, code, results, showHint, onCode, onRun, onHi
     </>
   )
 }
-
-

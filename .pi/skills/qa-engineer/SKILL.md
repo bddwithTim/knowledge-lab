@@ -5,10 +5,55 @@ description: QA Engineer specializing in edge cases, type safety, state transiti
 
 # QA Engineer
 
-## Core Expertise
+## Toolkit
 
-Edge cases, boundary values, type mismatches, state persistence, regression risks,
-error states, data consistency, assumption validation.
+**Use `playwright-cli` for all visual verification.** It is installed globally
+(`npm install -g @playwright/cli`). Run `playwright-cli --help` for available
+commands.
+
+The QA engineer MUST visually verify every UI change. Do not trust that layout
+code "looks right" from the numbers alone — open the browser, navigate, and
+inspect.
+
+### Quick reference
+
+```bash
+playwright-cli open http://localhost:5173    # Open app
+playwright-cli click "<text or ref>"         # Click element by label or ref
+playwright-cli snapshot                      # Accessibility tree (catches empty labels)
+playwright-cli screenshot                    # Screenshot → .playwright-cli/*.png
+playwright-cli eval "<js>"                   # Run JS in page
+playwright-cli console                       # Check for errors
+playwright-cli goto <url>                    # Navigate in open session
+playwright-cli resize 1440 900               # Set viewport
+```
+
+### Verification flow
+
+After every UI or layout change, run this sequence:
+
+```bash
+playwright-cli open http://localhost:5173
+# Navigate to the affected page
+# If SPA routing: use eval to click (snapshot refs may not match link text)
+playwright-cli eval "document.querySelectorAll('.nav-link')[N].click()"
+# Wait for render, then inspect
+playwright-cli snapshot
+playwright-cli screenshot
+playwright-cli console
+```
+
+### Checklist
+
+- [ ] Navigated to every affected page and inspected the accessibility tree
+- [ ] No overlapping elements (check bounding boxes with `eval`)
+- [ ] Iframes/playgrounds render content and are accessible
+- [ ] Console has no errors (`playwright-cli console`)
+- [ ] All interactive elements have labels in the snapshot
+- [ ] Structure matches equivalent pages (e.g., PW listing vs JS listing)
+- [ ] Sidebar buttons are clickable and navigate correctly
+
+---
 
 ## Bug Patterns — Type Field Mismatches
 
@@ -79,14 +124,6 @@ not just the active lesson/challenge reference.
 The most common QA finding: a feature works with one value but breaks with
 another that should be equivalent.
 
-```tsx
-// Works fine:
-console.log(double(4))  // outputs "8"
-
-// Should also work but... does it?
-console.log(double(10)) // outputs "20" — verify!
-```
-
 **Detection:** Always test with at least two different input values. If the
 feature involves user-editable code, verify that changing a value doesn't
 trigger a stale-closure or editor-sync bug.
@@ -95,19 +132,11 @@ trigger a stale-closure or editor-sync bug.
 
 - [ ] Test with the default/example value AND a different value
 - [ ] Test with zero, empty string, empty array where applicable
-- [ ] Test with large values (e.g., `double(999999)`)
-- [ ] If the feature strips type annotations (like `runTS`), test with and
-      without annotations, with generics, with complex types
+- [ ] Test with large values where applicable
+- [ ] If the feature strips/modifies input (like TS annotation stripping),
+      test with and without annotations, generics, complex types
 
 ## Bug Patterns — Type Coercion and Runtime Type Errors
-
-### Example: `setOutput('')` vs `setOutput([])`
-
-```tsx
-// ❌ Runtime crash: output.map is not a function
-const [output, setOutput] = useState<string[]>([])
-setOutput('') // TypeScript might not catch this if types are loose
-```
 
 **Detection:** Check that state setters receive values matching the declared
 type. Pay special attention to reset/clear operations.
@@ -120,8 +149,7 @@ type. Pay special attention to reset/clear operations.
 
 ## Bug Patterns — Missing State Reset
 
-When navigating between items (lessons, challenges), all derived state must
-reset.
+When navigating between items (lessons, challenges), all derived state must reset.
 
 ### Checklist for navigation
 
@@ -134,11 +162,11 @@ reset.
 
 ## Review Checklist
 
-Before approving a feature, verify:
+Before approving a feature, verify all of the above checklists plus:
+- [ ] Visual verification completed (playwright-cli snapshot + screenshot)
 - [ ] Works correctly with at least two different input values
 - [ ] Browser refresh restores the correct page and state
 - [ ] Back/forward navigation works through all relevant page types
-- [ ] All state is properly reset when navigating between items
 - [ ] No type field mismatches (check actual type definitions, not assumptions)
-- [ ] Edge cases: empty inputs, boundary values, error states
-- [ ] No runtime type errors from mismatched state types
+- [ ] No unused props, imports, or dead code
+- [ ] `npx tsc --noEmit && npx vite build` passes

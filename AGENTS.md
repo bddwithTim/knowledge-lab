@@ -4,7 +4,16 @@ A local refresher app for JavaScript, TypeScript, and algorithm fundamentals.
 
 - Files under `sources/` are read-only reference material.
 
-## Skill Routing
+## Skill Routing (MANDATORY FIRST STEP)
+
+For EVERY request, your very first response must begin with one of:
+- `SKILL: none` followed by a one-line reason ("straightforward edit", "explanation only", etc.)
+- `SKILL: <name>` followed by a one-line reason
+
+Only after declaring the routing decision may you proceed with the
+actual work. Do not plan, analyze, or write code before this step.
+
+---
 
 Before taking action on any user request, first determine whether a
 specialist skill would materially improve the result.

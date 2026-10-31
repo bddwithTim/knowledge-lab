@@ -1664,3 +1664,92 @@ code, .inline-code {
   .algorithm-study-panels { grid-template-columns: 1fr; }
   .when-to-use-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Playwright Playground ──────────────────────────── */
+.pw-playground {
+  border: 1px solid #2d2d2d;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin: var(--space-lg) 0;
+}
+
+/* Toolbar above the iframe */
+.pw-playground-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: #1e1e1e;
+  border-bottom: 1px solid #2d2d2d;
+  flex-wrap: wrap;
+  min-height: 44px;
+}
+.pw-playground-input-row {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 200px;
+}
+.pw-input-prefix {
+  color: #569cd6;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin-right: 2px;
+  user-select: none;
+  white-space: nowrap;
+}
+.pw-locator-input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: #d4d4d4;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  caret-color: #569cd6;
+  padding: 4px 0;
+}
+.pw-locator-input::placeholder { color: #505050; }
+
+/* Feedback badge */
+.pw-feedback {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.pw-feedback.has-match { color: #4caf88; background: rgba(76, 175, 136, 0.12); }
+.pw-feedback.has-error { color: #c96e6e; background: rgba(201, 110, 110, 0.12); }
+
+/* Hint buttons */
+.pw-hints {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.pw-hint-btn {
+  background: #2a2a2a;
+  border: 1px solid #3d3d3d;
+  color: #9cdcfe;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pw-hint-btn:hover { background: #383838; }
+
+/* Iframe container */
+.pw-playground-frame {
+  background: #fff;
+  position: relative;
+}
+.pw-iframe {
+  width: 100%;
+  height: 380px;
+  border: 0;
+  display: block;
+}
