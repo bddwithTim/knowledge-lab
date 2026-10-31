@@ -23,16 +23,23 @@ export const zodLessons: ZodLesson[] = [
     order: 1,
     title: 'What is Zod?',
     block: 'foundations',
-    summary: 'TypeScript types vanish at runtime. Zod keeps a copy of your type rules and checks them while your program runs, catching bad data the moment it arrives.',
+    summary: 'Zod is a TypeScript-first schema validation library. You define the shape of your data once with a fluent, composable API. Zod validates real data at runtime and automatically generates TypeScript types — your schema is the single source of truth.',
     sections: [
       {
-        title: 'Mental model: A security guard at the door',
+        title: 'What Zod is — and why it exists',
         body: [
-          'TypeScript types are like blueprints — they show what your house SHOULD look like, but they do not actually stop someone from walking in with muddy shoes. Once the program runs, the blueprints are gone.',
-          'Zod is like a security guard standing at the door. While the program is running, Zod checks every piece of data: "Are you really a string? Let me see." If something does not match, Zod stops it right there with a clear, readable error.',
-          'The core idea: **parse, do not validate.** Instead of writing `if (typeof x === "string")` everywhere, you define a schema ONCE and Zod handles the rest. The schema IS the source of truth.',
+          'Zod is a **runtime validation library** designed for TypeScript. You write schemas (descriptions of what valid data looks like) using a chainable API: `z.string().email()`, `z.object({ name: z.string() })`. It is not a TypeScript superset — it is a companion that fills the gap TypeScript leaves behind at runtime.',
+          'TypeScript checks your types at compile time, then erases them. Zod keeps a runtime copy of those rules and enforces them as data flows through your program.',
         ],
-        code: '// TypeScript — types are gone at runtime\ntype User = { name: string; age: number }\n\n// This compiles fine, crashes at runtime:\ngreet(JSON.parse(\'{"name": 42}\'))\n// 💥 user.name.toUpperCase is not a function\n\n// Zod — validates at runtime\nimport { z } from \'zod\'\nconst User = z.object({ name: z.string(), age: z.number() })\n\nUser.parse({ name: 42, age: 30 })\n// ❌ ZodError: Expected string, received number at "name"',
+        code: 'type User = { name: string; age: number }\n\nfunction greet(user: User) {\n  console.log(user.name.toUpperCase())\n}\n\n// TypeScript says this is fine. It compiles.\n// But at runtime, name is a number.\ngreet(JSON.parse(\'{"name": 42}\'))\n// 💥 Cannot read properties of undefined',
+      },
+      {
+        title: 'The gap Zod fills: runtime enforcement',
+        body: [
+          'Zod keeps a **runtime copy** of your type rules. Instead of types that disappear, you define schemas that live in your code and check data as it flows in.',
+          'The same example with Zod — the bad data never reaches your function. Zod stops it at the door with the exact field and reason.',
+        ],
+        code: 'import { z } from \'zod\'\nconst User = z.object({ name: z.string(), age: z.number() })\n\nfunction greet(user: z.infer<typeof User>) {\n  console.log(user.name.toUpperCase())\n}\n\nconst raw = JSON.parse(\'{"name": 42}\')\ngreet(User.parse(raw))\n// ❌ ZodError: Expected string, received number at "name"',
       },
       {
         title: '.parse() vs .safeParse()',
@@ -43,18 +50,29 @@ export const zodLessons: ZodLesson[] = [
         code: '// .parse() — throws on failure\nconst name = z.string().parse("Mina")  // ✅ "Mina"\nz.string().parse(42)  // ❌ throws ZodError\n\n// .safeParse() — never throws, inspect result\nconst result = z.string().safeParse(42)\nif (!result.success) {\n  console.log(result.error.issues[0].message)\n  // "Expected string, received number"\n}',
       },
       {
-        title: '👎 See it fail: API response',
+        title: '👎 Without Zod: silent bug',
         body: [
-          'An API returns `{ "user": { "name": "Mina", "age": "25" } }`. age is a STRING, not a number. TypeScript sees `any` from `fetch()`. Your code calls `user.age + 1` and gets `"251"` — a string! No crash, just wrong results.',
-          'Zod catches this: `User.parse(response)` immediately throws "Expected number, received string at user.age." You know exactly what is wrong and where.',
+          'An API returns `{ "user": { "name": "Mina", "age": "25" } }`. The `age` field is a **string**, not a number. `fetch()` returns `any`, so TypeScript lets you treat it as a number.',
+          'No crash — just silently wrong results. `"25" + 1` becomes `"251"` (string concatenation), not `26`. This bug could live in production for weeks.',
         ],
-        code: '// Without Zod — silently wrong\nconst res = await fetch("/api/user")\nconst data = await res.json()\n// data.user.age is "25" (string), not 25 (number)\nconsole.log(data.user.age + 1)  // "251" — not 26!\n\n// With Zod — caught immediately\nconst User = z.object({ user: z.object({ name: z.string(), age: z.number() }) })\nUser.parse(data)  // ❌ Expected number, received string at user.age',
+        code: 'const res = await fetch("/api/user")\nconst data = await res.json()\n// data is `any` — TypeScript trusts whatever you do\n\nconsole.log(data.user.age + 1)\n// "251" — not 26! String concatenation, not addition.',
       },
       {
-        title: '💡 Where Zod fits in your code',
+        title: '✅ With Zod: caught at the boundary',
         body: [
-          'Use Zod at the **boundaries** of your app — where data enters from the outside world. API responses, form inputs, config files, CLI arguments, environment variables, localStorage.',
-          'Once Zod validates the data at the boundary, the rest of your code can trust the types. No more defensive `if (typeof x === "string")` checks scattered everywhere.',
+          'Add one Zod schema. The bad data never enters your app logic. The error tells you the exact path — `user.age` — and what went wrong.',
+          'Parse at the boundary, trust everywhere else. No more defensive `typeof` checks scattered through your code.',
+        ],
+        code: 'const User = z.object({\n  user: z.object({ name: z.string(), age: z.number() })\n})\n\nconst res = await fetch("/api/user")\nUser.parse(await res.json())\n// ❌ Expected number, received string at "user.age"',
+      },
+      {
+        title: '💡 The advantages, in one place',
+        body: [
+          '**1. Runtime validation** — TypeScript types disappear after compile. Zod schemas live in your running code and check data as it arrives.',
+          '**2. Boundary defense** — API responses, form inputs, localStorage, URL params — all untrusted. Zod validates at the entry point so the rest of your code trusts the types.',
+          '**3. Single source of truth** — `z.infer<typeof MySchema>` gives you the TypeScript type for free. Change the schema, the type updates. No drift.',
+          '**4. Rich validation** — `.email()`, `.url()`, `.min(5)`, `.refine(v => v > 0)`. TypeScript cannot express these. Zod can.',
+          '**5. Clear error messages** — "Expected string, received number at user.age" beats "Cannot read properties of undefined" every time.',
         ],
       },
     ],
