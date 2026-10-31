@@ -907,23 +907,47 @@ function binarySearch(arr, target) {
     spaceComplexity: 'O(1)',
     debugCode: `function firstUnique(str) {
   const count = new Map();
+
+  // Pass 1: count every character
   for (const ch of str) {
     count.set(ch, (count.get(ch) ?? 0) + 1);
   }
+
+  // Pass 2: find the first with count = 1
   for (let i = 0; i < str.length; i++) {
-    if (count.get(str[i]) === 1) return i;
+    if (count.get(str[i]) === 1) {
+      return i;
+    }
   }
   return -1;
 }`,
     steps: [
-      { currentLine: 2, variables: { count: '{}', i: '~', ch: '~' }, description: 'Empty map. Scan the string once to count every character.' },
-      { currentLine: 4, variables: { count: '{p:3,i:1,n:1,e:2,a:1,l:1}', i: '~', ch: '~' }, description: 'Counts: p=3, i=1, n=1, e=2, a=1, l=1. "i" is the first character with count 1 that appears earliest.' },
-      { currentLine: 7, variables: { count: '{p:3,...}', i: 1, ch: '~' }, description: 'Second pass: str[0] = "p". count[p]=3 → skip. str[1] = "i". count[i]=1 → first unique! Return 1.' },
+      { currentLine: 2, variables: { count: '{}', i: '~', ch: '~' }, description: 'Empty map. We\'ll count each character in "pineapple".' },
+      { currentLine: 5, variables: { count: '{p:1}', i: '~', ch: 'p' }, description: 'ch="p": first occurrence. count = 1.' },
+      { currentLine: 5, variables: { count: '{p:1,i:1}', i: '~', ch: 'i' }, description: 'ch="i": first occurrence. count = 1.' },
+      { currentLine: 5, variables: { count: '{p:1,i:1,n:1}', i: '~', ch: 'n' }, description: 'ch="n": first occurrence. count = 1.' },
+      { currentLine: 5, variables: { count: '{p:1,i:1,n:1,e:1}', i: '~', ch: 'e' }, description: 'ch="e": first occurrence. count = 1.' },
+      { currentLine: 5, variables: { count: '{p:1,i:1,n:1,e:1,a:1}', i: '~', ch: 'a' }, description: 'ch="a": first occurrence. count = 1.' },
+      { currentLine: 5, variables: { count: '{p:2,i:1,n:1,e:1,a:1}', i: '~', ch: 'p' }, description: 'ch="p": seen before! count = 2.' },
+      { currentLine: 5, variables: { count: '{p:3,i:1,n:1,e:1,a:1}', i: '~', ch: 'p' }, description: 'ch="p": third time. count = 3.' },
+      { currentLine: 5, variables: { count: '{p:3,i:1,n:1,e:1,a:1,l:1}', i: '~', ch: 'l' }, description: 'ch="l": first occurrence. count = 1.' },
+      { currentLine: 5, variables: { count: '{p:3,i:1,n:1,e:2,a:1,l:1}', i: '~', ch: 'e' }, description: 'ch="e": seen before! count = 2.' },
+      { currentLine: 11, variables: { count: '{p:3,i:1,n:1,e:2,a:1,l:1}', i: 0, ch: 'p' }, description: 'Pass 2: i=0, str[0]="p". count[p]=3 ≠ 1 → skip.' },
+      { currentLine: 12, variables: { count: '{p:3,i:1,n:1,e:2,a:1,l:1}', i: 1, ch: 'i' }, description: 'i=1, str[1]="i". count[i]=1 → first unique! Return index 1.' },
     ],
     visualType: 'char-cells',
     visualData: [
       { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: -1, rightIndex: -1 },
-      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: -1, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 0, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 1, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 2, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 3, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 4, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 5, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 6, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 7, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 8, rightIndex: -1 },
+      { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 0, rightIndex: -1 },
       { items: ['p','i','n','e','a','p','p','l','e'], leftIndex: 1, rightIndex: -1, found: true },
     ],
     whyItWorks: {
