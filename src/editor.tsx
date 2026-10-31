@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { EditorState } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
@@ -6,14 +6,10 @@ import { javascript } from '@codemirror/lang-javascript'
 import { bracketMatching, indentOnInput, syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
 import { lintKeymap } from '@codemirror/lint'
+import { modLabel } from './utils'
+import { Kbd } from './components/Kbd'
 
 type OutputFlash = 'idle' | 'success' | 'error'
-
-const modLabel = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'
-
-function Kbd({ children }: { children: ReactNode }) {
-  return <kbd className="kbd">{children}</kbd>
-}
 
 /* ── Dark theme for CodeMirror ─────────────────────── */
 const darkTheme = EditorView.theme(
@@ -69,9 +65,6 @@ export type EditorProps = {
   onPrevious?: () => void
   onNext?: () => void
   nextLabel?: string
-  /* Step debugger support */
-  debugHighlights?: number[] /* line numbers (0-based) to highlight in the gutter */
-  debugCurrentLine?: number | null /* 0-based line to show an arrow on */
 }
 
 export function Editor({
@@ -86,17 +79,17 @@ export function Editor({
   onPrevious,
   onNext,
   nextLabel,
-  debugHighlights,
-  debugCurrentLine,
 }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onCodeRef = useRef(onCode)
+  const onRunRef = useRef(onRun)
   const outputRef = useRef<HTMLDivElement>(null)
   const [flash, setFlash] = useState<OutputFlash>('idle')
   const [hasRun, setHasRun] = useState(false)
 
   onCodeRef.current = onCode
+  onRunRef.current = onRun
   const isEmpty = output.length === 0 && !error
   const runStatus = !hasRun ? 'Ready to run' : error ? 'Execution failed' : 'Ran just now'
 
@@ -133,7 +126,7 @@ export function Editor({
           {
             key: 'Mod-Enter',
             run: () => {
-              onRun()
+              onRunRef.current()
               return true
             },
           },
@@ -169,18 +162,6 @@ export function Editor({
       })
     }
   }, [code])
-
-  /* Apply debug highlights */
-  useEffect(() => {
-    const view = viewRef.current
-    if (!view) return
-    const effects: any[] = []
-
-    /* Clear previous gutter markers (simple approach: re-dispatch with empty) */
-    /* We handle this via CSS class on the container instead */
-
-    view.dispatch({ effects })
-  }, [debugHighlights, debugCurrentLine])
 
   function handleRun() {
     onRun()

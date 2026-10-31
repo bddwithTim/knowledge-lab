@@ -33,7 +33,7 @@ For visual changes: screenshot via `browser-tools` skill before and after.
 ```
 src/
   App.tsx              ← Routing + top-level state. View components co-located.
-  types.ts             ← Shared types (View, WorkspaceMode, etc.)
+  types.ts             ← Shared types (View, NavEntry, etc.)
   utils.ts             ← Pure functions: storage, execution, display
   components/          ← Reusable UI only (used in 3+ places OR >100 lines)
   hooks/               ← Custom hooks (used in 3+ places OR >30 lines of logic)

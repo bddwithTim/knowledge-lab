@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { challenges, lessons, type Challenge, type Kyu, type Lesson, type Topic } from './content'
 import { tsLessons, type TSLesson, type TSExercise } from './ts-content'
 import { Editor } from './editor'
 import { StepDebugger } from './debugger'
 import { scenarios, type ScenarioId } from './algorithm-scenarios'
 import { BookOpen, CaretLeft, Code, Flask, Graph, List } from '@phosphor-icons/react'
+import { readStorage, writeStorage, display, runTS, executeExample, modLabel, runAssertions } from './utils'
+import { Kbd } from './components/Kbd'
 
 type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'ts-learn' | 'ts-lesson'
 type NavEntry = { v: View; lo?: number; to?: number; cid?: string }
@@ -14,31 +16,6 @@ type OutputFlash = 'idle' | 'success' | 'error'
 const topics: Array<Topic | 'All topics'> = ['All topics', 'Fundamentals', 'Strings', 'Arrays', 'Objects']
 const levels: Array<Kyu | 'All levels'> = ['All levels', '8 kyu', '7 kyu', '6 kyu', '5 kyu']
 const SIDEBAR_KEY = 'knowledge-lab-sidebar-collapsed'
-const modLabel = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'
-
-import { readStorage, writeStorage, display, runTS, executeExample } from './utils'
-
-function runAssertions(source: string, challenge: Challenge): Result[] {
-  try {
-    const candidate = new Function(`${source}\nreturn typeof ${challenge.functionName} === 'function' ? ${challenge.functionName} : undefined`)()
-    if (!candidate) return challenge.cases.map((item) => ({ label: item.label, passed: false, error: `Define ${challenge.functionName} as a function.` }))
-    return challenge.cases.map((item) => {
-      try {
-        const actual = candidate(...item.args)
-        return { label: item.label, passed: JSON.stringify(actual) === JSON.stringify(item.expected), actual }
-      } catch (error) {
-        return { label: item.label, passed: false, error: error instanceof Error ? error.message : 'This assertion could not run.' }
-      }
-    })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'This code could not run.'
-    return challenge.cases.map((item) => ({ label: item.label, passed: false, error: message }))
-  }
-}
-
-function Kbd({ children }: { children: ReactNode }) {
-  return <kbd className="kbd">{children}</kbd>
-}
 
 function CollapsibleSection({ title, defaultOpen = true, children }: { title: string; defaultOpen?: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -79,6 +56,8 @@ export function App() {
   const runChallengeRef = useRef<() => void>(() => {})
   const nextLessonRef = useRef<() => void>(() => {})
   const prevLessonRef = useRef<() => void>(() => {})
+  const nextTSLessonRef = useRef<() => void>(() => {})
+  const prevTSLessonRef = useRef<() => void>(() => {})
 
   const availableChallenges = useMemo(() => challenges.filter((item) => (topic === 'All topics' || item.topic === topic) && (level === 'All levels' || item.kyu === level)), [topic, level])
 
@@ -152,6 +131,8 @@ export function App() {
   runChallengeRef.current = testSolution
   nextLessonRef.current = goNextLesson
   prevLessonRef.current = goPrevLesson
+  nextTSLessonRef.current = goNextTSLesson
+  prevTSLessonRef.current = goPrevTSLesson
 
   function toggleSidebar() {
     setSidebarCollapsed((current) => {
@@ -176,30 +157,30 @@ export function App() {
       if (event.key === 'Enter') {
         if (view === 'lesson' || view === 'ts-lesson') {
           event.preventDefault()
-          runLessonCode()
+          runLessonRef.current()
         }
         if (view === 'challenge') {
           event.preventDefault()
-          testSolution()
+          runChallengeRef.current()
         }
       }
 
       if (event.shiftKey && event.key === 'ArrowRight' && (view === 'lesson')) {
         event.preventDefault()
-        goNextLesson()
+        nextLessonRef.current()
       }
       if (event.shiftKey && event.key === 'ArrowRight' && (view === 'ts-lesson')) {
         event.preventDefault()
-        goNextTSLesson()
+        nextTSLessonRef.current()
       }
 
       if (event.shiftKey && event.key === 'ArrowLeft' && (view === 'lesson')) {
         event.preventDefault()
-        goPrevLesson()
+        prevLessonRef.current()
       }
       if (event.shiftKey && event.key === 'ArrowLeft' && (view === 'ts-lesson')) {
         event.preventDefault()
-        goPrevTSLesson()
+        prevTSLessonRef.current()
       }
 
       if (event.key === 'e' && view !== 'learn' && view !== 'practice') {
@@ -352,13 +333,6 @@ export function App() {
   )
 }
 
-function useMemo<T>(factory: () => T, deps: unknown[]): T {
-  const ref = useRef<{ deps: unknown[]; value: T } | undefined>(undefined)
-  if (!ref.current || deps.some((dep, index) => dep !== ref.current!.deps[index])) {
-    ref.current = { deps, value: factory() }
-  }
-  return ref.current.value
-}
 
 function BigOPage() {
   const [showBackTop, setShowBackTop] = useState(false)

@@ -1,5 +1,9 @@
 /* Pure utility functions — no React dependencies */
 
+import type { Challenge } from './content'
+
+export const modLabel = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'
+
 export function readStorage(key: string): string | null {
   try {
     return localStorage.getItem(key)
@@ -47,5 +51,23 @@ export function executeExample(source: string) {
     return { output, error: '' }
   } catch (error) {
     return { output, error: error instanceof Error ? error.message : 'This code could not run.' }
+  }
+}
+
+export function runAssertions(source: string, challenge: Challenge): { label: string; passed: boolean; actual?: unknown; error?: string }[] {
+  try {
+    const candidate = new Function(`${source}\nreturn typeof ${challenge.functionName} === 'function' ? ${challenge.functionName} : undefined`)()
+    if (!candidate) return challenge.cases.map((item) => ({ label: item.label, passed: false, error: `Define ${challenge.functionName} as a function.` }))
+    return challenge.cases.map((item) => {
+      try {
+        const actual = candidate(...item.args)
+        return { label: item.label, passed: JSON.stringify(actual) === JSON.stringify(item.expected), actual }
+      } catch (error) {
+        return { label: item.label, passed: false, error: error instanceof Error ? error.message : 'This assertion could not run.' }
+      }
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'This code could not run.'
+    return challenge.cases.map((item) => ({ label: item.label, passed: false, error: message }))
   }
 }
