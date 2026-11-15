@@ -41,7 +41,7 @@ export const CodePanel = forwardRef<HTMLPreElement, CodePanelProps>(function Cod
         return (
           <div
             key={i}
-            data-line={i}
+            data-line={i + 1}
             style={{
               background: isCurrent ? 'var(--accent-bg)' : 'transparent',
               borderLeft: isCurrent ? '2px solid var(--accent)' : '2px solid transparent',

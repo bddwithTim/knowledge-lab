@@ -8,7 +8,6 @@ export function ScenarioSection({ scenarioId }: { scenarioId: ScenarioId }) {
   const [stepIndex, setStepIndex] = useState(0)
   const scenario = scenarios.find((s) => s.id === scenarioId)!
   const step = scenario.visualData[stepIndex]!
-  const debugStep = scenario.steps[stepIndex]
 
   return (
     <section className="scenario-section" id={scenarioId}>

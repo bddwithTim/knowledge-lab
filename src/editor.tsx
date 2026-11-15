@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditorState } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine } from '@codemirror/view'
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { javascript } from '@codemirror/lang-javascript'
 import { bracketMatching, indentOnInput, syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
@@ -115,7 +115,7 @@ export function Editor({
         autocompletion(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         history(),
-        javascript(),
+        javascript({ typescript: true }),
         darkTheme,
         syntaxOverrides,
         keymap.of([
@@ -220,7 +220,7 @@ export function Editor({
           <span>Console</span>
           {isEmpty ? (
             <p className="output-placeholder">
-              Press Run code (<Kbd>{modLabel} Enter</Kbd>) to see output here.
+              {hasRun ? 'Ran with no console output.' : <>Press Run code (<Kbd>{modLabel} Enter</Kbd>) to see output here.</>}
             </p>
           ) : (
             <>

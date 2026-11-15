@@ -5,16 +5,14 @@ import { zodLessons, type ZodLesson, type ZodExercise } from './zod-content'
 import { Editor } from './editor'
 import { type ScenarioId } from './algorithm-scenarios'
 import { BookOpen, CaretLeft, Code, Flask, Graph, List } from '@phosphor-icons/react'
-import { readStorage, writeStorage, display, runTS, executeExample, modLabel, runAssertions } from './utils'
+import { readStorage, writeStorage, display, runCode, modLabel, runAssertions } from './utils'
 import { Kbd } from './components/Kbd'
 import { CodePanel } from './components/CodePanel'
 import { CollapsibleSection } from './components/CollapsibleSection'
-import { CollapsibleBreakdown } from './components/CollapsibleBreakdown'
 import { CodeText } from './components/CodeText'
 import { CodeBlock } from './components/CodeBlock'
 import { ScenarioSection } from './components/ScenarioSection'
 import { BigOPage } from './components/BigOPage'
-import { WaterLayer } from './components/WaterLayer'
 
 type View = 'learn' | 'practice' | 'lesson' | 'challenge' | 'big-o' | 'patterns' | 'pattern-detail' | 'sliding-window' | 'hash-map' | 'binary-search' | 'fast-slow' | 'stack' | 'merge-intervals' | 'prefix-sum' | 'sorting-algorithms' | 'greedy' | 'dp' | 'backtracking' | 'ts-learn' | 'ts-lesson' | 'zod-learn' | 'zod-lesson'
 type NavEntry = { v: View; lo?: number; to?: number; zo?: number; cid?: string }
@@ -39,6 +37,8 @@ export function App() {
   const [topic, setTopic] = useState<Topic | 'All topics'>('All topics')
   const [level, setLevel] = useState<Kyu | 'All levels'>('All levels')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readStorage(SIDEBAR_KEY) === 'true')
+  const [isMobile, setIsMobile] = useState(() => typeof matchMedia !== 'undefined' && matchMedia('(max-width: 800px)').matches)
+  const navCollapsed = sidebarCollapsed || isMobile
 
   const runLessonRef = useRef<() => void>(() => {})
   const runChallengeRef = useRef<() => void>(() => {})
@@ -73,6 +73,7 @@ export function App() {
       if (challenge) entry.cid = challenge.id
       history.pushState(entry, '', '')
     }
+    window.scrollTo(0, 0)
   }
 
   function goNextChallenge() {
@@ -90,11 +91,11 @@ export function App() {
   }
 
   const runLessonCode = useCallback(() => {
-    const src = view === 'ts-lesson' || view === 'zod-lesson' ? code : code
-    const next = view === 'ts-lesson' || view === 'zod-lesson' ? runTS(code) : executeExample(code)
-    setOutput(next.output)
-    setError(next.error)
-  }, [code, view])
+    void runCode(code, (line) => setOutput((prev) => [...prev, line])).then((next) => {
+      setOutput(next.output)
+      setError(next.error)
+    })
+  }, [code])
 
   const testSolution = useCallback(() => {
     setResults(runAssertions(code, activeChallenge))
@@ -148,10 +149,19 @@ export function App() {
   }
 
   useEffect(() => {
+    const mq = matchMedia('(max-width: 800px)')
+    function onChange(event: MediaQueryListEvent) { setIsMobile(event.matches) }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.target instanceof HTMLSelectElement) return
       const mod = event.metaKey || event.ctrlKey
       if (!mod) return
+      // CodeMirror's own Mod-Enter keymap handles runs when the editor is focused.
+      const inEditor = event.target instanceof HTMLElement && event.target.closest('.cm-editor') !== null
 
       if (event.key.toLowerCase() === 'b') {
         event.preventDefault()
@@ -159,7 +169,7 @@ export function App() {
         return
       }
 
-      if (event.key === 'Enter') {
+      if (event.key === 'Enter' && !inEditor) {
         if (view === 'lesson' || view === 'ts-lesson' || view === 'zod-lesson') {
           event.preventDefault()
           runLessonRef.current()
@@ -198,7 +208,7 @@ export function App() {
 
       if (event.key === 'e' && view !== 'learn' && view !== 'practice') {
         event.preventDefault()
-        const editor = document.querySelector<HTMLElement>('.cm-editor')
+        const editor = document.querySelector<HTMLElement>('.cm-content')
         editor?.focus()
       }
     }
@@ -216,8 +226,10 @@ export function App() {
       setView(entry.v)
       const lo = entry.lo; if (lo) { const l = lessons.find(x => x.order === lo); if (l) { setActiveLesson(l); setCode(l.starterCode); setOutput([]); setError('') } }
       const to = entry.to; if (to) { const l = tsLessons.find(x => x.order === to); if (l) { setActiveTSLesson(l); setCode(l.starterCode); setOutput([]); setError('') } }
+      const zo = entry.zo; if (zo) { const l = zodLessons.find(x => x.order === zo); if (l) { setActiveZodLesson(l); setCode(l.starterCode); setOutput([]); setError('') } }
       const cid = entry.cid; if (cid) { const c = challenges.find(x => x.id === cid); if (c) { setActiveChallenge(c); setCode(c.starterCode); setResults([]); setShowHint(false) } }
       navigatingRef.current = false
+      window.scrollTo(0, 0)
     }
     window.addEventListener('popstate', onPopState)
     // Restore state on refresh, or seed initial entry
@@ -230,18 +242,18 @@ export function App() {
   }, [])
 
   return (
-    <main className={`shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+    <main className={`shell${navCollapsed ? ' sidebar-collapsed' : ''}`}>
       <aside className="sidebar">
         <div className="sidebar-top">
           <button className="brand" onClick={() => navigateTo('learn')} title="Back to lessons">
             <span><Flask size={20} weight="fill" /></span>
-            {!sidebarCollapsed && 'knowledge lab'}
+            {!navCollapsed && 'knowledge lab'}
           </button>
-          <button className={`sidebar-toggle${sidebarCollapsed ? ' menu-toggle' : ''}`} onClick={toggleSidebar} title={`${sidebarCollapsed ? 'Open menu' : 'Collapse menu'} (${modLabel} B)`} aria-label={sidebarCollapsed ? 'Open menu' : 'Collapse menu'}>
-            {sidebarCollapsed ? <List size={18} /> : <CaretLeft size={18} />}
+          <button className={`sidebar-toggle${navCollapsed ? ' menu-toggle' : ''}`} onClick={toggleSidebar} title={`${navCollapsed ? 'Open menu' : 'Collapse menu'} (${modLabel} B)`} aria-label={navCollapsed ? 'Open menu' : 'Collapse menu'}>
+            {navCollapsed ? <List size={18} /> : <CaretLeft size={18} />}
           </button>
         </div>
-        {!sidebarCollapsed && (
+        {!navCollapsed && (
           <>
             <p className="nav-label">Explore</p>
             <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => navigateTo('learn')}>
@@ -268,7 +280,7 @@ export function App() {
             </div>
           </>
         )}
-        {sidebarCollapsed && (
+        {navCollapsed && (
           <div className="sidebar-icons">
             <button className={`nav-link ${view === 'learn' || view === 'lesson' ? 'active' : ''}`} onClick={() => navigateTo('learn')} title="JavaScript">
               <span><BookOpen size={16} /></span>
@@ -305,7 +317,7 @@ export function App() {
         )}
         {view === 'big-o' && <BigOPage />}
         {view === 'patterns' && <PatternsOverview onSelectPattern={(v) => navigateTo(v)} />}
-        {view === 'pattern-detail' && <PatternDetailPage onBack={() => navigateTo('patterns')} onNext={() => navigateTo('sliding-window')} onOpenChallenge={(c) => navigateTo('challenge', undefined, undefined, c)} />}
+        {view === 'pattern-detail' && <PatternDetailPage onBack={() => navigateTo('patterns')} onNext={() => navigateTo('sliding-window')} />}
         {view === 'sliding-window' && <SlidingWindowPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('pattern-detail')} onNext={() => navigateTo('hash-map')} />}
         {view === 'hash-map' && <HashMapPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('sliding-window')} />}
         {view === 'binary-search' && <BinarySearchPage onBack={() => navigateTo('patterns')} onPrevious={() => navigateTo('hash-map')} onNext={() => navigateTo('fast-slow')} />}
@@ -368,7 +380,7 @@ export function App() {
             onRun={testSolution}
             onHint={() => setShowHint(!showHint)}
             onBack={() => navigateTo('practice')}
-            onNext={availableChallenges.indexOf(activeChallenge) < availableChallenges.length - 1 ? goNextChallenge : null}
+            onNext={(() => { const i = availableChallenges.indexOf(activeChallenge); return i >= 0 && i < availableChallenges.length - 1 ? goNextChallenge : null })()}
             onPrevious={availableChallenges.indexOf(activeChallenge) > 0 ? goPrevChallenge : null}
           />
         )}
@@ -428,7 +440,7 @@ function PatternsOverview({ onSelectPattern }: { onSelectPattern: (view: View) =
 }
 
 /* ── PatternDetailPage: scrollable inline scenarios for a pattern ── */
-function PatternDetailPage({ onBack, onNext, onOpenChallenge }: { onBack: () => void; onNext: () => void; onOpenChallenge: (c: Challenge) => void }) {
+function PatternDetailPage({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const twoPointerIds: ScenarioId[] = ['pair-sum', 'palindrome', 'remove-duplicates', 'container-water', 'merge-sorted']
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
@@ -1530,7 +1542,7 @@ function ZodLessonPage({
           </CollapsibleSection>
         ))}
       </article>
-      <Editor title="lesson.zod.ts" code={code} onCode={onCode} onRun={onRun} output={output} error={error} />
+      <Editor title="lesson.zod.ts" code={code} onCode={onCode} onRun={onRun} output={output} error={error} onPrevious={hasPrevious ? onPrevious : undefined} onNext={hasNext ? onNext : undefined} nextLabel={zodLessons.find((l) => l.order === lesson.order + 1)?.title} />
       {lesson.exercises.length > 0 && (
         <section className="ts-exercises-section">
           <h2 className="scenario-section-title">Exercises</h2>
@@ -1718,7 +1730,7 @@ function PracticeIndex({ challenges: items, topic, level, onTopic, onLevel, onOp
       </header>
       <section className="practice-toolbar">
         <div>
-          <span className="eyebrow">40 challenges</span>
+          <span className="eyebrow">{challenges.length} challenges</span>
           <h2>Challenge catalogue</h2>
         </div>
         <div className="filters">
@@ -1811,7 +1823,7 @@ function TSLessonPage({
           </CollapsibleSection>
         ))}
       </article>
-      <Editor title="lesson.ts" code={code} onCode={onCode} onRun={onRun} output={output} error={error} />
+      <Editor title="lesson.ts" code={code} onCode={onCode} onRun={onRun} output={output} error={error} onPrevious={hasPrevious ? onPrevious : undefined} onNext={hasNext ? onNext : undefined} nextLabel={tsLessons.find((l) => l.order === lesson.order + 1)?.title} />
       <div className="reading ts-reading">
         {lesson.exercises.length > 0 && (
           <section className="ts-exercises">
@@ -2043,7 +2055,7 @@ function LessonPage({
           </CollapsibleSection>
         ))}
       </article>
-      <Editor title="lesson.js" code={code} onCode={onCode} onRun={onRun} output={output} error={error} />
+      <Editor title="lesson.js" code={code} onCode={onCode} onRun={onRun} output={output} error={error} onPrevious={hasPrevious ? onPrevious : undefined} onNext={hasNext ? onNext : undefined} nextLabel={lessons.find((l) => l.order === lesson.order + 1)?.title} />
       <nav className="lesson-end-nav" aria-label="Lesson navigation">
         <div>
           <span className="eyebrow">End of lesson</span>
